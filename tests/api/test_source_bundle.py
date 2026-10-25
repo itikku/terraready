@@ -117,3 +117,24 @@ def test_approved_source_assets_and_unknown_extensions(bundle_repo):
         assert module.allowed(name)
     for name in ["apps/web/src/private.key", "scripts/.env.py", "apps/web/src/dist/cached.ts"]:
         assert not module.allowed(name)
+
+
+def test_bundle_preserves_both_reviewed_artifacts_but_excludes_raw_reports(bundle_repo):
+    module, root, tmp = bundle_repo
+    reports = {
+        "docs/verification/local-agent.json": '{"synthetic":"native"}\n',
+        "docs/verification/gpu-agent.json": '{"synthetic":"gpu"}\n',
+        "docs/verification/raw-report.json": '{"synthetic":"unreviewed"}\n',
+    }
+    for name, content in reports.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    module.git(root, "add", ".")
+    module.git(root, "commit", "-qm", "Synthetic reviewed artifacts")
+    output = tmp / "evidence.tar.gz"
+    module.build_bundle(root, output)
+    with tarfile.open(output) as archive:
+        assert "docs/verification/raw-report.json" not in archive.getnames()
+        for name in list(reports)[:2]:
+            assert archive.extractfile(name).read().decode() == reports[name]

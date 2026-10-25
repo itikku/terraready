@@ -37,6 +37,7 @@ FILES = frozenset(
         "data/fixtures/post-rain.json",
         "data/fixtures/shift-docket.json",
         "docs/verification/local-agent.json",
+        "docs/verification/gpu-agent.json",
     }
 )
 SOURCE_RULES = (
