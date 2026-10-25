@@ -115,7 +115,7 @@ The private test on **2026-10-25** ran the complete stack on one NVIDIA L4 with 
 | Workflow and failures | Human review/approval/briefs, stopped-model fallback and evidence expiry passed; restart reachability recovered |
 | Cleanup and cost | Temporary Pod terminated; no Pods or network volumes remained. Provider-recorded GPU + storage charge **$0.1461** (below the $5 ceiling); earlier account balance decrease was $0.16 |
 
-These are bounded integration observations, not reliability guarantees or absolute memory high-water marks. Container memory includes caches. Startup followed preload; cold-cache performance was not established. Full-stack outbound-network denial remains deferred/unverified. No Jetson, power-efficiency or production-safety result is claimed. The local regression suite passed **267 backend tests and 44 browser tests**; those browser tests use a labeled protocol stub and are separate from real inference evidence.
+These are bounded integration observations, not reliability guarantees or absolute memory high-water marks. Container memory includes caches. Startup followed preload; cold-cache performance was not established. Full-stack outbound-network denial remains deferred/unverified. No Jetson, power-efficiency or production-safety result is claimed. The local regression suite passed **268 backend tests and 44 browser tests**; those browser tests use a labeled protocol stub and are separate from real inference evidence.
 
 `make agent-smoke` records actual inference under ignored `.data/reports/`; `python scripts/export_verification.py` prints only the typed public projection for deliberate review/promotion. Never publish the raw local database, model key, `.env.local` or an unreviewed report. Current implementation and verification state: [project state](docs/STATE.md).
 
@@ -200,6 +200,16 @@ Once the runtimes are installed, `make verify` runs the complete backend, fronte
 Playwright starts isolated services on ports 8001/5174 and uses `.data/e2e-lancedb/`, leaving your running demo and approvals untouched. The test-only reset script drops only the approval table in that fixed disposable database. The browser suite blocks all external requests and uses an intentionally invalid Mapbox token for provider-failure coverage. It verifies equipment changes, zone evidence, route outcomes, evidence expiry, plan approval, persisted reload, both teammate briefs, clipboard/download, recovery states, keyboard controls, mobile layout, accessibility and a screenshot baseline. Failure traces, screenshots and videos are saved locally. Browser tests do not need your real Mapbox token.
 
 CI runs backend and workspace checks independently and retains browser failure artifacts for seven days. CI has not yet run on GitHub because this repository has not been pushed. The visual baseline allows 3% pixel variation for cross-platform rendering; updates require deliberate review.
+
+### Reproduction status — October 25, 2026
+
+A separate clean local Git checkout installed locked Python/npm dependencies and Chromium into fresh directories, without copying the development environment, credentials, database or model. Verified on macOS arm64 with Python **3.12.12**, uv **0.13.5** and Node **24.22.1**:
+
+- `make verify`: formatting, lint, types, production build, **268 backend tests** (**99.42%** API statement/branch coverage) and **44 browser tests** passed. The browser suite uses its labeled model-protocol stub.
+- Two explicit fixture seeds and live HTTP ground/recovery checks passed. A separate browser run against the **real API without a model installed** verified fallback, manual approval, correct copied brief, persisted reload, evidence expiry and mobile layout. It made no external browser requests.
+- `uv build` produced backend source/wheel packages; member review found no credential/database/cache paths and confirmed source-package attribution. Two allowlisted source exports were byte-identical, with all member hashes checked and both reviewed native/GPU evidence artifacts retained.
+
+The checked application revision was `a6c39d4`; final source-package/attribution and manual-demo checks used `82feb5a`. Later README/checkpoint edits do not change application behavior. GitHub CI has not run remotely and no public service is deployed. Browser request blocking does not prove backend outbound-network isolation. Existing npm ESLint-support and lazy Mapbox bundle-size advisories remain; dependency upgrades are outside this verified slice.
 
 ## POC boundaries
 
