@@ -60,6 +60,8 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: .data/pw-browsers
       - name: Frontend types, lint, formatting and production build
         run: make web-check
+      - name: Shared budget policy and local Cloudflare persistence
+        run: make controller-check
       - name: Interaction, accessibility and visual regression checks
         run: make browser-check
       - uses: actions/upload-artifact@v4

@@ -138,3 +138,33 @@ def test_bundle_preserves_both_reviewed_artifacts_but_excludes_raw_reports(bundl
         assert "docs/verification/raw-report.json" not in archive.getnames()
         for name in list(reports)[:2]:
             assert archive.extractfile(name).read().decode() == reports[name]
+
+
+def test_bundle_preserves_controller_workspace_without_runtime_or_credentials(bundle_repo):
+    module, root, tmp = bundle_repo
+    included = [
+        "apps/controller/package.json",
+        "apps/controller/tsconfig.json",
+        "apps/controller/README.md",
+        "apps/controller/src/policy.ts",
+        "apps/controller/src/worker.ts",
+        "apps/controller/tests/storage.test.mjs",
+    ]
+    excluded = [
+        "apps/controller/dist/worker.js",
+        "apps/controller/node_modules/example/index.ts",
+        "apps/controller/src/private.key",
+        "apps/controller/.dev.vars",
+        "apps/controller/.wrangler/state/ledger.sqlite",
+    ]
+    for name in included + excluded:
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("SYNTHETIC SOURCE OR EXCLUSION FIXTURE\n")
+    module.git(root, "add", ".")
+    module.git(root, "commit", "-qm", "Synthetic controller workspace")
+    output = tmp / "controller.tar.gz"
+    module.build_bundle(root, output)
+    with tarfile.open(output) as archive:
+        assert set(included).issubset(archive.getnames())
+        assert not set(excluded).intersection(archive.getnames())

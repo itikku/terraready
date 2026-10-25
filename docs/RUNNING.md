@@ -2,6 +2,8 @@
 
 Reference for the current local single-host demo. The root README remains the default quickstart. Stop services with Ctrl-C in their terminals; preserve existing database/history before deliberate reset or migration.
 
+The root locked npm workspace includes the local-only controller readiness package. `make controller-check` tests budget/deadline policy and SQLite persistence in Cloudflare's emulator; `make verify` includes it. This needs no Cloudflare login or GPU and does not enable public access or live provisioning. See [controller scope and open gates](../apps/controller/README.md).
+
 ## Dependencies and services
 
 Requires Python 3.12, Node 24 LTS (or 22.13+), npm and uv. Clean locked installs were verified with uv 0.13.5. Dependency/browser/model setup needs network access; the default bundled aerial and manual workflow do not.

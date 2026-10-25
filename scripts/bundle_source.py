@@ -28,6 +28,9 @@ FILES = frozenset(
         "apps/web/index.html",
         "apps/web/tsconfig.json",
         "apps/web/vite.config.ts",
+        "apps/controller/package.json",
+        "apps/controller/tsconfig.json",
+        "apps/controller/README.md",
         "apps/web/public/imagery/site-aerial.jpg",
         "apps/web/public/imagery/north-inspection.png",
         "apps/web/public/imagery/source.json",
@@ -43,6 +46,8 @@ FILES = frozenset(
 SOURCE_RULES = (
     ("apps/api/src/terraready/", {".py"}),
     ("apps/web/src/", {".ts", ".tsx", ".css"}),
+    ("apps/controller/src/", {".ts"}),
+    ("apps/controller/tests/", {".mjs"}),
     ("scripts/", {".py"}),
     ("tests/api/", {".py"}),
     ("tests/e2e/", {".ts", ".png"}),

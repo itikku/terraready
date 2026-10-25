@@ -79,7 +79,7 @@ For actual inference, follow the pinned downloads/hash checks in [model setup](d
 
 | Evidence | Result and scope |
 | --- | --- |
-| [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | 296 backend tests and 60 browser tests cover the current flow, with formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
+| [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | 297 backend, 60 browser and 26 local controller tests, with formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
 | [Private L4 integration](docs/verification/gpu-agent.json) | Real Qwen inference: 3/3 smoke cases and 10/10 warm API requests. Warm end-to-end p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests. |
 | Same GPU test | Sampled peaks **3,274 MiB GPU**, **5.94 GiB container**; real approval/briefs, stopped-model fallback and expiry checked. Temporary Pod terminated; provider charge **$0.1461** including disk. |
 | [Camera interface tests](docs/CAMERAS.md#what-has-been-verified) | Synthetic folder exporter → API → browser, plus missing/invalid capture handling. No physical-camera test. |
@@ -98,7 +98,7 @@ Verification uses disposable test databases and explicit protocol fixtures. Stop
 
 The working vertical is construction. The same **asset × operation × location × evidence time** question motivates a planter on wet soil, a haul truck on a rain-soft mining road or a forestry harvester on a protected route. Those are transfer opportunities, not three additional implementations.
 
-This is a planning POC, not a safety-certified system, validated soil model or machinery controller. It has no live weather/telemetry ingestion, visual model, external messaging, authenticated multiuser service or optimal schedule. Camera pictures remain separate context. [On-demand sharing and the daily cost policy](docs/reviews/HOSTING_DESIGN.md) are designed, but are not deployed or enforced features.
+This is a planning POC, not a safety-certified system, validated soil model or machinery controller. It has no live weather/telemetry ingestion, visual model, external messaging, authenticated multiuser service or optimal schedule. Camera pictures remain separate context. [On-demand sharing and the daily cost policy](docs/reviews/HOSTING_DESIGN.md) have a tested local budget ledger; access and GPU lifecycle are not deployed or enforced features.
 
 References: [data/rules contract](docs/DATA_CONTRACT.md), [model/tools](docs/LOCAL_AGENT.md), [camera adapters](docs/CAMERAS.md), [architecture decisions](docs/DECISIONS.md), [research rationale](docs/RESEARCH.md).
 

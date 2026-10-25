@@ -28,6 +28,22 @@ Start permissions initially belong to the owner; invitees can join a ready run. 
 
 ## Why not the other immediate options
 
+### Cloudflare Free versus Vercel Hobby
+
+**Decision: keep Cloudflare**, reaffirmed after the user's comparison request. Both can serve the start page; the deciding requirement is coordinating a shared, persistent allowance and deadlines while the GPU is off. This is an architectural assessment against current official documentation, not a comparative production benchmark.
+
+| Requirement | Cloudflare design | Straightforward Vercel alternative |
+| --- | --- | --- |
+| Ten people start/join without duplicating a GPU or spending allowance | One SQLite-backed Durable Object serializes transactional ledger updates. | Functions/Workflows plus a transactional store, such as Marketplace Postgres or Redis, for shared admission. This is our proposed implementation, not a claim that Vercel cannot support other coordination designs. |
+| Wake for an idle, cost or two-hour deadline without an open browser | Programmatically scheduled Durable Object alarm, with retries. | Vercel Workflows provides durable sleep/hooks and retries. Ordinary Hobby Cron alone is unsuitable: once-daily scheduling with hourly precision. |
+| Fit the small free control plane | SQLite-backed Durable Objects are available on Free; exceeding a quota rejects operations. | Workflows has Hobby allowances; functions, workflow events/data and queues have separate usage meters. Database limits depend on the chosen integration. Free operation is plausible, not yet proven for our account/workload. |
+| Minimize setup and recovery dependencies | Ledger, timer and gateway stay within one Cloudflare account. | A transactional Marketplace store adds another integration and its persistence/availability limits. Existing Vercel/database infrastructure would make this tradeoff less significant. |
+| Keep future changes understandable | Plain TypeScript policy with a small Cloudflare storage/alarm adapter. | Standard Node functions and Postgres/Redis are familiar and more portable; adopting Workflows still adds its own execution model. |
+
+Primary references: [Cloudflare transactional SQLite](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/), [Free availability/quotas](https://developers.cloudflare.com/durable-objects/platform/pricing/), [alarms/retries](https://developers.cloudflare.com/durable-objects/api/alarms/), [Vercel Workflows durable waits](https://vercel.com/docs/workflows), [Workflow usage/pricing](https://vercel.com/docs/workflows/pricing), [Hobby Cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing), and [Vercel database integrations](https://vercel.com/docs/storage).
+
+Cloudflare's tradeoffs are a new account, provider-specific Durable Object lifecycle, finite alarm retries and free-tier quotas. The gateway's 10 ms Free CPU allowance still needs measurement; Durable Object CPU/storage limits have their own contract. [Worker limits](https://developers.cloudflare.com/workers/platform/limits/), [Durable Object limits](https://developers.cloudflare.com/durable-objects/platform/limits/). Neither platform supplies our Runpod spending cap or a guaranteed provider deletion: both need the same conservative reservations, billing reconciliation and independent cleanup fallback. The local Cloudflare tests reduce implementation uncertainty; they do not prove the hosted service or make Vercel incapable.
+
 | Option | Assessment |
 | --- | --- |
 | One GPU Pod without an external controller | Cannot provide the requested start page, durable daily budget or independent shutdown while off. An agent/browser timer is insufficient. |
@@ -65,4 +81,10 @@ Show operator evidence for settled / estimated / reserved spend, remaining share
 6. **Keep cleanup independently recoverable.** Durable Object alarms can wake an inactive controller and retry, but retries are finite and provider/API failures can outlast them. Use idempotent retries/reconciliation, quota monitoring and a separately authenticated cleanup fallback; test a failed first deletion and controller restart. A free-tier quota exhaustion must not silently disable the only shutdown path. [Alarms](https://developers.cloudflare.com/durable-objects/api/alarms/)
 7. **Only then run the genuine-model demonstration.** Reroute, redeployment, blocked work and an unscripted paraphrase; verify real outage/expiry, queue/load behavior and measured cost. Terminate before finishing optional captures; reconcile final charges. Preserve prior hardware artifacts and local services.
 
-The next cloud engineering slice is the **local controller/ledger and access-boundary proof**. A no-cost fake-provider test can establish races, deadlines and budget arithmetic before any live lifecycle call. It cannot establish a real provider shutdown or spending guarantee. Cloudflare plugin discovery returned no matching integration; secure account authentication will use a supported Cloudflare flow, without credentials in chat.
+## Local readiness evidence
+
+The [controller package](../../apps/controller/README.md) now implements the internal SQLite-backed Durable Object ledger and policy, with **26 passing local tests**. These cover concurrent admission/retries, actual emulator persistence/restart, first-use and idle deadlines, midnight/DST, cost shortening, unknown creation, exact resource identity, pending invoices, unexpected charges and corrupt accounting. A real emulator alarm persists shutdown intent without a browser. No provider API is called. All public Worker requests return 503; this establishes a closed default, not configured invitation/authentication.
+
+`npm ci` and `make check web-check controller-check` passed in the disposable QA checkout: 297 backend tests / 99.40% API statement+branch coverage, controller tests and frontend checks/build. Existing frontend dependency versions and historical GPU artifacts are unchanged. The controller is included in the source-only export and normal verification. Its prior bill is rounded conservatively to 146,056 integer microdollars; reservations are held until confirmed termination and reconciled billing. Proposed setup/idle/shutdown margins remain assumptions to verify against the live provider.
+
+The next cloud engineering slice is **secure account/access setup**, then protected origin/workspace/build and independent provider-shutdown proof. Local tests cannot establish a real provider shutdown or spending guarantee. Cloudflare plugin discovery returned no matching integration; secure account authentication will use a supported Cloudflare flow, without credentials in chat. No Cloudflare or Runpod resource has been created.

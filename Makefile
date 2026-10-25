@@ -1,4 +1,4 @@
-.PHONY: seed api check test smoke web web-check browser-check verify model agent-smoke
+.PHONY: seed api check test smoke web web-check controller-check browser-check verify model agent-smoke
 
 # Run from the repository root after: uv sync --frozen --extra dev
 seed:
@@ -30,7 +30,10 @@ web-check:
 browser-check:
 	npm run test:e2e
 
-verify: check web-check browser-check
+controller-check:
+	npm run controller:check
+
+verify: check web-check controller-check browser-check
 
 model:
 	.venv/bin/python scripts/serve_model.py
