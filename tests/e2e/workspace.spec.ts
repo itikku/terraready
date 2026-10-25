@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { execFileSync } from "node:child_process";
 
 test.beforeEach(async ({ page }) => {
+  execFileSync(".venv/bin/python", ["scripts/reset_browser_approvals.py"]);
   // The complete core experience must work with every non-local request blocked.
   await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) =>
     route.abort(),
@@ -13,7 +15,7 @@ test("local aerial, evidence and route are available without external connectivi
   page,
 }) => {
   await expect(
-    page.getByRole("heading", { name: "Good ground. Better decisions." }),
+    page.getByRole("heading", { name: "Recover today's shift" }),
   ).toBeVisible();
   await expect(
     page

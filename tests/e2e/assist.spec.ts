@@ -140,7 +140,7 @@ test("inference outage is explicit rules-only fallback and retry can recover", a
     result(page).getByText(/No model tools completed/),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Keep the work. Change the plan." }),
+    page.getByRole("heading", { name: "Compare routes for original work" }),
   ).toBeVisible();
   await analyze(page);
   await expect(

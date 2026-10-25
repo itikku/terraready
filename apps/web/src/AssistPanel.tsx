@@ -109,11 +109,12 @@ export default function AssistPanel({
             <Cpu size={23} />
           </span>
           <div>
-            <span className="eyebrow">READ-ONLY INTELLIGENCE</span>
+            <span className="eyebrow">OPTIONAL ASSISTANCE</span>
             <h2 id="assist-heading">Ask about the recovery.</h2>
             <p>
               Local model selects relevant records. Rules check the facts. You
-              make the call.
+              make the call. This panel reviews its own selection; it does not
+              change your package decisions above.
             </p>
           </div>
         </div>

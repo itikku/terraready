@@ -162,10 +162,16 @@ export interface RecoveryPlan {
     machine_id: string;
     route_id: string;
     required_hours: number;
+    eligible: boolean;
+    ground: Evaluation;
+    reasons: Reason[];
   }[];
   items: {
     task_id: string;
     disposition: string;
+    state: string;
+    action: string | null;
+    selected_candidate_id: string | null;
     reasons: Reason[];
     blocking_task_ids: string[];
   }[];

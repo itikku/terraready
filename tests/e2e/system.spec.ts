@@ -36,7 +36,7 @@ test("workspace links to the system and native back navigation returns to the si
   ).toBeVisible();
   await page.goBack();
   await expect(
-    page.getByRole("heading", { name: "Good ground. Better decisions." }),
+    page.getByRole("heading", { name: "Recover today's shift" }),
   ).toBeVisible();
 });
 
@@ -232,7 +232,7 @@ test("mobile provenance, keyboard skip and navigation stay accessible", async ({
   });
   await page.getByRole("link", { name: "Workspace", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Good ground. Better decisions." }),
+    page.getByRole("heading", { name: "Recover today's shift" }),
   ).toBeVisible();
 });
 

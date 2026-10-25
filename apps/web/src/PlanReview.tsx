@@ -125,11 +125,13 @@ export default function PlanReview({
             <GitBranch size={23} />
           </span>
           <div>
-            <span className="eyebrow">FROM OBSERVATION TO OPERATION</span>
-            <h2 id="plan-heading">Keep the work. Change the plan.</h2>
+            <span className="eyebrow">
+              ROUTE COMPARISON · ORIGINAL SCHEDULED WORK
+            </span>
+            <h2 id="plan-heading">Compare routes for original work</h2>
             <p>
-              Compare every access route. Keep uncertainty out of the operating
-              plan.
+              This separate approval covers {plan?.items.length ?? 3} originally
+              scheduled packages, not the full shift recovery above.
             </p>
           </div>
         </div>

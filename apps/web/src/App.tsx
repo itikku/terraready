@@ -29,6 +29,7 @@ import OfflineSiteMap from "./map/OfflineSiteMap";
 import PlanReview from "./PlanReview";
 import AssistPanel from "./AssistPanel";
 import CameraEvidence from "./CameraEvidence";
+import RecoveryWorkspace from "./RecoveryWorkspace";
 import type { Evaluation, Machine, Readiness, Site, Status } from "./types";
 
 const ConnectedMap = lazy(() => import("./map/MapboxSiteMap"));
@@ -242,8 +243,11 @@ export default function App() {
                 North Ridge <span>/</span> Construction earthworks{" "}
                 <ChevronDown size={13} />
               </div>
-              <h1>Good ground. Better decisions.</h1>
-              <p>A clear view of where your equipment can work today.</p>
+              <h1>Recover today's shift</h1>
+              <p>
+                Rain blocks the loaded hauler's north route. Choose what can
+                continue and what must wait.
+              </p>
             </div>
             <div className="shift-stamp">
               <span className="eyebrow">MORNING SHIFT</span>
@@ -274,14 +278,49 @@ export default function App() {
             </section>
           ) : (
             <>
+              <div className="shift-controls">
+                <div className="clock-select">
+                  <label htmlFor="clock">Evidence clock</label>
+                  <select
+                    id="clock"
+                    value={expired ? "expired" : "morning"}
+                    onChange={(e) => {
+                      setPending(true);
+                      setExpired(e.target.value === "expired");
+                    }}
+                  >
+                    <option value="morning">07:00 · Shift start</option>
+                    <option value="expired">12:00 · Evidence expired</option>
+                  </select>
+                </div>
+              </div>
+              <RecoveryWorkspace
+                key={`recovery-${asOf ?? site.scenario.as_of}`}
+                site={site}
+                asOf={asOf}
+                inspect={(id) => {
+                  chooseZone(id);
+                  evidenceHeading.current?.focus();
+                  evidenceHeading.current?.scrollIntoView({ block: "start" });
+                }}
+              />
+              <section
+                className="ground-evidence-heading"
+                id="ground-evidence"
+                aria-label="Ground investigation"
+              >
+                <h2>Inspect ground evidence</h2>
+                <p>
+                  Check each machine against the route and observations.{" "}
+                  <a href="#recovery-heading">Back to shift choices</a>
+                </p>
+              </section>
               <div className="weather-strip">
                 <div className="weather-icon">
                   <CloudRain size={24} />
                 </div>
                 <div>
-                  <strong>
-                    18 mm overnight. A different site this morning.
-                  </strong>
+                  <strong>18 mm of rain overnight.</strong>
                   <span>
                     North access is soft. Review ground readiness for each
                     machine before releasing work.
@@ -320,20 +359,6 @@ export default function App() {
                     );
                   },
                 )}
-                <div className="clock-select">
-                  <label htmlFor="clock">Evidence clock</label>
-                  <select
-                    id="clock"
-                    value={expired ? "expired" : "morning"}
-                    onChange={(e) => {
-                      setPending(true);
-                      setExpired(e.target.value === "expired");
-                    }}
-                  >
-                    <option value="morning">07:00 · Shift start</option>
-                    <option value="expired">12:00 · Evidence expired</option>
-                  </select>
-                </div>
               </section>
               <div className="workspace-grid">
                 <section className="map-workspace" aria-label="Site workspace">

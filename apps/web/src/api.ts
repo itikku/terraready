@@ -14,7 +14,8 @@ async function json<T>(
   url: string,
   signal: AbortSignal,
   body?: object,
-  context: "site" | "plan" | "approval" | "assist" | "system" = "site",
+  context:
+    "site" | "plan" | "approval" | "assist" | "system" | "selection" = "site",
 ): Promise<T> {
   const response = await fetch(url, {
     signal,
@@ -27,6 +28,10 @@ async function json<T>(
       : {}),
   });
   if (!response.ok) {
+    if (context === "selection" && response.status === 422)
+      throw new Error(
+        "These choices exceed a resource limit or include work that cannot start. Adjust the assignments and check again.",
+      );
     if (context === "system")
       throw new Error(
         "System status could not be checked. The evidence workspace remains available; retry this local check.",
@@ -139,6 +144,26 @@ export const approveRecovery = (plan: RecoveryPlan, signal: AbortSignal) =>
       as_of: plan.as_of,
     },
     "approval",
+  );
+
+export const getRecovery = (signal: AbortSignal, asOf?: string) =>
+  json<RecoveryPlan>(
+    `/api/scenarios/post-rain/recovery${asOf ? `?as_of=${encodeURIComponent(asOf)}` : ""}`,
+    signal,
+    undefined,
+    "plan",
+  );
+
+export const evaluateRecovery = (
+  candidateIds: string[],
+  signal: AbortSignal,
+  asOf?: string,
+) =>
+  json<RecoveryPlan>(
+    "/api/scenarios/post-rain/recovery/evaluate",
+    signal,
+    { candidate_ids: candidateIds, ...(asOf ? { as_of: asOf } : {}) },
+    "selection",
   );
 
 export const getSystemEvidence = (signal: AbortSignal) =>

@@ -4,7 +4,7 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const review = (page: Page) =>
-  page.getByRole("region", { name: "Keep the work. Change the plan." });
+  page.getByRole("region", { name: "Compare routes for original work" });
 async function approve(page: Page) {
   await review(page).getByRole("checkbox").check();
   await review(page)
