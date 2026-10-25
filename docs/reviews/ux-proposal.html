@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TerraReady — shift recovery proposal</title>
+  <style>
+    :root { color-scheme: light; --ink:#203e33; --muted:#54675b; --line:#d9e1d5; --paper:#f7f8f2; --green:#315d46; --soft:#ecf1e5; --hold:#744511; --hold-bg:#fff4dc; --red:#943c2c; }
+    * { box-sizing:border-box; } [hidden] { display:none !important; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    a { color:var(--green); } button,input { font:inherit; } button { cursor:pointer; }
+    button:disabled { cursor:default; opacity:.58; } button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline:3px solid #b46617; outline-offset:4px; }
+    h1,h2,h3,p { margin:0; } h1 { font-size:clamp(1.7rem,3vw,2.6rem); line-height:1.12; letter-spacing:-.04em; max-width:850px; }
+    h2 { font-size:1.4rem; letter-spacing:-.02em; line-height:1.25; } h3 { font-size:1rem; }
+    .review-banner { background:var(--ink); color:white; padding:10px 24px; text-align:center; font-size:.82rem; }
+    .review-banner a { color:white; } .skip { position:absolute; top:-100px; padding:10px; background:white; } .skip:focus { top:48px; z-index:2; }
+    .shell { max-width:1240px; margin:auto; padding:24px 32px 48px; }
+    .brand { display:flex; justify-content:space-between; gap:16px; align-items:center; border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:24px; }
+    .brand strong { font-size:1.2rem; letter-spacing:-.05em; } .small { font-size:.83rem; color:var(--muted); } .eyebrow { text-transform:uppercase; font-size:.71rem; font-weight:750; letter-spacing:.08em; color:var(--muted); }
+    .intro { margin-bottom:20px; } .intro>p { margin-top:12px; max-width:800px; color:var(--muted); } .intro .eyebrow { margin-bottom:9px; }
+    .steps { display:flex; gap:8px; flex-wrap:wrap; padding:0; list-style:none; margin:22px 0; }
+    .steps button { padding:9px 15px; border:1px solid var(--line); border-radius:6px; color:var(--ink); background:white; font-size:.88rem; }
+    .steps button[aria-current="step"] { background:var(--ink); color:white; border-color:var(--ink); }
+    .grid { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(260px,1fr); gap:24px; align-items:start; }
+    .card { background:white; border:1px solid var(--line); border-radius:10px; padding:24px; min-width:0; }
+    .card>p,.card>ul,.card>details { margin-top:12px; } .card>h2+p { color:var(--muted); }
+    .summary { padding:18px 20px; background:var(--soft); border-radius:8px; margin:18px 0; }
+    .counts { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:12px; } .count { display:flex; gap:7px; align-items:baseline; } .count strong { font-size:1.7rem; line-height:1; } .count span { font-size:.85rem; }
+    .primary,.secondary { display:inline-flex; align-items:center; justify-content:center; border-radius:6px; padding:11px 17px; font-size:.92rem; font-weight:650; border:1px solid var(--green); }
+    .primary { background:var(--green); color:white; } .secondary { background:white; color:var(--green); border-color:var(--line); }
+    .action-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:15px; }
+    .work { list-style:none; margin:0; padding:0; } .work li { padding:17px 0; border-bottom:1px solid var(--line); } .work li:last-child { border:0; padding-bottom:0; }
+    .work p { margin-top:5px; font-size:.89rem; color:var(--muted); } .tag { display:inline-block; font-size:.7rem; padding:2px 7px; border-radius:4px; color:var(--ink); background:var(--soft); margin-bottom:5px; font-weight:700; }
+    .hold { background:var(--hold-bg); color:var(--hold); padding:18px; border-radius:8px; margin-top:20px; } .hold h3 { margin-bottom:6px; } .hold ul { margin:8px 0 0; padding-left:20px; font-size:.89rem; } .hold p { font-size:.84rem; margin-top:8px; }
+    summary { cursor:pointer; font-weight:650; font-size:.92rem; } details>p { margin-top:12px; font-size:.88rem; } details+details { margin-top:20px; }
+    .context-image { display:block; width:100%; border-radius:6px; aspect-ratio:1.5; object-fit:cover; margin:15px 0 8px; }
+    .aside-stack { display:grid; gap:20px; } .deadline { border-left:3px solid var(--hold); padding-left:14px; } .deadline strong { display:block; }
+    .review-list { padding-left:20px; } .review-list li { padding:10px 0; font-size:.91rem; } .review-list span { display:block; color:var(--muted); font-size:.84rem; }
+    .check { display:flex; gap:10px; align-items:flex-start; margin-top:20px; font-size:.9rem; } .check input { width:20px; height:20px; flex:none; margin-top:2px; }
+    .brief { white-space:pre-wrap; font-size:.89rem; line-height:1.65; margin:16px 0; } .brief-card+.brief-card { margin-top:20px; }
+    .foot { border-top:1px solid var(--line); padding-top:20px; margin-top:28px; font-size:.8rem; color:var(--muted); } .status { min-height:24px; margin-top:12px; font-size:.85rem; }
+    @media(max-width:740px) { .shell { padding:18px 16px 32px; } .brand { margin-bottom:18px; padding-bottom:15px; align-items:flex-start; } .brand .small { text-align:right; max-width:180px; } .grid { grid-template-columns:1fr; gap:18px; } .card { padding:18px; } .steps { gap:6px; margin:18px 0; } .steps button { padding:9px 11px; font-size:.8rem; } .counts { gap:18px; } .count strong { font-size:1.5rem; } .count span { font-size:.78rem; } .action-row .primary { width:100%; } .review-banner { text-align:left; padding:9px 16px; } }
+  </style>
+</head>
+<body>
+  <div class="review-banner" role="region" aria-label="Design proposal notice">INTERACTIVE UX PROPOSAL · Synthetic fixture · Preview actions do not save approvals or run inference</div>
+  <a class="skip" href="#main">Skip to shift recovery</a>
+  <div class="shell">
+    <header class="brand"><strong>terraready</strong><span class="small">North Ridge · Demo snapshot<br>Oct 24, 2026 · 07:00 PDT</span></header>
+    <main id="main" tabindex="-1">
+      <div class="intro"><p class="eyebrow">Shift recovery / construction earthworks</p><h1>Recover today's shift</h1><p>Rain blocks north access for the loaded hauler. Review what can continue—and what must wait.</p></div>
+      <nav aria-label="Proposal screens"><ol class="steps"><li><button type="button" data-go="shift" aria-current="step">1 · Shift</button></li><li><button type="button" data-go="review">2 · Review</button></li><li><button type="button" data-go="brief" disabled>3 · Team briefs</button></li></ol></nav>
+      <section id="shift" class="grid" aria-labelledby="shift-heading">
+        <div class="card">
+          <h2 id="shift-heading" tabindex="-1">What can continue</h2>
+          <div class="summary"><div class="counts"><div class="count"><strong>4</strong><span>proposed</span></div><div class="count"><strong>2</strong><span>held</span></div><div class="count"><strong>1</strong><span>completed</span></div></div><p class="small">Keep excavation, reroute hauling and pull forward yard work. West work stays held. All four assignments need your approval.</p><p class="small">Review evidence before 10:15 PDT, or sooner if conditions change.</p><div class="action-row"><button class="primary" type="button" data-go="review">Review 4 assignments →</button></div></div>
+          <ul class="work">
+            <li><span class="tag">CONTINUE</span><h3>Prepare the east cut</h3><p>EX-01 can retain north access. The excavator's limits differ from the loaded hauler's. 3h planned effort.</p></li>
+            <li><span class="tag">REROUTE</span><h3>Keep east hauling on south access</h3><p>HT-02 uses South access → east cut. North access stays excluded for this machine. 4h planned effort.</p></li>
+            <li><span class="tag">PULL FORWARD</span><h3>Clear the yard drainage trench</h3><p>EX-01 can also take ready yard work within its remaining hour budget. 2h planned effort.</p></li>
+            <li><span class="tag">PULL FORWARD</span><h3>Inspect the yard drainage outlets</h3><p>UT-03 can take this ready alternative while west work remains held. 1h planned effort.</p></li>
+          </ul>
+          <div class="hold"><h3>Two packages must stay held</h3><ul><li>West-stockpile inspection needs fresh ground evidence.</li><li>West layout verification also needs the inspection to be actually completed.</li></ul><p>Approval does not finish the inspection or clear these holds.</p></div>
+        </div>
+        <aside class="aside-stack" aria-label="Decision context">
+          <div class="card deadline"><p class="eyebrow">Evidence review</p><strong>Before 10:15 PDT</strong><p class="small">Recheck sooner if conditions change. Eligibility is assessed at 07:00, not guaranteed for the entire shift.</p></div>
+          <div class="card"><h2>Inspect the evidence</h2><img class="context-image" src="../../apps/web/public/imagery/site-aerial.jpg" alt="Public-domain NAIP aerial used as context for the fictional site"><p class="small">Real aerial · synthetic operating site. No camera connected.</p><details><summary>Why north access excludes HT-02</summary><p>Synthetic bearing capacity: 65 kPa; loaded-hauler ground pressure: 85 kPa. Moisture: 72%; configured machine limit: 65%. These are demo rules and observations, not image-derived measurements.</p></details><details><summary>Route comparison · 3 scheduled packages</summary><p>The existing route-only comparison remains a supporting view with its own policy and approval. It does not approve this seven-package recovery. The full equipment/map workspace remains available in the implementation proposal.</p></details></div>
+          <div class="card"><h2>Optional assistance</h2><p class="small">Ask about rerouting, ready work or a blocked prerequisite. Manual recovery review remains available.</p><details><summary>What the model can do</summary><p>It can select relevant checked references. Rules determine feasibility; a person approves. This design proposal does not run a model or show live runtime status.</p></details></div>
+        </aside>
+      </section>
+      <section id="review" class="grid" aria-labelledby="review-heading" hidden>
+        <div class="card"><p class="eyebrow">Exact selection / seven-package recovery</p><h2 id="review-heading" tabindex="-1">Review these 4 assignments</h2><p>All four assignments below are selected. Two west packages remain held; the prior-shift haul batch is already complete.</p><ol class="review-list" id="selected-assignments"></ol><div class="hold"><h3>Held work is excluded</h3><ul><li>Inspect west-stockpile ground · fresh evidence needed.</li><li>Verify west-stockpile layout · ground evidence and completed inspection required.</li></ul><p>No entry onto unverified ground is authorized.</p></div><details><summary>Resource budgets and planning limits</summary><ul id="resource-budgets"></ul><p>Hours are serial planned effort, not a timed schedule or measured idle savings. Images do not establish ground conditions. A changed snapshot, clock or selection needs a new review. Nothing is sent or dispatched.</p></details><label class="check"><input type="checkbox" id="confirmed"><span>I reviewed these assignments, holds, resource limits and the 10:15 PDT evidence deadline.</span></label><div class="action-row"><button type="button" class="primary" id="approve" disabled>Approve these 4 assignments</button><button type="button" class="secondary" data-go="shift">Back to shift</button></div><p class="small">Preview interaction only. This prototype saves no approval.</p></div>
+        <aside class="card deadline"><p class="eyebrow">Before approving</p><h2>Review evidence by 10:15 PDT</h2><p>Or immediately if conditions change. This approval covers the exact selected response and current demo snapshot.</p><p class="small">It does not complete work, satisfy prerequisites, authorize unsafe access or dispatch machinery.</p></aside>
+      </section>
+      <section id="brief" class="grid" aria-labelledby="brief-heading" hidden>
+        <div><div class="card brief-card"><p class="eyebrow">Approved-state preview</p><h2 id="brief-heading" tabindex="-1">Response approved. Prepare the team briefs.</h2><p>The four reviewed assignments are the scope of this response. West work stays held; review evidence by 10:15 PDT.</p><p class="small">This is a preview of the approved screen. No approval was saved by this prototype.</p></div><div id="briefs"></div><div class="action-row"><button class="secondary" type="button" data-go="shift">Back to shift</button></div></div>
+        <aside class="card"><h2>What happens next</h2><p>Copy the relevant brief and share it through your normal channel. Copying does not send it.</p><div class="hold"><h3>West work remains held</h3><p>The inspection is not complete, and its successor cannot start. Recheck if evidence or conditions change.</p></div></aside>
+      </section>
+      <p id="notice" class="status" role="status" aria-live="polite"></p>
+    </main>
+    <footer class="foot">Design proposal grounded in the synthetic recovery API at application 9249889. Camera stub; no image inference, real-world safety clearance or autonomous dispatch. Aerial attribution: USDA NAIP / USGS, May 2022; see <a href="../../ATTRIBUTIONS.md">asset provenance</a>.</footer>
+  </div>
+  <script id="fixture" type="application/json">{"site":{"tasks":[{"id":"east-haul","name":"Haul material from east cut"},{"id":"east-excavation","name":"Prepare east cut"},{"id":"west-inspection","name":"Inspect west stockpile ground"},{"id":"east-batch-ready","name":"Prepare prior-shift haul batch"},{"id":"yard-drainage","name":"Clear service-yard drainage trench"},{"id":"yard-inspection","name":"Inspect service-yard drainage outlets"},{"id":"west-followup","name":"Verify west-stockpile layout"}],"machines":[{"id":"tracked-excavator","name":"EX-01 \u00b7 Tracked excavator"},{"id":"loaded-hauler","name":"HT-02 \u00b7 Loaded hauler"},{"id":"utility-rover","name":"UT-03 \u00b7 Utility vehicle"}],"routes":[{"id":"north-to-east","name":"North access \u2192 east cut"},{"id":"south-to-east","name":"South access \u2192 east cut"},{"id":"north-to-west","name":"North access \u2192 west stockpile"},{"id":"yard-loop","name":"Service yard internal access"}]},"recovery":{"candidates":[{"id":"c-9cd84dbb07a2dde43e3e1436","task_id":"east-excavation","machine_id":"tracked-excavator","route_id":"north-to-east","required_hours":3.0},{"id":"c-430da40369322990715722cf","task_id":"east-haul","machine_id":"loaded-hauler","route_id":"south-to-east","required_hours":4.0},{"id":"c-316bcccd9c9a179cd188b0ee","task_id":"yard-drainage","machine_id":"tracked-excavator","route_id":"yard-loop","required_hours":2.0},{"id":"c-b9644d4b529f594d7bddeca8","task_id":"yard-inspection","machine_id":"utility-rover","route_id":"yard-loop","required_hours":1.0}],"selected_candidate_ids":["c-9cd84dbb07a2dde43e3e1436","c-430da40369322990715722cf","c-316bcccd9c9a179cd188b0ee","c-b9644d4b529f594d7bddeca8"],"resources":[{"machine_id":"loaded-hauler","available_hours":8.0,"reserved_in_progress_hours":0.0,"original_planned_hours":4.0,"proposed_hours":4.0,"unallocated_hours":4.0},{"machine_id":"tracked-excavator","available_hours":8.0,"reserved_in_progress_hours":0.0,"original_planned_hours":3.0,"proposed_hours":5.0,"unallocated_hours":3.0},{"machine_id":"utility-rover","available_hours":8.0,"reserved_in_progress_hours":0.0,"original_planned_hours":0.5,"proposed_hours":1.0,"unallocated_hours":7.0}]},"updates":[{"role":"Field lead","body":"TerraReady synthetic demo \u00b7 assessed 2026-10-24T14:00:00+00:00 \u00b7 local plan 2703d5ddbfe3. Nothing sent or dispatched.\n\n- HOLD Inspect west stockpile ground: Ground/capability assessment is INSPECT.\n- HOLD Verify west-stockpile layout: Ground/capability assessment is INSPECT.; Actual completion required: west-inspection\n\nInspect from verified safe access only; no entry onto unverified ground is authorized. Return timestamped ground evidence. Actual completion must be recorded before dependent work can proceed. This approval does not complete any work."},{"role":"Haul coordinator","body":"TerraReady synthetic demo \u00b7 assessed 2026-10-24T14:00:00+00:00 \u00b7 local plan 2703d5ddbfe3. Nothing sent or dispatched.\n\n- Prepare east cut: EX-01 \u00b7 Tracked excavator; North access \u2192 east cut; 3h planned (retain).\n- Haul material from east cut: HT-02 \u00b7 Loaded hauler; South access \u2192 east cut; 4h planned (reroute).\n- Clear service-yard drainage trench: EX-01 \u00b7 Tracked excavator; Service yard internal access; 2h planned (pull_forward).\n- Inspect service-yard drainage outlets: UT-03 \u00b7 Utility vehicle; Service yard internal access; 1h planned (pull_forward).\n\n- HOLD Inspect west stockpile ground: Ground/capability assessment is INSPECT.\n- HOLD Verify west-stockpile layout: Ground/capability assessment is INSPECT.; Actual completion required: west-inspection\n\nEvidence review: 2026-10-24T17:15:00+00:00, or sooner if conditions change. Serial planned hours are not a timed schedule or guaranteed savings. This is not a real-world safety clearance."}]}</script>
+  <script>
+    const fixture = JSON.parse(document.getElementById('fixture').textContent);
+    const task = id => fixture.site.tasks.find(t => t.id === id);
+    const machine = id => fixture.site.machines.find(m => m.id === id);
+    const route = id => fixture.site.routes.find(r => r.id === id);
+    const selected = fixture.recovery.candidates.filter(c => fixture.recovery.selected_candidate_ids.includes(c.id));
+    for (const candidate of selected) {
+      const item = document.createElement('li');
+      item.textContent = task(candidate.task_id).name;
+      const detail = document.createElement('span');
+      detail.textContent = `${machine(candidate.machine_id).name} · ${route(candidate.route_id).name} · ${candidate.required_hours}h planned effort`;
+      item.append(detail); document.getElementById('selected-assignments').append(item);
+    }
+    for (const resource of fixture.recovery.resources) {
+      const item = document.createElement('li');
+      item.textContent = `${machine(resource.machine_id).name}: ${resource.proposed_hours}h selected / ${resource.available_hours}h available`;
+      document.getElementById('resource-budgets').append(item);
+    }
+    for (const update of fixture.updates) {
+      const article = document.createElement('article'); article.className = 'card brief-card';
+      const heading = document.createElement('h3'); heading.textContent = update.role;
+      const body = document.createElement('p'); body.className = 'brief'; body.textContent = update.body;
+      const copy = document.createElement('button'); copy.className = 'secondary'; copy.type = 'button'; copy.textContent = `Copy ${update.role.toLowerCase()} brief`;
+      copy.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(update.body); document.getElementById('notice').textContent = `${update.role} brief copied. Nothing was sent.`; }
+        catch { document.getElementById('notice').textContent = 'Clipboard unavailable. Select and copy the brief above.'; }
+      });
+      article.append(heading, body, copy); document.getElementById('briefs').append(article);
+    }
+    function show(name) {
+      for (const state of ['shift', 'review', 'brief']) document.getElementById(state).hidden = state !== name;
+      for (const button of document.querySelectorAll('.steps button')) {
+        if (button.dataset.go === name) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
+      }
+      if (name === 'shift') { document.getElementById('confirmed').checked = false; document.getElementById('approve').disabled = true; }
+      document.getElementById(`${name}-heading`).focus();
+      document.getElementById('notice').textContent = '';
+      window.scrollTo(0, 0);
+    }
+    for (const button of document.querySelectorAll('[data-go]')) button.addEventListener('click', () => show(button.dataset.go));
+    document.getElementById('confirmed').addEventListener('change', event => { document.getElementById('approve').disabled = !event.target.checked; });
+    document.getElementById('approve').addEventListener('click', () => { document.querySelector('[data-go="brief"]').disabled = false; show('brief'); });
+  </script>
+</body>
+</html>
