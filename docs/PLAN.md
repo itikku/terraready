@@ -192,7 +192,7 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 7 — Private single-GPU integration test
 
-**Status:** Approved in principle: Runpod, private temporary test, cumulative usage ceiling $5. Provisioning waits for completed local slices, account access and a documented readiness gate; no resources currently exist.
+**Status:** At the account/funding readiness gate. Phases 5–6 are complete; no resources exist. Primary billing docs describe $10 non-refundable starting credits, above the authorized $5 outlay; actual account checkout/quote and isolation controls remain unverified. See `GPU_READINESS.md`. Await user account/deposit direction before paid provisioning; no budget, exposure or acceptance expansion is inferred.
 
 **Readiness / spending gate**
 

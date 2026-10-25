@@ -35,6 +35,7 @@ Updated: 2026-10-25. Active slice: **Phase 7 — private GPU readiness / access 
 - Manifest: `config/local-model.json`; official Apache-2.0 revision `bc640142c66e1fdd12af0bd68f40445458f3869b`, weights SHA-256 `7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5`. llama.cpp b11669 / commit 620d2225c. Setup/security: `LOCAL_AGENT.md`.
 - Loopback-only, single-process POC. No authenticated superintendent or public hosting. Runtime offline flag/browser blocking are NOT full-stack egress-denial proof.
 - Private temporary Runpod GPU test approved with **$5 cumulative usage ceiling**. Larger deposit/budget, payment details or public exposure require approval. User has no account yet; wait until deployment-ready. No paid resources/spend.
+- 2026-10-25 readiness research: official billing docs describe non-refundable credits and $10 starting funding. Actual account checkout minimum/instance quote is unverified. This is above the authorized outlay, so stop for user direction; do not fund/deploy or infer permission. `GPU_READINESS.md` records references and remaining Linux/CUDA/private-access/true-egress-control gates.
 - Autonomous continuation/routine gates approved while user away. Stop for genuinely missing authority/access or material ambiguity, not routine steps. UI tuning deferred.
 
 ## Services and recovery
@@ -46,4 +47,4 @@ Updated: 2026-10-25. Active slice: **Phase 7 — private GPU readiness / access 
 
 ## Single next step
 
-Phase 5 backend **3ba7798**, UI **b647a33**, captures/state **77af88c**. Commit verified Phase 6, then finish only safe private-GPU readiness preparation: verify provider pricing/deposit and network-isolation capabilities from primary sources, prepare secret-free pinned workload/test/cleanup instructions, and stop at the actual account/quote/authority gate. No provisioning, funding, public exposure or external writes without that gate. User offered to create Runpod account when needed; no credentials should be pasted in chat. Full-stack external-access denial must be genuine, not browser-only blocking or a runtime flag.
+Phase 5 backend **3ba7798**, UI **b647a33**, captures/state **77af88c**; Phase 6 **d01211e**. Await the user's Runpod account/funding decision: account creation without funding/deploying is the immediate human step; up to $10 prepaid credits requires explicit approval even though test usage remains capped at $5. No credentials in chat. After direction, inspect the actual quote/checkout and finish `GPU_READINESS.md` prerequisites before provisioning. Linux/CUDA packaging, private access and real workload egress-denial controls are not yet tested; never call the GPU deployment complete or substitute browser blocking. Local preview/API/real model remain running and verified.
