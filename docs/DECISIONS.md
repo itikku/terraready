@@ -37,3 +37,13 @@ Evaluate against the fixture's explicit clock, with optional later time for stal
 ## 2026-10-24 — CI starts with the backend
 
 Add CI in Phase 1 so every subsequent change has automated backend verification. Use the current HTTPX2 client supported by the installed Starlette TestClient. Browser tests and visual checks begin with Phase 2; their absence must be explicit until then.
+
+## 2026-10-24 — Visual workspace and asset provenance
+
+Use React, TypeScript and Vite with a same-origin API proxy. A local SVG renders the downloaded aerial, selectable work-zone labels and current route, so the default experience has no external dependency. Mapbox GL JS loads only after the user opts into connected satellite imagery; request, token or WebGL failure returns to the local map. Root `.env.local` is consumed by Vite without printing or moving the token. Local fonts are bundled.
+
+The aerial is locked to USDA NAIP tile `m_3712248_nw_10_060_20220519`; exact extent, date and checksums are in `ATTRIBUTIONS.md` and `apps/web/public/imagery/source.json`. Fictional work-zone polygons follow visible cut/road areas. One generated inspection illustration is attached to the north-road observation in LanceDB, explicitly separated from the synthetic numeric measurements. Similarity retrieval is still future work; there are no invented image embeddings.
+
+## 2026-10-24 — Automated visual and interaction QA
+
+Use Playwright with full Chromium (`channel: chromium`); the downloaded headless-shell build crashed on this Mac due to its ICU/GPU runtime, while full Chromium runs successfully. Tests prohibit external HTTP requests and use a deliberately invalid token to exercise provider fallback without real account credentials. A reviewed map screenshot baseline permits 3% cross-platform pixel variation. Automated accessibility checks must remain enabled; initial contrast failures were repaired rather than suppressed.

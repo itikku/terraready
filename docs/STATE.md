@@ -12,6 +12,10 @@
 - Completed Phase 1: Pydantic data contract, six typed local LanceDB tables, repeatable seed, pure decision engine, FastAPI endpoints and locked dependencies.
 - Added `make seed`, `make api`, `make check`, and `make smoke`, with backend CI for checks, repeat seeding, live HTTP smoke tests and package builds.
 - Added `docs/DATA_CONTRACT.md` with units, explicit demo rules, evidence precedence, clock semantics and expected business outcomes.
+- Completed Phase 2: React/TypeScript/Vite visual workspace, local aerial with selectable georeferenced work zones and route overlays, machine selection, evidence panels, clock expiry, image/provenance dialogs and optional connected Mapbox mode.
+- Added a machine-readiness API that reuses the decision engine and persisted local image references/captions in LanceDB.
+- Bundled a public-domain NAIP crop and an explicitly synthetic inspection illustration. Sources, dates, checksums and the exact generation prompt are in `ATTRIBUTIONS.md`.
+- Added browser CI, a reviewed screenshot baseline and desktop/mobile README images. All external requests are blocked in the core browser suite.
 
 ## Evidence
 
@@ -24,6 +28,12 @@
 - `make smoke` against live Uvicorn on `127.0.0.1:8000`: north hauler route `NO_GO`, south route `GO`, expired evidence `INSPECT`, all approval-gated. Verified through HTTP, beyond the in-process API tests.
 - Frozen offline dependency sync passed. Source and wheel builds passed; distribution file listings contain no `.env.local`, generated database or dependency cache.
 - CI workflow is configured but has not run on GitHub: no remote repository has been created or pushed.
+- Phase 2 `make check`: 76 passed; 99.52% overall statement/branch coverage and 100% engine coverage. Backend formatting, lint and strict typing passed.
+- Phase 2 `make web-check`: frontend formatting, types, lint and production build passed. The optional lazy-loaded Mapbox chunk produces a bundle-size advisory; it is not loaded for the default local map.
+- `npm run test:e2e`: 14 passed, including actual screenshot comparison (not an update run), zero axe accessibility violations, machine/route changes, stale evidence, provider failure, keyboard use, dialogs, loading/API/image recovery and 390px mobile layout.
+- Visually inspected desktop and mobile screenshots; repaired initial text-contrast failures and a mobile map-badge layout defect. Reviewed baseline: `tests/e2e/__screenshots__/workspace.spec.ts/site-workspace.png`.
+- Live Mapbox probe on `http://localhost:5173`: WebGL available; style requests returned 200, imagery requests returned 429, fallback succeeded. Connected imagery success is NOT verified. No token or credential-bearing URL was printed.
+- Final `make verify` passed the full sequence on 2026-10-24: backend verification, frontend formatting/types/lint/build and all 14 browser tests against freshly started local services. Owned preview servers were stopped after verification. GitHub CI execution remains pending publication.
 
 ## Decisions in force
 
@@ -36,12 +46,13 @@
 
 ## Risks / unresolved work
 
-- Select a suitable NAIP crop and record provenance before adding it; local-meter fixture geometry must be aligned to that chosen scene for Phase 2.
-- There is no visual workspace, image retrieval, browser QA, revised-plan approval or teammate communications yet. These remain later phases, not verified features.
+- Revised-plan approval, teammate communications and multimodal similarity retrieval are not implemented. Image references are persisted, but there is no image embedding/search pipeline yet.
+- Mapbox imagery requests currently return HTTP 429 in the live check. Do not infer a specific account/billing cause without further evidence. Default local aerial and all core interactions work without it.
 - Seed replacement is not a cross-table transaction; run it with the API stopped. Stored data is validated before evaluation; broken or unseeded snapshots yield a recovery-oriented `503`.
 - The API is local-only and unauthenticated. Run on loopback as documented; public hosting is a separate decision.
-- The root `.env.local` was not read or exposed. Configure the future Vite app's environment directory so it can consume the root variable without relocating or printing the token.
+- Vite consumes the root `.env.local` as intended; its contents were not inspected or printed. The public token is visible in the browser by design, so keep origin restrictions in place and do not commit built bundles.
+- Full Chromium is required for reliable local browser QA on this Mac; headless shell crashed due to its ICU/GPU runtime. CI uses the same supported full-Chromium channel.
 
 ## Next step
 
-Phase 2: select and attribute a real aerial crop, align the site geometry, then build the map workspace and evidence panels against the existing `/api/scenarios/post-rain` and evaluation endpoints. Add Playwright interaction and offline-fallback checks with that UI slice. Follow `docs/PLAN.md`; do not claim browser verification until the actual UI has been exercised.
+Phase 3: implement deterministic alternative-plan comparison, supervisor approval state, and role-specific field-lead / haul-coordinator updates. Use the existing frontend/API rather than adding a second rules engine. Preserve browser, accessibility and visual checks with `make verify`. Mapbox 429 is an optional-provider limitation, not a blocker for the local planning flow.

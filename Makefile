@@ -1,4 +1,4 @@
-.PHONY: seed api check test smoke
+.PHONY: seed api check test smoke web web-check browser-check verify
 
 # Run from the repository root after: uv sync --frozen --extra dev
 seed:
@@ -18,3 +18,16 @@ test:
 
 smoke:
 	.venv/bin/python scripts/smoke_api.py
+
+web:
+	npm run dev
+
+web-check:
+	npm run format:check
+	npm run check
+	npm run build
+
+browser-check:
+	npm run test:e2e
+
+verify: check web-check browser-check

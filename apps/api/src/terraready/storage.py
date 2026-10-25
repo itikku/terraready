@@ -92,6 +92,8 @@ SCHEMAS = {
             ("access", pa.string()),
             ("moisture_fraction", pa.float64()),
             ("bearing_capacity_kpa", pa.float64()),
+            ("image_path", pa.string()),
+            ("image_caption", pa.string()),
             ("synthetic", pa.bool_()),
         ]
     ),

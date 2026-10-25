@@ -22,3 +22,5 @@ Before modifying code, read `docs/GOALS.md`, `docs/PLAN.md`, `docs/STATE.md`, `d
 ## Verification baseline
 
 When code exists, run the checks named by the active phase. Fix failures before committing, or record the exact blocker in `docs/STATE.md`.
+
+`make verify` runs backend checks, frontend checks/build and Playwright browser QA. Browser runtimes install to ignored `.data/pw-browsers/`; use full Chromium. Default browser tests block external requests and use a fake Mapbox token. Never update screenshot baselines just to silence a failure: inspect the actual difference first. `ATTRIBUTIONS.md` records image origin, dates, hashes and generation prompts.

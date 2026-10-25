@@ -1,0 +1,15 @@
+{
+  "provider": "USGS / USDA NAIP",
+  "service": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer",
+  "tile": "m_3712248_nw_10_060_20220519",
+  "object_id": 21792,
+  "acquired_at": "2022-05-19",
+  "retrieved_at": "2026-10-24",
+  "source_resolution_m": 0.6,
+  "image_size": [1800, 1300],
+  "requested_bbox_wgs84": [-122.124, 37.315, -122.100, 37.329],
+  "export_bbox_epsg3857": [-13594802.409609361, 4483105.1498714834, -13592088.909887083, 4485064.8996709064],
+  "sha256": "a897511b859e141aae4dd4073bb3e0b2585e3b48e74e7bcca01033d148bca9a4",
+  "license": "Public domain NAIP; attribution in repository ATTRIBUTIONS.md",
+  "operating_layers": "Synthetic. No current measurements are inferred from this historical image."
+}

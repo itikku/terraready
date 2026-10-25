@@ -107,3 +107,40 @@ def test_api_has_no_mutating_or_seed_endpoints(client):
     paths = client.get("/openapi.json").json()["paths"]
     for path, methods in paths.items():
         assert set(methods) <= ({"post"} if path.endswith("/evaluate") else {"get"})
+
+
+def test_machine_readiness_covers_every_zone_and_matches_evaluation(client):
+    result = client.get("/api/scenarios/post-rain/readiness?machine_id=loaded-hauler")
+    assert result.status_code == 200
+    zones = {z["zone_id"]: z for z in result.json()["zones"]}
+    assert len(zones) == 5
+    assert zones["north-access"]["status"] == "NO_GO"
+    assert zones["west-stockpile"]["status"] == "INSPECT"
+    assert zones["east-cut"]["status"] == "GO"
+    tracked = client.get("/api/scenarios/post-rain/readiness?machine_id=tracked-excavator")
+    assert (
+        next(z for z in tracked.json()["zones"] if z["zone_id"] == "north-access")["status"] == "GO"
+    )
+
+
+def test_readiness_clock_and_validation(client):
+    base = "/api/scenarios/post-rain/readiness"
+    assert client.get(base, params={"machine_id": "missing"}).status_code == 404
+    assert client.get(base, params={"machine_id": "'"}).status_code == 422
+    assert (
+        client.get(
+            base, params={"machine_id": "loaded-hauler", "as_of": "2026-10-24T01:00:00Z"}
+        ).status_code
+        == 422
+    )
+    result = client.get(
+        base, params={"machine_id": "loaded-hauler", "as_of": "2026-10-24T19:00:00Z"}
+    )
+    assert {z["status"] for z in result.json()["zones"]} == {"INSPECT"}
+
+
+def test_inspection_asset_provenance_survives_lancedb_roundtrip(client):
+    result = client.get("/api/scenarios/post-rain").json()
+    observation = next(o for o in result["observations"] if o["id"] == "north-morning")
+    assert observation["image_path"] == "/imagery/north-inspection.png"
+    assert "Not a photograph of the mapped site" in observation["image_caption"]

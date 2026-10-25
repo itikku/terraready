@@ -3,12 +3,20 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi import Path as ApiPath
 from fastapi.responses import JSONResponse
+from pydantic import AwareDatetime
 
-from terraready.engine import InvalidEvaluation, UnknownEntity, evaluate
-from terraready.models import Evaluation, EvaluationRequest, Model, Scenario, SiteSnapshot
+from terraready.engine import InvalidEvaluation, UnknownEntity, evaluate, evaluate_zone
+from terraready.models import (
+    Evaluation,
+    EvaluationRequest,
+    Model,
+    Readiness,
+    Scenario,
+    SiteSnapshot,
+)
 from terraready.seed import database_path
 from terraready.storage import DataUnavailable, SiteStore
 
@@ -59,6 +67,31 @@ def create_app(db_path: Path | None = None) -> FastAPI:
     @api.get("/api/scenarios/{scenario_id}", response_model=SiteSnapshot)
     def site(scenario_id: ScenarioId) -> SiteSnapshot:
         return scenario_snapshot(scenario_id)
+
+    @api.get("/api/scenarios/{scenario_id}/readiness", response_model=Readiness)
+    def readiness(
+        scenario_id: ScenarioId,
+        machine_id: Annotated[str, Query(pattern=r"^[a-z][a-z0-9-]{0,63}$")],
+        as_of: AwareDatetime | None = None,
+    ) -> Readiness:
+        site = scenario_snapshot(scenario_id)
+        machine = next((m for m in site.machines if m.id == machine_id), None)
+        if machine is None:
+            raise HTTPException(status_code=404, detail="Machine not found.")
+        clock = as_of or site.scenario.as_of
+        if clock < site.scenario.as_of:
+            raise HTTPException(
+                status_code=422, detail="Clock cannot precede the scenario snapshot."
+            )
+        return Readiness(
+            scenario_id=scenario_id,
+            machine_id=machine_id,
+            as_of=clock,
+            zones=[
+                evaluate_zone(zone, machine, site.observations, site.scenario, clock)
+                for zone in site.zones
+            ],
+        )
 
     @api.post("/api/scenarios/{scenario_id}/evaluate", response_model=Evaluation)
     def evaluation(scenario_id: ScenarioId, body: EvaluationRequest) -> Evaluation:

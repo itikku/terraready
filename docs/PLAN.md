@@ -48,7 +48,7 @@ Define domain models, repeatable fixture seeding into LanceDB, and pure decision
 
 ## Phase 2 — Visual site workspace
 
-**Status:** Next phase — not started.
+**Status:** Complete — approved by the user on 2026-10-24; verified with 14 browser tests and 76 backend tests.
 
 Build the map-first frontend with an offline aerial fallback and optional connected Mapbox view.
 
@@ -63,7 +63,18 @@ Build the map-first frontend with an offline aerial fallback and optional connec
 - Frontend lint/type checks and production build.
 - Playwright verifies dashboard load, zone selection, evidence view, and offline fallback.
 
+**Implementation contract**
+
+- React/TypeScript/Vite client, consuming the existing local API through a same-origin development proxy.
+- Use a downloaded, attributed USGS aerial image and explicit synthetic geometry/evidence; no remote fonts or imagery in the fallback.
+- Persist any new observation image references in LanceDB. Generated inspection photos are illustrative and never used to infer quantitative soil measurements.
+- Evaluate machine-specific zone overlays through a backend read endpoint using the existing pure decision rules; do not duplicate rules in the frontend.
+- Optional Mapbox is opt-in, uses the root local environment variable, and falls back automatically on token/network/WebGL failure. Never print credential-bearing network URLs.
+- Playwright covers zone/evidence selection, equipment and route changes, stale evidence, offline mode, provider failure, API error and keyboard/mobile use. Capture screenshots and failure traces.
+
 ## Phase 3 — Replanning and communications
+
+**Status:** Next phase — not started.
 
 Add deterministic alternative-plan comparison, approval state, and role-specific shift updates.
 

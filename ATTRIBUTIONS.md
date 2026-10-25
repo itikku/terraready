@@ -1,0 +1,27 @@
+# Asset provenance
+
+## Bundled aerial
+
+- File: `apps/web/public/imagery/site-aerial.jpg`
+- Source: [USGS National Map NAIP Plus service](https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer)
+- Credit: USGS, USDA, The National Map: Orthoimagery.
+- Tile: `m_3712248_nw_10_060_20220519`, object ID 21792, USDA / USDA-FSA-APFO.
+- Acquisition: May 19, 2022. Native source resolution: 0.6 m.
+- Requested WGS84 bounds: `[-122.124, 37.315, -122.100, 37.329]` near Cupertino, California. Exported Web Mercator bounds are recorded in `source.json`; the service adjusts the image extent to its aspect ratio.
+- Export: JPEG, 1800 × 1300, quality 90, `esriMosaicLockRaster` ID 21792.
+- SHA-256: `a897511b859e141aae4dd4073bb3e0b2585e3b48e74e7bcca01033d148bca9a4`.
+- Public-domain NAIP imagery: [USGS archive documentation](https://www.usgs.gov/centers/eros/science/usgs-eros-archive-aerial-photography-national-agriculture-imagery-program-naip).
+
+This historical aerial provides visual context only. North Ridge, its operational boundaries, routes, asset profiles, measurements and current conditions are fictional. No relationship with the actual site or its owner is implied. Local coordinates and route distances are illustrative, not surveyed engineering data.
+
+## Synthetic inspection illustration
+
+- File: `apps/web/public/imagery/north-inspection.png`.
+- Created using the built-in OpenAI ImageGen tool on October 24, 2026.
+- SHA-256: `f6a803b80adf6812232b47529e88cbc50888bb2a9bbad79456ddae98007d0d84`.
+- It is not a photograph of the mapped site and is never used to infer quantitative ground measurements.
+- Prompt: “Use case: photorealistic-natural. Asset type: fictional inspection evidence photo for a construction ground-readiness demo. A documentary photograph taken from standing height at the edge of an unpaved earthworks access road just after overnight rain. Heavy truck tire ruts hold shallow muddy water; saturated clay shoulders; gravel and small stones in the foreground; a terraced earth cut and subdued construction equipment in the distant background. Overcast California dawn, natural muted earth tones, highly realistic soil and water textures, understated professional field-survey photography, sharp near-ground details. Wide landscape composition. No people, text, overlays, logos, watermarks or dramatic cinematic effects. This is an explicitly fictional synthetic inspection scene, not a photograph of an actual site.”
+
+## Fonts, icons and connected maps
+
+DM Sans and IBM Plex Mono are bundled through Fontsource (SIL Open Font License). The full font licenses are included in `apps/web/public/licenses/` so they accompany the built site. Lucide icons use the ISC License. Optional Mapbox imagery and software retain Mapbox's terms and attribution; no Mapbox tiles or imagery are bundled or redistributed under MIT.

@@ -22,7 +22,13 @@ The first demo focuses on construction earthworks, but the underlying planning p
 
 ## Current build
 
-Phase 1 is implemented: a local FastAPI service, six typed LanceDB tables, repeatable fixtures, and a deterministic decision engine. The visual workspace, image retrieval, revised-plan approval, and teammate updates are subsequent phases.
+The visual workspace now runs against the local FastAPI service and six typed LanceDB tables. Select equipment to update ground readiness, inspect a zone's evidence, compare access routes, and advance the evidence clock to see stale observations require inspection.
+
+![Construction ground-readiness workspace](docs/images/workspace-desktop.png)
+
+The aerial is real USGS/USDA NAIP imagery; operational overlays and measurements are synthetic. The inspection photo is an AI-generated illustration, explicitly labeled in the UI and never used to infer quantitative ground conditions. See [asset provenance](ATTRIBUTIONS.md).
+
+Revised-plan approval, role-specific teammate updates and multimodal similarity retrieval remain unfinished. Manual route comparison in the current workspace does not automatically replan or release work.
 
 The seed demonstrates four distinct outcomes:
 
@@ -44,6 +50,15 @@ uv sync --frozen --extra dev
 make seed
 make api
 ```
+
+In another terminal, install the frontend and start its preview:
+
+```sh
+npm ci
+make web
+```
+
+Open `http://localhost:5173`. The default local aerial, fonts, evidence and decision flow require no external connection. Select **Satellite** to opt into Mapbox; a missing token, failed request or unavailable WebGL falls back to the local aerial. Both modes use the same georeferenced synthetic work zones and backend decisions. Mapbox imagery is not bundled.
 
 The API listens at `http://127.0.0.1:8000`; interactive API documentation is at `http://127.0.0.1:8000/docs`. `make seed` resets the six demo tables: stop the API before reseeding. The database lives in ignored `.data/lancedb/`. `TERRAREADY_DB_DIR` can point to a different local directory.
 
@@ -67,7 +82,19 @@ uv build
 
 With `make api` running in another terminal, `make smoke` verifies real HTTP responses for all three decision states against the seeded LanceDB records.
 
-The check command runs formatting, lint, strict backend type checks and unit/API/LanceDB integration tests with branch coverage. CI runs the same checks on push and pull request, plus repeat seeding and a package build. Tests use disposable databases and do not read local credentials. The browser interaction suite will be added with the visual workspace; no UI has been verified yet.
+The check command runs formatting, lint, strict backend type checks and unit/API/LanceDB integration tests with branch coverage. Tests use disposable databases.
+
+```sh
+make web-check
+PLAYWRIGHT_BROWSERS_PATH=.data/pw-browsers npx playwright install chromium
+make browser-check
+```
+
+Once the runtimes are installed, `make verify` runs the complete backend, frontend and browser verification sequence.
+
+Playwright starts the API and frontend when needed. Stop any manually running API before letting tests reseed it. The browser suite blocks all external requests, uses an intentionally invalid Mapbox token for provider-failure coverage, and verifies equipment changes, zone evidence, route outcomes, evidence expiry, keyboard controls, mobile layout, dialogs, recovery states, accessibility and a screenshot baseline. Failure traces, screenshots and videos are saved locally. Browser tests do not need your real Mapbox token.
+
+CI runs backend and workspace checks independently and retains browser failure artifacts for seven days. CI has not yet run on GitHub because this repository has not been pushed. The visual baseline allows 3% pixel variation for cross-platform rendering; updates require deliberate review.
 
 ## POC boundaries
 
@@ -84,7 +111,7 @@ TerraReady is not a safety-certified system, trafficability model, or machine-co
 
 ## Local configuration
 
-For the upcoming frontend, copy `.env.example` to `.env.local` and optionally set `VITE_MAPBOX_TOKEN`. Never commit this token. The backend does not load this file; Mapbox is not required for Phase 1.
+The frontend reads optional `VITE_MAPBOX_TOKEN` from the repository-root `.env.local`. The backend does not load that file. Use a dedicated public token restricted to your development origins (`http://localhost:5173` and `http://127.0.0.1:5173` as appropriate); never commit it. Public client tokens are visible to the browser by design. Static build output is ignored by Git and should not be published without reviewing token restrictions.
 
 ## License
 

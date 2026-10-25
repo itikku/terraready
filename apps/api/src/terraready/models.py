@@ -114,6 +114,8 @@ class Observation(Model):
     access: GroundAccess
     moisture_fraction: Fraction | None = None
     bearing_capacity_kpa: Positive | None = None
+    image_path: str | None = Field(default=None, pattern=r"^/imagery/[a-z0-9-]+\.(jpg|png|webp)$")
+    image_caption: str | None = Field(default=None, max_length=500)
     synthetic: Literal[True] = True
 
 
@@ -185,3 +187,10 @@ class Evaluation(Model):
     policy_version: Literal["demo-v1"] = "demo-v1"
     requires_approval: Literal[True] = True
     synthetic: Literal[True] = True
+
+
+class Readiness(Model):
+    scenario_id: Identifier
+    machine_id: Identifier
+    as_of: AwareDatetime
+    zones: list[ZoneDecision]

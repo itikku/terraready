@@ -11,7 +11,7 @@ All operational values are synthetic. These are transparent POC gates, not valid
 - **Machine:** operating mass, ground pressure, slope/moisture limits, supported operations.
 - **Route:** ordered traversed zones and local-meter path; must reach the task's zone.
 - **Task:** operation, assigned asset, route, duration, priority and quantity in stated units.
-- **Observation:** zone, timestamp, source, note, confidence, access state, moisture fraction and bearing capacity. Image paths are deferred until actual assets exist.
+- **Observation:** zone, timestamp, source, note, confidence, access state, moisture fraction and bearing capacity, plus an optional local image path and explicit image caption. Asset paths are restricted to `/imagery/` filenames. The north-road illustration is synthetic and does not determine measurements.
 
 IDs are restricted to lowercase identifiers. Unknown references, duplicate IDs, naive timestamps, non-finite/out-of-range numbers and unknown fields fail validation. The seed contains a single site snapshot; any future second site requires a schema decision rather than silently mixing records.
 
@@ -29,6 +29,8 @@ Explicit limits are conservative at equality. Evidence confidence is the minimum
 ## Clock and snapshot semantics
 
 The demo clock is fixed at 2026-10-24 07:00 America/Los_Angeles. `as_of` can advance it to demonstrate evidence expiry, but cannot precede the snapshot. Measurements from the future are excluded. A fresh pre-rain measurement cannot release post-rain work. Responses expose the effective clock, `policy_version: demo-v1`, `synthetic: true` and `requires_approval: true`.
+
+The zone-readiness read endpoint (`GET /api/scenarios/post-rain/readiness?machine_id=…&as_of=…`) uses the same pure zone evaluator as task/route evaluations. The UI does not reimplement ground-readiness rules. Map geometry uses illustrative local meters aligned to the recorded Web Mercator crop; route distances are synthetic, not surveyed.
 
 ## Expected seed outcomes
 
