@@ -21,6 +21,8 @@ These are local development services. The current app has no public authenticati
 
 The approval and assistant-audit tables are created on first use. Their history survives reseeding, but an approval applies only to the matching snapshot, clock, planning policy and selection. Approval does not mark work complete or satisfy prerequisites.
 
+The shift editor keeps checked choice IDs and their source identity in browser session storage for reload. LanceDB remains authoritative for approvals; the API revalidates restored choices. If browser storage is blocked, checking/approval still work, but that browser cannot automatically restore its custom selection. Unchecked edits do not replace the saved checked choices.
+
 The default database is ignored `.data/lancedb/`; `TERRAREADY_DB_DIR` selects another local directory. Run one API process per database. Concurrent reseeding, multiple writers and shared multiuser hosting are outside this verified local contract. Legacy v1 records can serve the original workspace; recovery requires the explicit v2 docket.
 
 ## API examples

@@ -1,12 +1,12 @@
-# On-demand shared demo: proposed architecture and readiness
+# On-demand shared demo: architecture and readiness
 
-Design proposal, 2026-10-25. No new resource, account, deployment or funding has been created. The earlier private GPU integration is historical proof; it is not an on-demand multiuser service. Provider facts below were checked against official documentation on this date; design recommendations are inferences, not verified deployment capabilities.
+Design, 2026-10-25. The user approved Cloudflare Free for the controller, access and persistent budget ledger. Account access, invitation setup and implementation remain unverified. No new resource, account, deployment or funding has been created. The earlier private GPU integration is historical proof; it is not an on-demand multiuser service. Provider facts below were checked against official documentation on this date; design recommendations are inferences, not verified deployment capabilities.
 
 ## Recommendation for the first hosted slice
 
 Use **one GPU lease shared by an authenticated run**, controlled by a small service that remains reachable while the GPU is off. Keep the tested Python/LanceDB/llama.cpp stack together initially. This avoids simultaneously migrating the model protocol, moving operational storage and building a new serverless handler.
 
-The candidate controller is **Cloudflare Workers + one SQLite-backed Durable Object**, with invite-only access in front. This adds a provider/account dependency that is not yet approved/configured; it is a concrete candidate for review, not an existing capability. Keep it on the Free plan, with upgrades disabled, and verify actual account quotas/access before choosing it. Workers Free has a 10 ms request CPU limit and 100,000 daily requests; the controller must be benchmarked within those limits and configured to fail closed. [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+The selected controller is **Cloudflare Workers + one SQLite-backed Durable Object**, with invite-only access in front. Provider choice is approved; the account and access mechanism are not configured. Keep it on the Free plan without a paid upgrade, and verify actual account quotas/access before deployment. Workers Free has a 10 ms request CPU limit and 100,000 daily requests; the controller must be benchmarked within those limits and configured to fail closed. [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
 
 SQLite-backed Durable Objects are available on Free; excess free-tier operations fail instead of becoming unlimited free capacity. Their provider quota reset is UTC, distinct from our Los Angeles budget day. Store only run/access/budget metadata there; domain records remain in LanceDB. [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)
 
@@ -57,7 +57,7 @@ Show operator evidence for settled / estimated / reserved spend, remaining share
 
 ## Readiness gates before paid creation
 
-1. **Review the controller/access addition.** Confirm account/free-plan eligibility and the invitation mechanism. Do not acquire credentials through chat or inspect existing credential files. No paid plan or domain purchase by implication.
+1. **Verify the approved controller/access addition.** Cloudflare Free is approved. Confirm account/free-plan eligibility and the invitation mechanism. Do not acquire credentials through chat or inspect existing credential files. No paid plan or domain purchase by implication.
 2. **Build locally and prove boundaries first.** Pin/export a verified source/runtime/model; build from source without environment files or token-bearing output. Local Docker daemon is currently unavailable; an image/build path must be verified instead of assumed. No implicit paid remote builder/registry.
 3. **Persist atomic admission and run state.** Idempotent start, exact resource IDs, immutable first-use deadline, daily buckets and cumulative reservations survive restarts. A timed-out provider create must be reconciled before retry. Seed prior charges; unknown accounting fails closed. Crossing midnight/DST cannot reset a run or overspend either day.
 4. **Test private shared access and queueing.** Verify a real second device, direct-origin denial, owner-only changes, ten simultaneous clients, fair queue limits, overload feedback and per-visitor approval isolation. A current single-user test or protocol stub does not prove this.
@@ -65,4 +65,4 @@ Show operator evidence for settled / estimated / reserved spend, remaining share
 6. **Keep cleanup independently recoverable.** Durable Object alarms can wake an inactive controller and retry, but retries are finite and provider/API failures can outlast them. Use idempotent retries/reconciliation, quota monitoring and a separately authenticated cleanup fallback; test a failed first deletion and controller restart. A free-tier quota exhaustion must not silently disable the only shutdown path. [Alarms](https://developers.cloudflare.com/durable-objects/api/alarms/)
 7. **Only then run the genuine-model demonstration.** Reroute, redeployment, blocked work and an unscripted paraphrase; verify real outage/expiry, queue/load behavior and measured cost. Terminate before finishing optional captures; reconcile final charges. Preserve prior hardware artifacts and local services.
 
-The next cloud engineering slice is the **local controller/ledger and access-boundary proof**, after the provider/access design is reviewed. A no-cost fake-provider test can establish races, deadlines and budget arithmetic before any live lifecycle call. It cannot establish a real provider shutdown or spending guarantee.
+The next cloud engineering slice is the **local controller/ledger and access-boundary proof**. A no-cost fake-provider test can establish races, deadlines and budget arithmetic before any live lifecycle call. It cannot establish a real provider shutdown or spending guarantee. Cloudflare plugin discovery returned no matching integration; secure account authentication will use a supported Cloudflare flow, without credentials in chat.

@@ -1,25 +1,25 @@
 # TerraReady
 
-> Editorial draft for the root README. Links resolve from this review folder. The current UI labels below remain until the proposed UX is implemented; replace the workspace capture with an inspected capture of that final UI before promotion.
+> Editorial working draft retained for review history; the root README is the current published version. Links here resolve from this review folder. The final text follows the implemented per-package editor and its inspected capture.
 
 Overnight rain makes the north access road unsuitable for a loaded hauler. Can hauling continue on another route? What work can the excavator pull forward? What must stay held?
 
-TerraReady is a construction-earthworks planning prototype for answering those questions from timestamped ground evidence, machine limits, unfinished prerequisites and resource budgets. A small local model helps choose what to examine; independent rules check feasibility; a superintendent reviews and approves the exact response.
+TerraReady is a construction-earthworks planning prototype for answering those questions from timestamped ground evidence, machine limits, unfinished prerequisites and resource budgets. The superintendent chooses or defers each package and selects checked route/resource alternatives. Independent rules check the combination before exact human approval; an optional small local model helps choose what to examine.
 
 **Demo data is synthetic.** The aerial is real, attributed NAIP imagery. The default camera is a disconnected stub with a fixed illustration; neither images nor the model produce soil measurements. [Camera snapshot adapters](../CAMERAS.md) are implemented; physical-camera integration is untested.
 
-![Construction evidence workspace; operational overlays are synthetic](../images/workspace-desktop.png)
+![Per-package shift decisions over synthetic operating data](../images/shift-decisions.png)
 
 ## Try the decision
 
 The default demo needs no model, Mapbox token or cloud account.
 
-1. Keep **HT-02 · Loaded hauler** selected. North access is `NO_GO`; inspect the source, timestamp and machine-specific reason.
-2. Choose **South access → east cut** under the work package. Hauling becomes eligible under the demo rules; west inspection stays held.
-3. In **Keep the work. Change the plan.**, review route changes, holds and the evidence deadline. Confirm the review, approve, then copy or download the field-lead and haul-coordinator briefs. Reload to see the saved approval.
+1. Start in **Choose this shift's work**. The checked recommendation preserves excavation, reroutes hauling and pulls forward ready yard work; west work stays held.
+2. Make a decision for each package. Try **Defer this package** for yard drainage, or choose an eligible alternate route for excavation. Held packages cannot be released by changing a dropdown.
+3. Choose **Review 3 assignments** (the count follows your choices). The API rechecks the exact combination, capacities and evidence deadline. Confirm and approve, then copy the field-lead or haul-coordinator brief. Reload to see the checked selection and its saved approval in this browser session.
 4. Set **Evidence clock** to **12:00**. Stale evidence requires inspection and the earlier approval cannot authorize that changed snapshot.
 
-That route comparison covers three originally scheduled packages. The seven-package recovery backend also enforces actual completion, prerequisites and paired-resource hour budgets, including ready yard work and a blocked west successor. Optional assistance exposes a separately reviewed recovery selection. Its approval does not approve the route-only plan, and neither approval completes work or dispatches machinery.
+The primary recovery covers seven packages with actual completion, prerequisites and paired-resource hour budgets. **Inspect ground evidence** opens the supporting map/equipment workspace. **Compare routes for original work** retains a separately scoped three-package route review. Optional assistance also reviews its own selection; it does not overwrite your package choices. Approvals never complete work or dispatch machinery.
 
 ## Why this architecture fits
 

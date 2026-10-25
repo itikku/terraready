@@ -1,6 +1,8 @@
 # README editorial critique
 
-Expert technical-writing review, 2026-10-25, against published `816a4eb`. The [proposed README](README_DRAFT.md) is a reviewable draft; the root README is unchanged by this critique. Final screenshots and navigation wording must follow the approved implemented UX.
+Expert technical-writing review, 2026-10-25, against published `816a4eb`. The [editorial draft](README_DRAFT.md) preserves the proposed structure; the findings below describe that earlier published version.
+
+Execution update: the user approved shift-first recovery and required per-package decisions. The working editor was verified as `903d45c` with 296 backend / 60 browser tests. The root README now uses its actual labels and an inspected manual-decision capture; the critique below describes the previous README. Detailed running/maintenance information is retained in RUNNING. Human comprehension feedback remains pending.
 
 ## The argument to make
 
