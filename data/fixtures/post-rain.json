@@ -1,0 +1,43 @@
+{
+  "scenario": {
+    "id": "post-rain",
+    "schema_version": 1,
+    "name": "North Ridge earthworks — morning shift",
+    "summary": "18 mm of overnight rain has softened the north access road. Review the east-cut haul, compare south access, and request an updated west-stockpile inspection.",
+    "as_of": "2026-10-24T07:00:00-07:00",
+    "rainfall_24h_mm": 18,
+    "rain_ended_at": "2026-10-24T04:00:00-07:00",
+    "max_evidence_age_hours": 4,
+    "min_evidence_confidence": 0.8,
+    "synthetic": true
+  },
+  "zones": [
+    {"id": "service-yard", "name": "Service yard", "polygon": [{"x_m": 0, "y_m": 0}, {"x_m": 80, "y_m": 0}, {"x_m": 80, "y_m": 80}, {"x_m": 0, "y_m": 80}], "slope_deg": 1},
+    {"id": "north-access", "name": "North access road", "polygon": [{"x_m": 80, "y_m": 60}, {"x_m": 320, "y_m": 60}, {"x_m": 320, "y_m": 100}, {"x_m": 80, "y_m": 100}], "slope_deg": 6},
+    {"id": "south-access", "name": "South access road", "polygon": [{"x_m": 80, "y_m": 0}, {"x_m": 360, "y_m": 0}, {"x_m": 360, "y_m": 40}, {"x_m": 80, "y_m": 40}], "slope_deg": 3},
+    {"id": "east-cut", "name": "East cut", "polygon": [{"x_m": 320, "y_m": 40}, {"x_m": 460, "y_m": 40}, {"x_m": 460, "y_m": 160}, {"x_m": 320, "y_m": 160}], "slope_deg": 5},
+    {"id": "west-stockpile", "name": "West stockpile", "polygon": [{"x_m": 80, "y_m": 120}, {"x_m": 220, "y_m": 120}, {"x_m": 220, "y_m": 220}, {"x_m": 80, "y_m": 220}], "slope_deg": 4}
+  ],
+  "machines": [
+    {"id": "tracked-excavator", "name": "EX-01 · Tracked excavator", "operating_mass_t": 22, "ground_pressure_kpa": 42, "max_slope_deg": 15, "max_moisture_fraction": 0.8, "operations": ["excavate"]},
+    {"id": "loaded-hauler", "name": "HT-02 · Loaded hauler", "operating_mass_t": 38, "ground_pressure_kpa": 85, "max_slope_deg": 10, "max_moisture_fraction": 0.65, "operations": ["haul"]},
+    {"id": "utility-rover", "name": "UT-03 · Utility vehicle", "operating_mass_t": 2.4, "ground_pressure_kpa": 35, "max_slope_deg": 12, "max_moisture_fraction": 0.75, "operations": ["inspect"]}
+  ],
+  "routes": [
+    {"id": "north-to-east", "name": "North access → east cut", "zone_ids": ["service-yard", "north-access", "east-cut"], "path": [{"x_m": 40, "y_m": 40}, {"x_m": 100, "y_m": 80}, {"x_m": 320, "y_m": 80}, {"x_m": 390, "y_m": 100}], "distance_m": 360},
+    {"id": "south-to-east", "name": "South access → east cut", "zone_ids": ["service-yard", "south-access", "east-cut"], "path": [{"x_m": 40, "y_m": 40}, {"x_m": 100, "y_m": 20}, {"x_m": 350, "y_m": 20}, {"x_m": 390, "y_m": 100}], "distance_m": 460},
+    {"id": "north-to-west", "name": "North access → west stockpile", "zone_ids": ["service-yard", "north-access", "west-stockpile"], "path": [{"x_m": 40, "y_m": 40}, {"x_m": 100, "y_m": 80}, {"x_m": 150, "y_m": 160}], "distance_m": 200}
+  ],
+  "tasks": [
+    {"id": "east-haul", "name": "Haul material from east cut", "zone_id": "east-cut", "operation": "haul", "priority": 1, "duration_hours": 4, "target_quantity": 320, "quantity_unit": "m3", "assigned_machine_id": "loaded-hauler", "route_id": "north-to-east"},
+    {"id": "east-excavation", "name": "Prepare east cut", "zone_id": "east-cut", "operation": "excavate", "priority": 1, "duration_hours": 3, "target_quantity": 180, "quantity_unit": "m3", "assigned_machine_id": "tracked-excavator", "route_id": "north-to-east"},
+    {"id": "west-inspection", "name": "Inspect west stockpile ground", "zone_id": "west-stockpile", "operation": "inspect", "priority": 2, "duration_hours": 0.5, "target_quantity": 1, "quantity_unit": "inspection", "assigned_machine_id": "utility-rover", "route_id": "north-to-west"}
+  ],
+  "observations": [
+    {"id": "yard-morning", "zone_id": "service-yard", "observed_at": "2026-10-24T06:30:00-07:00", "source": "Synthetic field lead inspection", "note": "Compacted yard is clear; no ponding or fresh rutting.", "confidence": 0.95, "access": "open", "moisture_fraction": 0.3, "bearing_capacity_kpa": 220, "synthetic": true},
+    {"id": "north-morning", "zone_id": "north-access", "observed_at": "2026-10-24T06:20:00-07:00", "source": "Synthetic ground survey", "note": "Fresh ruts and standing water in the road shoulder. Soft ground is unsuitable for the loaded hauler under demo rules.", "confidence": 0.92, "access": "open", "moisture_fraction": 0.72, "bearing_capacity_kpa": 65, "synthetic": true},
+    {"id": "south-morning", "zone_id": "south-access", "observed_at": "2026-10-24T06:15:00-07:00", "source": "Synthetic field lead inspection", "note": "Gravel surface drains toward the southern swale; route remains clear.", "confidence": 0.94, "access": "open", "moisture_fraction": 0.35, "bearing_capacity_kpa": 200, "synthetic": true},
+    {"id": "east-morning", "zone_id": "east-cut", "observed_at": "2026-10-24T06:40:00-07:00", "source": "Synthetic ground survey", "note": "Cut floor remains firm after drainage; fresh measurements available.", "confidence": 0.9, "access": "open", "moisture_fraction": 0.57, "bearing_capacity_kpa": 140, "synthetic": true},
+    {"id": "west-yesterday", "zone_id": "west-stockpile", "observed_at": "2026-10-23T15:00:00-07:00", "source": "Synthetic prior-shift handoff", "note": "Dry conditions reported yesterday; this predates the overnight rain and must not release work today.", "confidence": 0.95, "access": "open", "moisture_fraction": 0.4, "bearing_capacity_kpa": 180, "synthetic": true}
+  ]
+}

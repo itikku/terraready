@@ -4,7 +4,7 @@ Only the active phase may be implemented. Complete its acceptance criteria and v
 
 ## Phase 0 — Foundation and product contract
 
-**Status:** Active
+**Status:** Complete — foundation committed as `c27ba78`.
 
 Create repository guidance, durable project records, license, research rationale, and configuration hygiene. No app code or external imagery download.
 
@@ -22,6 +22,8 @@ Create repository guidance, durable project records, license, research rationale
 
 ## Phase 1 — Data contract and deterministic decision engine
 
+**Status:** Complete — user approved proceeding on 2026-10-24; verification recorded in `STATE.md`.
+
 Define domain models, repeatable fixture seeding into LanceDB, and pure decision logic for `GO`, `INSPECT`, and `NO_GO`.
 
 **Acceptance criteria**
@@ -34,7 +36,19 @@ Define domain models, repeatable fixture seeding into LanceDB, and pure decision
 
 - Backend formatting, lint/type checks, unit tests, and API integration tests.
 
+**Implementation contract**
+
+- Python 3.12+, FastAPI and Pydantic; local LanceDB persisted to ignored `.data/`.
+- One versioned JSON fixture describes a scenario, zones, machines, routes, tasks and observations. Validate IDs, references, units and timestamps before storing any data.
+- Preserve typed, queryable records in LanceDB; no JSON-only blob storage and no fabricated embeddings.
+- Evaluate the task zone and every zone crossed by its selected route. Confirmed operational constraints take precedence; incomplete evidence never permits `GO`.
+- Use an explicit, fixed scenario clock for a repeatable demo; accept an optional timezone-aware evaluation time for staleness tests. Report that time in each response.
+- Expose a health check, scenario read API and evaluation API. Keep the API local, read-only apart from evaluation; plan approval remains Phase 3.
+- Verify a real local HTTP request in addition to tests; use a disposable database in tests.
+
 ## Phase 2 — Visual site workspace
+
+**Status:** Next phase — not started.
 
 Build the map-first frontend with an offline aerial fallback and optional connected Mapbox view.
 

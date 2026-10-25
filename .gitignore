@@ -6,6 +6,13 @@
 # Generated artifacts
 __pycache__/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.data/
+.coverage
+htmlcov/
+*.egg-info/
 node_modules/
 dist/
 playwright-report/
