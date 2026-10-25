@@ -27,12 +27,15 @@ def launcher(tmp_path, monkeypatch):
         "sha256": hashlib.sha256(model.read_bytes()).hexdigest(),
         "runtime": {
             "tag": "test",
+            "commit": "a" * 40,
             "macos_arm64_server_sha256": hashlib.sha256(runtime.read_bytes()).hexdigest(),
         },
     }
     (tmp_path / "config").mkdir()
     (tmp_path / "config/local-model.json").write_text(json.dumps(manifest))
     monkeypatch.setattr("sys.argv", ["serve_model.py"])
+    monkeypatch.setattr(module.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(module.platform, "machine", lambda: "arm64")
     calls = []
     monkeypatch.setattr(
         module.subprocess, "run", lambda *args, **kwargs: calls.append((args, kwargs))
@@ -104,3 +107,65 @@ def test_explicit_cpu_option_is_recorded(launcher, monkeypatch):
     monkeypatch.setattr("sys.argv", ["serve_model.py", "--gpu-layers", "0"])
     module.main()
     assert json.loads((module.ROOT / ".data/runtime/launch.json").read_text())["gpu_layers"] == 0
+
+
+def test_alternate_runtime_location_requires_same_hash(launcher, monkeypatch):
+    module, _, runtime, calls = launcher
+    alternate = runtime.parent / "alternate-server"
+    alternate.write_bytes(runtime.read_bytes())
+    monkeypatch.setattr("sys.argv", ["serve_model.py", "--runtime", str(alternate)])
+    module.main()
+    saved = json.loads((module.ROOT / ".data/runtime/launch.json").read_text())
+    assert saved["runtime_platform"] == "Darwin/arm64"
+    assert saved["runtime_commit"] == "a" * 40
+    assert saved["runtime_sha256"] == hashlib.sha256(alternate.read_bytes()).hexdigest()
+    calls.clear()
+    alternate.write_bytes(b"unapproved binary")
+    with pytest.raises(SystemExit) as caught:
+        module.main()
+    assert caught.value.code == 2
+    assert not calls
+
+
+@pytest.mark.parametrize("fault", [None, "library_changed", "library_missing", "server_changed"])
+def test_linux_verifies_server_and_bundled_shared_libraries(launcher, monkeypatch, fault):
+    module, _, runtime, calls = launcher
+    monkeypatch.setattr(module.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(module.platform, "machine", lambda: "x86_64")
+    library = runtime.parent / "libllama-server-impl.so"
+    library.write_bytes(b"synthetic library")
+    p = module.ROOT / "config/local-model.json"
+    manifest = json.loads(p.read_text())
+    manifest["runtime"]["linux_x64_cuda_12_8"] = {
+        "files_sha256": {
+            "llama-server": hashlib.sha256(runtime.read_bytes()).hexdigest(),
+            library.name: hashlib.sha256(library.read_bytes()).hexdigest(),
+        }
+    }
+    p.write_text(json.dumps(manifest))
+    if fault == "library_changed":
+        library.write_bytes(b"changed library")
+    elif fault == "library_missing":
+        library.unlink()
+    elif fault == "server_changed":
+        runtime.write_bytes(b"changed server")
+    if fault:
+        with pytest.raises(SystemExit) as caught:
+            module.main()
+        assert caught.value.code == 2
+        assert not calls
+        assert not (module.ROOT / ".data/runtime/inference.key").exists()
+    else:
+        module.main()
+        assert len(calls) == 1
+        saved = json.loads((module.ROOT / ".data/runtime/launch.json").read_text())
+        assert saved["runtime_platform"] == "Linux/x86_64"
+
+
+def test_unpinned_platform_refused(launcher, monkeypatch):
+    module, _, _, calls = launcher
+    monkeypatch.setattr(module.platform, "machine", lambda: "unsupported-test-platform")
+    with pytest.raises(SystemExit) as caught:
+        module.main()
+    assert caught.value.code == 2
+    assert not calls
