@@ -31,7 +31,7 @@ terraready-seed = "terraready.seed:main"
 packages = ["apps/api/src/terraready"]
 
 [tool.hatch.build.targets.sdist]
-include = ["apps/api/src", "config", "data/fixtures", "tests/api", "scripts", "docs", "README.md", "LICENSE", "Makefile", "uv.lock"]
+include = ["apps/api/src", "config", "data/fixtures", "tests/api", "scripts", "docs", "README.md", "ATTRIBUTIONS.md", "LICENSE", "Makefile", "uv.lock"]
 
 [tool.ruff]
 target-version = "py312"

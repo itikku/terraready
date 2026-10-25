@@ -187,7 +187,7 @@ uv build
 
 With `make api` running in another terminal, `make smoke` verifies real HTTP responses for all three decision states against the seeded LanceDB records.
 
-The check command runs formatting, lint, strict backend type checks and unit/API/LanceDB integration tests with branch coverage. Tests use disposable databases.
+The check command runs formatting, lint, strict backend type checks and unit/API/LanceDB integration tests with branch coverage. Tests use disposable databases. `uv build` creates backend source/wheel packages; these are not a standalone full-web-app installer. Use a Git checkout for the complete demo and its bundled assets.
 
 ```sh
 make web-check
