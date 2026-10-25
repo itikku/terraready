@@ -102,7 +102,7 @@
     "Startup and first-request observations followed preload; OS caches were not controlled. No cold-cache benchmark.",
     "Enforced full-stack external-access denial is deferred and unverified; browser blocking is not that proof.",
     "Synthetic fixtures and a new remote database only. Approval did not complete work or dispatch anything.",
-    "Pod termination and absence of residual network volumes verified. Final provider charge pending reconciliation.",
+    "Pod termination and absence of residual network volumes verified. Provider billing read on 2026-10-25 records $0.1460550270 including disk; the earlier $0.16 balance decrease is a separate account snapshot.",
     "Source-only export from a clean committed revision; external test harness hashes are retained with local sanitized evidence.",
     "No Jetson deployment, power-efficiency measurement or production-safety claim. Native M1 evidence is preserved separately."
   ],
@@ -147,9 +147,9 @@
     "cleanup_verified": true,
     "started_at": "2026-10-25T14:10:04.111000Z",
     "terminated_at": "2026-10-25T14:25:42Z",
-    "billing_status": "pending",
+    "billing_status": "recorded",
     "observed_balance_decrease_usd": 0.16,
-    "provider_charge_usd": null,
+    "provider_charge_usd": 0.14605502702761441,
     "usage_ceiling_usd": 5,
     "egress_denial": "deferred_unverified"
   }

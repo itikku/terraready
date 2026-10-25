@@ -108,7 +108,7 @@ The private test on **2026-10-25** ran the complete stack on one NVIDIA L4 with 
 | Warm end-to-end API latency | p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests |
 | Sampled memory peaks | **3,274 MiB GPU**, **5.94 GiB container**, 419 nominal one-second samples |
 | Workflow and failures | Human review/approval/briefs, stopped-model fallback and evidence expiry passed; restart reachability recovered |
-| Cleanup and cost | Temporary Pod terminated; no Pods or network volumes remained. Observed balance decrease **$0.16**; detailed provider billing pending |
+| Cleanup and cost | Temporary Pod terminated; no Pods or network volumes remained. Provider-recorded GPU + storage charge **$0.1461** (below the $5 ceiling); earlier account balance decrease was $0.16 |
 
 These are bounded integration observations, not reliability guarantees or absolute memory high-water marks. Container memory includes caches. Startup followed preload; cold-cache performance was not established. Full-stack outbound-network denial remains deferred/unverified. No Jetson, power-efficiency or production-safety result is claimed. The local regression suite passed **267 backend tests and 44 browser tests**; those browser tests use a labeled protocol stub and are separate from real inference evidence.
 
