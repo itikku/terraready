@@ -126,7 +126,7 @@ def test_failure_diagnostic_names_stage_location_without_leaking_exception_value
     assert "synthetic-sensitive-value" not in output
 
 
-def test_boot_refuses_other_platforms_and_provider_keys_before_any_download(
+def test_boot_refuses_other_platforms_and_missing_gateway_before_any_download(
     boot, tmp_path, monkeypatch
 ):
     boot.ROOT = tmp_path
@@ -136,17 +136,16 @@ def test_boot_refuses_other_platforms_and_provider_keys_before_any_download(
     monkeypatch.setattr(boot.platform, "system", lambda: "Linux")
     monkeypatch.setattr(boot.platform, "machine", lambda: "x86_64")
     monkeypatch.setenv("RUNPOD_API_KEY", "synthetic-key")
-    with pytest.raises(ValueError, match="controller"):
-        boot.main()
-    monkeypatch.delenv("RUNPOD_API_KEY")
     monkeypatch.delenv("TR_ORIGIN_SECRET", raising=False)
     with pytest.raises(ValueError, match="gateway"):
         boot.main()
+    assert "RUNPOD_API_KEY" not in boot.os.environ
     assert not (tmp_path / ".data").exists()
 
 
+@pytest.mark.parametrize("injected_key", [None, "", "synthetic-provider-key"])
 def test_boot_uses_locked_build_fresh_keys_loopback_model_and_one_signed_api(
-    boot, tmp_path, monkeypatch
+    boot, tmp_path, monkeypatch, injected_key, capsys
 ):
     boot.ROOT = tmp_path
     (tmp_path / "config").mkdir()
@@ -156,16 +155,35 @@ def test_boot_uses_locked_build_fresh_keys_loopback_model_and_one_signed_api(
     )
     monkeypatch.setattr(boot.platform, "system", lambda: "Linux")
     monkeypatch.setattr(boot.platform, "machine", lambda: "x86_64")
-    monkeypatch.delenv("RUNPOD_API_KEY", raising=False)
-    monkeypatch.setenv("TR_ORIGIN_SECRET", "a" * 64)
-    monkeypatch.setenv("TR_SOURCE_COMMIT", "b" * 40)
-    monkeypatch.setenv("VITE_MAPBOX_TOKEN", "synthetic-not-for-build")
-    monkeypatch.setenv("LLAMA_ARG_TOOLS", "synthetic-unwanted-setting")
+
+    class GuardedEnvironment(dict):
+        def __getitem__(self, key):
+            assert key != "RUNPOD_API_KEY", "Provider key value must never be read"
+            return super().__getitem__(key)
+
+        def get(self, key, default=None):
+            assert key != "RUNPOD_API_KEY", "Provider key value must never be read"
+            return super().get(key, default)
+
+        def items(self):
+            assert "RUNPOD_API_KEY" not in self, "Discard key before copying child environments"
+            return super().items()
+
+    environment = GuardedEnvironment(
+        TR_ORIGIN_SECRET="a" * 64,
+        TR_SOURCE_COMMIT="b" * 40,
+        VITE_MAPBOX_TOKEN="synthetic-not-for-build",
+        LLAMA_ARG_TOOLS="synthetic-unwanted-setting",
+    )
+    if injected_key is not None:
+        environment["RUNPOD_API_KEY"] = injected_key
+    monkeypatch.setattr(boot.os, "environ", environment)
     checks = []
     monkeypatch.setattr(boot, "verify_source", lambda *args: checks.append(args))
     downloads = []
 
     def download(url, path, sha, size):
+        assert "RUNPOD_API_KEY" not in environment
         downloads.append((url, sha, size))
         path.write_bytes(b"synthetic downloaded artifact")
 
@@ -206,6 +224,9 @@ def test_boot_uses_locked_build_fresh_keys_loopback_model_and_one_signed_api(
     health.status = 200
     monkeypatch.setattr(boot.urllib.request, "urlopen", lambda *a, **k: health)
     boot.main()
+    assert "RUNPOD_API_KEY" not in environment
+    output = capsys.readouterr()
+    assert "synthetic-provider-key" not in output.out + output.err
     assert checks == [(tmp_path, "b" * 40)]
     assert len(downloads) == 4
     assert all(

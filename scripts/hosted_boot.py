@@ -116,8 +116,10 @@ def main() -> None:
     print("Hosted startup: validating Linux configuration", flush=True)
     if (platform.system(), platform.machine()) != ("Linux", "x86_64"):
         raise ValueError("The hosted bootstrap requires a fresh Linux x86_64 Pod.")
-    if os.environ.get("RUNPOD_API_KEY"):
-        raise ValueError("Provider management credentials must stay in the controller.")
+    # Runpod may inject its management key. Discard it without inspecting its value
+    # before building child environments or starting downloads/processes.
+    if "RUNPOD_API_KEY" in os.environ:
+        del os.environ["RUNPOD_API_KEY"]
     secret = os.environ.get("TR_ORIGIN_SECRET", "")
     if len(secret) != 64 or any(c not in "0123456789abcdef" for c in secret):
         raise ValueError("New gateway secret missing.")
