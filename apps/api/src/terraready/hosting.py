@@ -13,7 +13,8 @@ from time import time
 
 from fastapi import FastAPI, HTTPException
 from starlette.concurrency import run_in_threadpool
-from starlette.responses import JSONResponse
+from starlette.responses import FileResponse, JSONResponse
+from starlette.staticfiles import StaticFiles
 from starlette.types import Message, Receive, Scope, Send
 
 from terraready.agent import ModelClient, assist
@@ -41,6 +42,7 @@ class HostedOrigin:
         model: ModelClient,
         *,
         clock: Callable[[], float] = time,
+        web_root: Path | None = None,
     ) -> None:
         if not HEX64.fullmatch(secret):
             raise ValueError("A new 32-byte hex gateway secret is required.")
@@ -67,6 +69,14 @@ class HostedOrigin:
         self._fixture = fixture
         self._model = model
         self._clock = clock
+        self._web_root = web_root
+        if web_root is not None and (
+            web_root.is_symlink()
+            or not (web_root / "index.html").is_file()
+            or any(not (web_root / name).is_dir() for name in ("assets", "imagery", "licenses"))
+            or any(p.is_symlink() for p in web_root.rglob("*"))
+        ):
+            raise ValueError("A complete, clean frontend build is required.")
         self._apps: dict[str, FastAPI] = {}
         self._visitors = set(names)
         self._nonce_db = root / nonce_file
@@ -119,6 +129,18 @@ class HostedOrigin:
                     ) from exc
 
             api = create_app(path, self._model, assist_runner=run)
+
+            if self._web_root is not None:
+                web = self._web_root
+
+                @api.get("/", include_in_schema=False)
+                @api.get("/system", include_in_schema=False)
+                def workspace_page() -> FileResponse:
+                    return FileResponse(web / "index.html", media_type="text/html")
+
+                # Only public build directories, never the source/storage root.
+                for name in ("assets", "imagery", "licenses"):
+                    api.mount("/" + name, StaticFiles(directory=web / name), name=name)
 
             @api.get("/api/hosting")
             def hosting_status() -> dict[str, object]:

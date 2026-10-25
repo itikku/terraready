@@ -18,6 +18,16 @@ const modules = [
     path: path.resolve("dist/gateway.js"),
     contents: await readFile("dist/gateway.js", "utf8"),
   },
+  {
+    type: "ESModule",
+    path: path.resolve("dist/provider.js"),
+    contents: await readFile("dist/provider.js", "utf8"),
+  },
+  {
+    type: "ESModule",
+    path: path.resolve("dist/page.js"),
+    contents: await readFile("dist/page.js", "utf8"),
+  },
 ];
 const emulator = (configuration) =>
   new Miniflare(convertV4MiniflareOptions(configuration));
@@ -197,6 +207,8 @@ test("corrupt or unsupported stored accounting cannot silently become a new budg
         contents: await readFile("dist/policy.js", "utf8"),
       },
       modules[2],
+      modules[3],
+      modules[4],
     ],
     durableObjects: { BUDGET: { className: "TestLedger", useSQLite: true } },
   });
@@ -249,6 +261,8 @@ test("a real emulator alarm persists shutdown intent without a browser or provid
       },
       modules[1],
       modules[2],
+      modules[3],
+      modules[4],
     ],
     durableObjects: { BUDGET: { className: "TestLedger", useSQLite: true } },
   });

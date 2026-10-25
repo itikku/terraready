@@ -1,0 +1,205 @@
+import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { controlPage } from "../../apps/controller/src/page";
+
+const status = (phase = "off", owner = true) => ({
+  phase,
+  owner,
+  activeEndAt: null as number | null,
+  costStopAt: null as number | null,
+  accountingHold: false,
+  startupEnabled: false,
+  dailyAvailable: 1.35,
+  lifetimeAvailable: 4.85,
+});
+
+test("owner sees honest setup and shared budget; polling never opens a run", async ({
+  page,
+}, info) => {
+  const methods: string[] = [];
+  const html = controlPage();
+  await page.route("**/demo", async (route) =>
+    route.fulfill({
+      status: 200,
+      headers: Object.fromEntries(html.headers),
+      body: await html.clone().text(),
+    }),
+  );
+  await page.route("**/api/**", (route) => {
+    methods.push(route.request().method());
+    return route.fulfill({ json: status() });
+  });
+  await page.goto("/demo");
+  await expect(
+    page.getByRole("heading", { name: "Demo is off" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Start demo", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByText("Setup is being finished.", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("$1.50 per Los Angeles", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Available for a new run:", { exact: false }),
+  ).toContainText("$1.35 today");
+  await expect(
+    page.getByRole("button", { name: "Open shift workspace" }),
+  ).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "End shared session" }),
+  ).toBeHidden();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: info.outputPath("control-mobile.png"),
+    fullPage: true,
+  });
+  expect(methods.every((method) => method === "GET")).toBe(true);
+});
+
+for (const [phase, heading] of [
+  ["reserved", "Starting the demo"],
+  ["ready", "Demo is ready"],
+  ["active", "Demo is running"],
+  ["stopping", "Ending the session"],
+  ["terminated", "GPU is off"],
+])
+  test(`guest sees ${phase} state and never owner controls`, async ({
+    page,
+  }) => {
+    const html = controlPage();
+    await page.route("**/demo", async (route) =>
+      route.fulfill({
+        status: 200,
+        headers: Object.fromEntries(html.headers),
+        body: await html.clone().text(),
+      }),
+    );
+    await page.route("**/api/status", (route) =>
+      route.fulfill({ json: status(phase, false) }),
+    );
+    await page.goto("/demo");
+    await expect(
+      page.getByRole("heading", { name: heading, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Start demo", exact: true }),
+    ).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: "End shared session" }),
+    ).toBeHidden();
+    const open = page.getByRole("button", { name: "Open shift workspace" });
+    if (["ready", "active"].includes(phase)) await expect(open).toBeEnabled();
+    else await expect(open).toBeHidden();
+  });
+
+test("open is explicit, duplicate clicks submit once, and failed join stays on the control page", async ({
+  page,
+}) => {
+  const html = controlPage();
+  let opens = 0;
+  await page.route("**/demo", async (route) =>
+    route.fulfill({
+      status: 200,
+      headers: Object.fromEntries(html.headers),
+      body: await html.clone().text(),
+    }),
+  );
+  await page.route("**/api/status", (route) =>
+    route.fulfill({ json: status("ready", false) }),
+  );
+  await page.route("**/api/open", async (route) => {
+    opens++;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await route.fulfill({ status: 409, json: { accepted: false } });
+  });
+  await page.goto("/demo");
+  const button = page.getByRole("button", { name: "Open shift workspace" });
+  await expect(button).toBeEnabled();
+  await button.focus();
+  await page.keyboard.press("Enter");
+  await expect(button).toBeDisabled();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("alert")).toContainText("could not finish");
+  expect(opens).toBe(1);
+  expect(new URL(page.url()).pathname).toBe("/demo");
+});
+
+test("accepted join navigates to workspace and status errors offer recovery", async ({
+  page,
+}) => {
+  const html = controlPage();
+  let failed = true;
+  await page.route("**/demo", async (route) =>
+    route.fulfill({
+      status: 200,
+      headers: Object.fromEntries(html.headers),
+      body: await html.clone().text(),
+    }),
+  );
+  await page.route("**/api/status", (route) =>
+    failed
+      ? route.fulfill({ status: 503 })
+      : route.fulfill({ json: status("ready", false) }),
+  );
+  await page.route("**/api/open", (route) =>
+    route.fulfill({ json: { accepted: true } }),
+  );
+  await page.route("**/", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>Workspace test fixture</h1>",
+    }),
+  );
+  await page.goto("/demo");
+  await expect(
+    page.getByRole("heading", { name: "Session status unavailable" }),
+  ).toBeVisible();
+  failed = false;
+  await page.getByRole("button", { name: "Check again" }).click();
+  await page.getByRole("button", { name: "Open shift workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Workspace test fixture" }),
+  ).toBeVisible();
+});
+
+test("accounting hold blocks opening and owner shutdown remains visibly unconfirmed", async ({
+  page,
+}) => {
+  const html = controlPage();
+  let state = { ...status("active"), accountingHold: true };
+  await page.route("**/demo", async (route) =>
+    route.fulfill({
+      status: 200,
+      headers: Object.fromEntries(html.headers),
+      body: await html.clone().text(),
+    }),
+  );
+  await page.route("**/api/status", (route) => route.fulfill({ json: state }));
+  await page.route("**/api/stop", (route) => {
+    state = { ...state, phase: "stopping", accountingHold: false };
+    return route.fulfill({ status: 202, json: { shutdownConfirmed: false } });
+  });
+  await page.goto("/demo");
+  await expect(
+    page.getByRole("heading", { name: "Demo is paused" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Open shift workspace" }),
+  ).toBeHidden();
+  await page.getByRole("button", { name: "End shared session" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Ending the session" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("New work is paused", { exact: false }),
+  ).toBeVisible();
+});

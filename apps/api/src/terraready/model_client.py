@@ -16,9 +16,10 @@ class LocalModel:
     mode: Literal["local_model", "test_stub"] = "local_model"
     model_id = "qwen3-4b-q4_k_m"
 
-    def __init__(self, key_file: Path, port: int = 8080):
+    def __init__(self, key_file: Path, port: int = 8080, *, seed: int | None = 42):
         self.key_file = key_file
         self.port = port
+        self.seed = seed
 
     def available(self) -> bool:
         """Bounded authenticated reachability check, never presented as successful inference."""
@@ -55,25 +56,25 @@ class LocalModel:
             key = self.key_file.read_text().strip()
             if len(key) != 64 or any(c not in "0123456789abcdef" for c in key):
                 raise InferenceFailure("unavailable")
-            payload = json.dumps(
-                {
-                    "model": self.model_id,
-                    "messages": messages,
-                    "tools": tools,
-                    "tool_choice": "required",
-                    "parallel_tool_calls": False,
-                    "temperature": 0.7,
-                    "top_p": 0.8,
-                    "top_k": 20,
-                    "min_p": 0,
-                    "presence_penalty": 1.5,
-                    "seed": 42,
-                    "max_tokens": 192,
-                    "reasoning_effort": "none",
-                    "chat_template_kwargs": {"enable_thinking": False},
-                    "stream": False,
-                }
-            )
+            options: dict[str, Any] = {
+                "model": self.model_id,
+                "messages": messages,
+                "tools": tools,
+                "tool_choice": "required",
+                "parallel_tool_calls": False,
+                "temperature": 0.7,
+                "top_p": 0.8,
+                "top_k": 20,
+                "min_p": 0,
+                "presence_penalty": 1.5,
+                "max_tokens": 192,
+                "reasoning_effort": "none",
+                "chat_template_kwargs": {"enable_thinking": False},
+                "stream": False,
+            }
+            if self.seed is not None:
+                options["seed"] = self.seed
+            payload = json.dumps(options)
             connection.request(
                 "POST",
                 "/v1/chat/completions",

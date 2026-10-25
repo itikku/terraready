@@ -1,4 +1,6 @@
-import { POLICY, type Event, type transition } from "./policy.js";
+import { dayAt, POLICY, type Event, type transition } from "./policy.js";
+import { providerAccess } from "./provider.js";
+import { controlPage } from "./page.js";
 
 type Result = ReturnType<typeof transition>;
 interface LedgerStub {
@@ -11,6 +13,7 @@ export interface GatewayBindings {
   ACCESS_AUD?: string;
   OWNER_EMAIL?: string;
   ORIGIN_SECRET?: string;
+  RUNPOD_API_KEY?: string;
 }
 
 const hex = (bytes: ArrayBuffer) =>
@@ -146,6 +149,17 @@ export async function gateway(
     const owner =
       identity.email.toLowerCase() === env.OWNER_EMAIL.toLowerCase();
     const url = new URL(request.url);
+    if (url.pathname === "/api/setup") {
+      if (!owner) return response(403, "Only the demo owner can check setup.");
+      if (request.method !== "GET") return response(405, "Setup requires GET.");
+      return Response.json(
+        {
+          provider: await providerAccess(env.RUNPOD_API_KEY),
+          startupEnabled: false,
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
     const control = [
       "/api/start",
       "/api/stop",
@@ -174,9 +188,13 @@ export async function gateway(
       );
     const stub = env.BUDGET.getByName("terraready-project");
     let result = await stub.apply({ type: "tick" });
-    const run = result.state.runs.find(
-      (item) => !["settled", "terminated"].includes(item.phase),
-    );
+    const run = result.state.runs.find((item) => item.phase !== "settled");
+    if (
+      request.method === "GET" &&
+      (url.pathname === "/demo" ||
+        (url.pathname === "/" && run?.phase !== "active"))
+    )
+      return controlPage();
     if (url.pathname === "/api/status")
       return Response.json(
         {
@@ -188,6 +206,21 @@ export async function gateway(
           lifetimeLimit: POLICY.lifetime / 1_000_000,
           timezone: POLICY.timezone,
           accountingHold: result.state.accountingHold,
+          startupEnabled: false,
+          dailyAvailable:
+            Math.max(
+              0,
+              POLICY.daily -
+                (result.state.spent[dayAt(Date.now())] ?? 0) -
+                (run?.reserved[dayAt(Date.now())] ?? 0),
+            ) / 1_000_000,
+          lifetimeAvailable:
+            Math.max(
+              0,
+              POLICY.lifetime -
+                result.state.totalSpent -
+                Object.values(run?.reserved ?? {}).reduce((a, b) => a + b, 0),
+            ) / 1_000_000,
         },
         { headers: { "Cache-Control": "no-store" } },
       );
@@ -215,8 +248,14 @@ export async function gateway(
     }
     if (run.phase !== "active" || !run.resourceId)
       return response(503, "Open a ready demo before using its workspace.");
-    if (!url.pathname.startsWith("/api/"))
-      return response(404, "The hosted workspace page is not configured yet.");
+    if (
+      !url.pathname.startsWith("/api/") &&
+      !["/", "/system"].includes(url.pathname) &&
+      !["/assets/", "/imagery/", "/licenses/"].some((p) =>
+        url.pathname.startsWith(p),
+      )
+    )
+      return response(404, "This demo page does not exist.");
     const visitor = await digest(
       utf8(`${env.ACCESS_AUD}\n${identity.user_uuid}`),
     );

@@ -106,6 +106,106 @@ test("status polling never starts or extends active use and hides resource/accou
   assert.ok(!JSON.stringify(body).includes("syntheticpod01"));
 });
 
+test("setup check is owner-only, read-only, secret-free and cannot start a GPU", async () => {
+  const f = await fixture(false);
+  const before = f.events.length;
+  assert.equal(
+    (
+      await gateway(
+        request("/api/setup"),
+        f.env,
+        context("guest@example.org", "guest"),
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await gateway(request("/api/setup", "POST"), f.env, context())).status,
+    405,
+  );
+  const response = await gateway(request("/api/setup"), f.env, context());
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.deepEqual(await response.json(), {
+    provider: {
+      pods: "missing_key",
+      catalog: "missing_key",
+      billing: "missing_key",
+    },
+    startupEnabled: false,
+  });
+  assert.equal(f.events.length, before);
+});
+
+test("private control page requires Access and cannot open a run through page loads", async () => {
+  const f = await fixture(false);
+  assert.equal((await gateway(request("/demo"), f.env, {})).status, 403);
+  for (const path of ["/", "/demo"]) {
+    const result = await gateway(request(path), f.env, context());
+    assert.equal(result.status, 200);
+    assert.match(result.headers.get("content-type"), /text\/html/);
+    assert.equal(result.headers.get("cache-control"), "no-store");
+    assert.match(
+      result.headers.get("content-security-policy"),
+      /frame-ancestors 'none'/,
+    );
+    const text = await result.text();
+    assert.ok(text.includes("One shared budget"));
+    assert.ok(!text.includes(secret));
+  }
+  assert.ok(f.events.every((e) => e.type === "tick"));
+  assert.equal(f.state().runs.length, 0);
+});
+
+test("signed frontend and System routes work only during active use; assets do not refresh idle", async (t) => {
+  const f = await fixture();
+  const original = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = original;
+  });
+  const forwarded = [];
+  globalThis.fetch = async (req) => {
+    forwarded.push(req);
+    return new Response("public-frontend-test-only", {
+      headers: { "Content-Type": "text/html" },
+    });
+  };
+  assert.equal(
+    (await gateway(request("/system"), f.env, context())).status,
+    503,
+  );
+  await f.stub.apply({ type: "open", key: "synthetic-run" });
+  const lastUse = f.state().runs[0].lastUseAt;
+  for (const path of [
+    "/",
+    "/system",
+    "/assets/app.js",
+    "/imagery/site-aerial.jpg",
+    "/licenses/DM-Sans-OFL.txt",
+  ]) {
+    const result = await gateway(request(path), f.env, context());
+    assert.equal(result.status, 200);
+    assert.equal(await result.text(), "public-frontend-test-only");
+  }
+  assert.equal(forwarded.length, 5);
+  assert.ok(forwarded.every((req) => req.headers.has("X-TR-Signature")));
+  assert.equal(f.state().runs[0].lastUseAt, lastUse);
+  assert.equal(
+    (await gateway(request("/.env.local"), f.env, context())).status,
+    404,
+  );
+  await f.stub.apply({
+    type: "terminated",
+    key: "synthetic-run",
+    resourceId: "syntheticpod01",
+  });
+  assert.equal(
+    (await (await gateway(request("/api/status"), f.env, context())).json())
+      .phase,
+    "terminated",
+  );
+});
+
 test("invited users cannot start/stop; owner startup stays disabled behind provider gates", async () => {
   const f = await fixture();
   for (const path of ["/api/start", "/api/stop"]) {

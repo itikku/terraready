@@ -1,6 +1,6 @@
 # Shared-demo controller readiness
 
-This contains the local budget/deadline proof and authenticated API-gateway boundary for the approved Cloudflare Free design. It is **not a deployed service**. With its bindings/access unconfigured, every public Worker request returns 503. There is no Runpod lifecycle client, deployment credential, configured invitation policy, hosted start page or live provisioning.
+This contains the budget/deadline ledger, protected session page and authenticated gateway for the approved Cloudflare Free design. An initial controller is deployed behind private email-code access. GPU startup is disabled: runtime credentials, actual owner sign-in, provider lifecycle and independently recoverable cleanup remain launch gates. Missing configuration fails closed.
 
 From the repository root, after `npm ci`:
 
@@ -26,10 +26,16 @@ The gateway requires Cloudflare's platform-authenticated `ctx.access` for the co
 
 API forwarding uses an HMAC envelope tied to the verified visitor, method, encoded target, body digest, timestamp and fresh nonce. Browser cookies/tokens never forward to the GPU. The [shared origin](../../docs/HOSTED_DEMO.md) verifies the envelope and separates visitor LanceDB state. Thirty-one origin/queue tests and ten gateway tests supplement the original 26 policy/storage tests, including ten signed HTTP clients. Gateway identity fixtures exercise authorization logic; only a real Access deployment can prove sign-in/invitation configuration.
 
-This design uses a Worker without a Static Assets binding: the current platform does not pass `ctx.access` through the internal assets router. The eventual frontend must come through the protected origin, or use separately verified JWT validation if that routing changes. [Cloudflare Access context and limitations](https://developers.cloudflare.com/workers/configuration/cloudflare-access/#ctxaccess-limitations)
+This design uses a Worker without a Static Assets binding: the current platform does not pass `ctx.access` through the internal assets router. The frontend comes through the protected origin; a change to static edge hosting would require separately verified JWT validation. [Cloudflare Access context and limitations](https://developers.cloudflare.com/workers/configuration/cloudflare-access/#ctxaccess-limitations)
 
 ## Gates still open
 
 Alarms persist a **shutdown intent**; no provider deletion occurs. Real termination/retries, an independent cleanup fallback, account/free-plan eligibility, deployed invitation/access and direct-origin checks, frontend/runtime packaging, quote/billing integration and Free-tier CPU/quota measurements remain unverified. Local signature/workspace tests do not establish a provider spending guarantee or deployed multiuser service.
 
 Tooling is pinned to the Miniflare beta used by Wrangler 4.152.0, with its official v4 configuration converter. The root lockfile overrides only the emulator's HTTP dependency to patched Undici 7.30.1. No frontend dependency version changed. See [hosting design](../../docs/reviews/HOSTING_DESIGN.md) for deployment gates.
+
+## Secure runtime setup
+
+The controller needs its own encrypted `RUNPOD_API_KEY`; the chat's MCP login cannot authenticate a deployed Worker. The owner creates the dedicated key in Runpod and enters it directly in Cloudflare's Production secret settings. The current Runpod console offers Restricted → GraphQL Read/Write with AI API None; this is broad management access, not a Pod-scoped key. Keep it out of the GPU, repository, browser client and chat. `/api/setup` is owner-only and returns just read-only capability states for Pods, catalog and billing. It never starts resources or exposes the key/provider bodies.
+
+The [hosted package guide](../../docs/HOSTED_DEMO.md) describes the clean source/bootstrap, signed frontend and explicit join flow. Local tests distinguish requested shutdown from verified provider termination; a session page is not proof of working paid-resource cleanup.

@@ -47,13 +47,13 @@ jobs:
           python-version: "3.12"
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24.22.1"
           cache: npm
       - name: Install locked dependencies
         run: |
           python -m pip install uv==0.13.5
           uv sync --frozen --extra dev
-          npm ci
+          npm ci --ignore-scripts
       - name: Install browser runtime
         run: npx playwright install --with-deps chromium
         env:

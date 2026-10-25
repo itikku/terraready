@@ -47,9 +47,22 @@ def test_only_fixed_loopback_authenticated_nonstreaming_transport(tmp_path, monk
     assert (method, path) == ("POST", "/v1/chat/completions")
     assert headers["Authorization"] == "Bearer " + "a" * 64
     assert body["max_tokens"] == 192
+    assert body["seed"] == 42
     assert body["stream"] is False
     assert body["chat_template_kwargs"]["enable_thinking"] is False
     assert connection.closed
+
+
+def test_hosted_sampling_omits_fixed_seed_without_changing_model_bounds(tmp_path, monkeypatch):
+    client, connection = setup(tmp_path, monkeypatch, b'{"choices": []}')
+    client = LocalModel(client.key_file, seed=None)
+    client.complete([], [], 3)
+    body = connection.sent[2]
+    assert "seed" not in body
+    assert body["temperature"] == 0.7
+    assert body["max_tokens"] == 192
+    assert body["tool_choice"] == "required"
+    assert body["stream"] is False
 
 
 @pytest.mark.parametrize(

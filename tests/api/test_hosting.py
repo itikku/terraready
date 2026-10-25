@@ -84,6 +84,56 @@ def test_direct_origin_is_closed_without_creating_a_workspace(origin, target):
     assert not (origin.root / ALICE).exists()
 
 
+def frontend(tmp_path):
+    web = tmp_path / "web"
+    web.mkdir()
+    (web / "index.html").write_text("<html><h1>Synthetic hosted workspace</h1></html>")
+    for name in ("assets", "imagery", "licenses"):
+        (web / name).mkdir()
+    (web / "assets/app.js").write_text("console.log('public build fixture');")
+    (web / "imagery/site.jpg").write_bytes(b"synthetic-public-image")
+    (web / ".env.local").write_text("synthetic-forbidden-fixture")
+    return web
+
+
+def test_frontend_requires_the_same_gateway_auth_and_does_not_expose_source(tmp_path, docket):
+    origin = HostedOrigin(
+        tmp_path / "hosted",
+        SECRET,
+        docket,
+        UnavailableModel(),
+        clock=lambda: NOW,
+        web_root=frontend(tmp_path),
+    )
+    with TestClient(origin) as client:
+        for target in ["/", "/system", "/assets/app.js", "/imagery/site.jpg"]:
+            assert client.get(target).status_code == 401
+            result = request(client, "GET", target)
+            assert result.status_code == 200
+            assert result.headers["cache-control"] == "no-store"
+        assert "Synthetic hosted workspace" in request(client, "GET", "/system").text
+        for target in ["/.env.local", "/hosting.py", "/assets/../.env.local"]:
+            # Signed target itself may be normalized by the HTTP client; either
+            # rejection or a missing route is safe, never file contents.
+            result = request(client, "GET", target)
+            assert result.status_code in (401, 404)
+            assert "synthetic-forbidden-fixture" not in result.text
+
+
+@pytest.mark.parametrize("invalid", ["missing_index", "missing_assets", "symlink"])
+def test_invalid_frontend_build_fails_before_serving_any_files(tmp_path, docket, invalid):
+    web = frontend(tmp_path)
+    if invalid == "missing_index":
+        (web / "index.html").unlink()
+    elif invalid == "missing_assets":
+        (web / "assets/app.js").unlink()
+        (web / "assets").rmdir()
+    else:
+        (web / "assets/leak.txt").symlink_to(web / ".env.local")
+    with pytest.raises(ValueError, match="clean frontend"):
+        HostedOrigin(tmp_path / "hosted", SECRET, docket, UnavailableModel(), web_root=web)
+
+
 @pytest.mark.parametrize("mutation", ["visitor", "time", "nonce", "signature", "duplicate"])
 def test_invalid_envelope_is_rejected(origin, mutation):
     headers = signed("GET", BASE)
