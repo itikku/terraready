@@ -16,6 +16,7 @@
 - Added a machine-readiness API that reuses the decision engine and persisted local image references/captions in LanceDB.
 - Bundled a public-domain NAIP crop and an explicitly synthetic inspection illustration. Sources, dates, checksums and the exact generation prompt are in `ATTRIBUTIONS.md`.
 - Added browser CI, a reviewed screenshot baseline and desktop/mobile README images. All external requests are blocked in the core browser suite.
+- Phase 3 backend slice: pure deterministic route planner, evidence-review deadline, snapshot fingerprint, approval API and typed idempotent local LanceDB approval records with both teammate briefs.
 
 ## Evidence
 
@@ -34,6 +35,7 @@
 - Visually inspected desktop and mobile screenshots; repaired initial text-contrast failures and a mobile map-badge layout defect. Reviewed baseline: `tests/e2e/__screenshots__/workspace.spec.ts/site-workspace.png`.
 - Live Mapbox probe on `http://localhost:5173`: WebGL available; style requests returned 200, imagery requests returned 429, fallback succeeded. Connected imagery success is NOT verified. No token or credential-bearing URL was printed.
 - Final `make verify` passed the full sequence on 2026-10-24: backend verification, frontend formatting/types/lint/build and all 14 browser tests against freshly started local services. Owned preview servers were stopped after verification. GitHub CI execution remains pending publication.
+- Phase 3 backend `make check`: formatting/lint/strict typing passed; 97 tests passed, 98.63% overall statement/branch coverage, 100% decision-engine coverage. Tests include route ranking, clock/evidence fingerprint changes, stale/all-held rejection, app restart, concurrent duplicate approval and storage-failure handling.
 
 ## Decisions in force
 
@@ -46,7 +48,7 @@
 
 ## Risks / unresolved work
 
-- Revised-plan approval, teammate communications and multimodal similarity retrieval are not implemented. Image references are persisted, but there is no image embedding/search pipeline yet.
+- Revised-plan backend and teammate brief generation are implemented; the approval UI is not yet implemented or browser-verified. Multimodal similarity retrieval remains unfinished: image references are persisted, but there is no image embedding/search pipeline yet.
 - Mapbox imagery requests currently return HTTP 429 in the live check. Do not infer a specific account/billing cause without further evidence. Default local aerial and all core interactions work without it.
 - Seed replacement is not a cross-table transaction; run it with the API stopped. Stored data is validated before evaluation; broken or unseeded snapshots yield a recovery-oriented `503`.
 - The API is local-only and unauthenticated. Run on loopback as documented; public hosting is a separate decision.
@@ -55,4 +57,4 @@
 
 ## Next step
 
-Phase 3: implement deterministic alternative-plan comparison, supervisor approval state, and role-specific field-lead / haul-coordinator updates. Use the existing frontend/API rather than adding a second rules engine. Preserve browser, accessibility and visual checks with `make verify`. Mapbox 429 is an optional-provider limitation, not a blocker for the local planning flow.
+Phase 3: connect a plan-review/approval panel to the verified backend, then browser-test approval, held work, stale/error/reload flows and copy/export of both teammate briefs. Run `make verify`. The local preview has been restored at `http://localhost:5173` for Chrome; prefer a direct link and keep it running for the user. Mapbox 429 is an optional-provider limitation, not a blocker.

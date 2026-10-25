@@ -44,3 +44,11 @@ The zone-readiness read endpoint (`GET /api/scenarios/post-rain/readiness?machin
 ## Seeding and read semantics
 
 Seeding explicitly resets only the six named demo tables. It first validates the entire fixture, then replaces each table. LanceDB does not provide a cross-table transaction for this seed; run seeding with the API stopped. Repeated seeding produces the same logical records without duplicates. Runtime API calls read the stored records; they never silently auto-seed, fetch cloud data or synthesize missing evidence.
+
+## Route comparison and approval
+
+`GET /api/scenarios/post-rain/plan` compares routes reaching each task's destination for its assigned machine, at optional aware `as_of`. Every candidate uses the same evaluator. Rank by `GO`, `INSPECT`, `NO_GO`, then synthetic route distance, then stable ID. Only `GO` candidates receive a selected route; other tasks remain held. Preserve task priority, not a fabricated optimized schedule. The earliest expiry of eligible supporting evidence becomes `review_by`. Work is eligible only at the evaluation clock; targets and durations are not guaranteed production or evidence validity for the entire shift.
+
+The SHA-256 proposal fingerprint covers the validated full snapshot, UTC-normalized effective clock and `routes-v1` planner version. `POST /api/scenarios/post-rain/approvals` accepts only `plan_id` and optional `as_of`, recomputes the proposal and returns `409` for a changed fingerprint or all-held plan. The client cannot supply decisions, identities or message contents.
+
+A seventh, lazily created `approvals` LanceDB table stores the fingerprint, scenario, evaluation/approval timestamps, literal demo identity, planner version, typed work records and role-specific updates. Local request threads are serialized during save; repeated submissions preserve the first approval. Multiple API processes and concurrent reseeding are unsupported. Approval history survives reseeding but is shown only for an exactly matching proposal. No external message is sent; no work is dispatched. The recorded identity is a label, not authentication. Corrupt or unavailable approval storage fails with a generic `503`, never a false success.

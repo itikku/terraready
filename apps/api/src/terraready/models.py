@@ -194,3 +194,58 @@ class Readiness(Model):
     machine_id: Identifier
     as_of: AwareDatetime
     zones: list[ZoneDecision]
+
+
+PlanId = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+
+
+class PlanItem(Model):
+    task_id: Identifier
+    baseline: Evaluation
+    alternatives: list[Evaluation] = Field(min_length=1)
+    selected_route_id: Identifier | None
+    status: DecisionStatus
+
+
+class ApprovedWork(Model):
+    task_id: Identifier
+    machine_id: Identifier
+    route_id: Identifier | None
+    status: DecisionStatus
+    evidence_ids: list[Identifier]
+
+
+class TeamUpdate(Model):
+    role: Literal["Field lead", "Haul coordinator"]
+    title: str
+    body: str
+
+
+class Approval(Model):
+    plan_id: PlanId
+    scenario_id: Identifier
+    evaluated_at: AwareDatetime
+    approved_at: AwareDatetime
+    approved_by: Literal["Demo superintendent"] = "Demo superintendent"
+    planner_version: Literal["routes-v1"] = "routes-v1"
+    work: list[ApprovedWork]
+    updates: list[TeamUpdate]
+    synthetic: Literal[True] = True
+
+
+class ShiftPlan(Model):
+    id: PlanId
+    scenario_id: Identifier
+    as_of: AwareDatetime
+    review_by: AwareDatetime | None
+    items: list[PlanItem]
+    baseline_eligible_count: int = Field(ge=0)
+    proposed_eligible_count: int = Field(ge=0)
+    assumptions: list[str]
+    planner_version: Literal["routes-v1"] = "routes-v1"
+    approval: Approval | None = None
+
+
+class ApprovalRequest(Model):
+    plan_id: PlanId
+    as_of: AwareDatetime | None = None

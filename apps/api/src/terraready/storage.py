@@ -2,12 +2,14 @@
 
 from collections.abc import Sequence
 from pathlib import Path
+from threading import Lock
 from typing import TypeVar
 
 import lancedb
 import pyarrow as pa
 
 from terraready.models import (
+    Approval,
     Machine,
     Model,
     Observation,
@@ -21,6 +23,38 @@ from terraready.models import (
 Record = TypeVar("Record", bound=Model)
 POINT = pa.struct([("x_m", pa.float64()), ("y_m", pa.float64())])
 UTC_TIME = pa.timestamp("us", tz="UTC")
+APPROVAL_LOCK = Lock()
+APPROVAL_SCHEMA = pa.schema(
+    [
+        ("plan_id", pa.string()),
+        ("scenario_id", pa.string()),
+        ("evaluated_at", UTC_TIME),
+        ("approved_at", UTC_TIME),
+        ("approved_by", pa.string()),
+        ("planner_version", pa.string()),
+        ("synthetic", pa.bool_()),
+        (
+            "work",
+            pa.list_(
+                pa.struct(
+                    [
+                        ("task_id", pa.string()),
+                        ("machine_id", pa.string()),
+                        ("route_id", pa.string()),
+                        ("status", pa.string()),
+                        ("evidence_ids", pa.list_(pa.string())),
+                    ]
+                )
+            ),
+        ),
+        (
+            "updates",
+            pa.list_(
+                pa.struct([("role", pa.string()), ("title", pa.string()), ("body", pa.string())])
+            ),
+        ),
+    ]
+)
 # Explicit Arrow schemas support literal/enum fields without weakening the domain contract.
 SCHEMAS = {
     "scenarios": pa.schema(
@@ -104,6 +138,10 @@ class DataUnavailable(RuntimeError):
     """The demo has not been seeded or the stored snapshot is incomplete."""
 
 
+class ApprovalUnavailable(RuntimeError):
+    """Approval persistence failed; never imply success or disclose local paths."""
+
+
 class SiteStore:
     def __init__(self, path: Path):
         self.connection = lancedb.connect(str(path))
@@ -150,3 +188,37 @@ class SiteStore:
             raise DataUnavailable(
                 "Demo data unavailable. Stop the API and run the seed command."
             ) from exc
+
+    def approval(self, plan_id: str) -> Approval | None:
+        try:
+            if "approvals" not in self.connection.list_tables().tables:
+                return None
+            matches = [
+                record for record in self._read("approvals", Approval) if record.plan_id == plan_id
+            ]
+            if len(matches) > 1:
+                raise ValueError("Duplicate approvals")
+            return matches[0] if matches else None
+        except (ValueError, OSError, RuntimeError, pa.ArrowException) as exc:
+            raise ApprovalUnavailable("Local approval unavailable. Please retry.") from exc
+
+    def save_approval(self, approval: Approval) -> Approval:
+        # Serialize local request threads; multiple API processes are outside this POC's scope.
+        with APPROVAL_LOCK:
+            try:
+                existing = self.approval(approval.plan_id)
+                if existing:
+                    return existing
+                table = self.connection.create_table(
+                    "approvals", schema=APPROVAL_SCHEMA, exist_ok=True
+                )
+                rows = pa.Table.from_pylist([approval.model_dump()], schema=APPROVAL_SCHEMA)
+                table.merge_insert("plan_id").when_not_matched_insert_all().execute(rows)
+                saved = self.approval(approval.plan_id)
+                if saved is None:
+                    raise ValueError("Approval was not persisted")
+                return saved
+            except (ValueError, OSError, RuntimeError, pa.ArrowException) as exc:
+                raise ApprovalUnavailable(
+                    "Local approval could not be saved. Please retry."
+                ) from exc

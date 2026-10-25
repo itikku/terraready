@@ -103,10 +103,10 @@ def test_api_exposes_typed_contract(client):
     }
 
 
-def test_api_has_no_mutating_or_seed_endpoints(client):
+def test_only_approval_mutates_state_and_no_seed_endpoint_exists(client):
     paths = client.get("/openapi.json").json()["paths"]
     for path, methods in paths.items():
-        assert set(methods) <= ({"post"} if path.endswith("/evaluate") else {"get"})
+        assert set(methods) <= ({"post"} if path.endswith(("/evaluate", "/approvals")) else {"get"})
 
 
 def test_machine_readiness_covers_every_zone_and_matches_evaluation(client):

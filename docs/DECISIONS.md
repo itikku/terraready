@@ -47,3 +47,9 @@ The aerial is locked to USDA NAIP tile `m_3712248_nw_10_060_20220519`; exact ext
 ## 2026-10-24 — Automated visual and interaction QA
 
 Use Playwright with full Chromium (`channel: chromium`); the downloaded headless-shell build crashed on this Mac due to its ICU/GPU runtime, while full Chromium runs successfully. Tests prohibit external HTTP requests and use a deliberately invalid token to exercise provider fallback without real account credentials. A reviewed map screenshot baseline permits 3% cross-platform pixel variation. Automated accessibility checks must remain enabled; initial contrast failures were repaired rather than suppressed.
+
+## 2026-10-24 — Bounded replanning and local approval
+
+Compare all routes reaching each task's destination with its assigned machine using the existing evaluator. Retain only `GO` work in the proposed operating plan; rank eligible alternatives by synthetic distance then ID. Preserve task priorities without pretending to optimize dependencies, shared-resource scheduling, or production. A refreshed-evidence deadline qualifies eligibility at a single clock, not for the entire planned duration.
+
+Fingerprint the validated snapshot, effective clock and planner version. Approval recomputes this fingerprint, rejects stale proposals and all-held plans, then stores a typed LanceDB record with role-specific updates. Duplicate approval requests preserve the first local approval. This is a single-process, loopback POC with no authenticated identity and no external dispatch. Seeding replaces only the six fixture tables; approvals are retained but apply only to matching fingerprints. Chrome links are preferred over opening app-embedded previews; keep the local preview available for the user.

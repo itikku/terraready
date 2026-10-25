@@ -74,7 +74,7 @@ Build the map-first frontend with an offline aerial fallback and optional connec
 
 ## Phase 3 — Replanning and communications
 
-**Status:** Next phase — not started.
+**Status:** Active — user authorized continuation on 2026-10-24, including after the desktop-app crash.
 
 Add deterministic alternative-plan comparison, approval state, and role-specific shift updates.
 
@@ -88,6 +88,15 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 - Unit/API tests for plan selection.
 - Playwright verifies recommendation, approval, and both updates.
+
+**Implementation contract**
+
+- Reuse the existing evaluator to compare routes for each task's assigned machine. Choose an eligible route by shortest synthetic distance, then stable ID; never substitute equipment or invent a schedule.
+- Compare the original plan with the proposed plan at the explicit evidence clock. Quantities are planned targets, not guaranteed production; show the earliest evidence-review deadline.
+- Held tasks remain held after approval. Inspection requests must not instruct entry onto unverified ground.
+- Recompute the proposal on approval and reject a mismatched snapshot fingerprint or a proposal with no eligible work. Persist one idempotent, typed local approval record per fingerprint in LanceDB.
+- Generate copyable/exportable updates only after approval. No external messages, real identities, dispatch, or authentication claims.
+- Verify planner edge cases, durable/idempotent approval, stale-proposal rejection, browser approval/error/reload/clock flows, clipboard/export, mobile and accessibility. Commit backend and UI as separately verified slices.
 
 ## Phase 4 — Demo hardening
 
