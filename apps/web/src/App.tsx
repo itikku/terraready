@@ -8,7 +8,6 @@ import {
   Compass,
   Crosshair,
   Database,
-  Expand,
   FileImage,
   Info,
   Layers,
@@ -29,6 +28,7 @@ import { getEvaluation, getReadiness, getSite } from "./api";
 import OfflineSiteMap from "./map/OfflineSiteMap";
 import PlanReview from "./PlanReview";
 import AssistPanel from "./AssistPanel";
+import CameraEvidence from "./CameraEvidence";
 import type { Evaluation, Machine, Readiness, Site, Status } from "./types";
 
 const ConnectedMap = lazy(() => import("./map/MapboxSiteMap"));
@@ -85,8 +85,6 @@ export default function App() {
   const [overlays, setOverlays] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [sources, setSources] = useState(false);
-  const [photo, setPhoto] = useState(false);
-  const [photoFailed, setPhotoFailed] = useState(false);
   const evidenceHeading = useRef<HTMLHeadingElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const sourceTrigger = useRef<HTMLButtonElement>(null);
@@ -127,9 +125,9 @@ export default function App() {
     return () => c.abort();
   }, [site, machineId, taskId, routeId, asOf, retry]);
   useEffect(() => {
-    if (sources || photo) dialog.current?.showModal();
+    if (sources) dialog.current?.showModal();
     else dialog.current?.close();
-  }, [sources, photo]);
+  }, [sources]);
   const providerFailed = () => {
     setConnected(false);
     setProviderReady(false);
@@ -148,11 +146,9 @@ export default function App() {
   }
   function chooseZone(id: string) {
     setSelected(id);
-    setPhotoFailed(false);
   }
   function closeDialog() {
     setSources(false);
-    setPhoto(false);
     sourceTrigger.current?.focus();
   }
   const machine = site?.machines.find((m) => m.id === machineId);
@@ -537,37 +533,11 @@ export default function App() {
                     )}
                     <span>for {SHORT[machineId]}</span>
                   </div>
-                  <div className="evidence-picture">
-                    {observation?.image_path && !photoFailed ? (
-                      <button
-                        aria-label="Enlarge synthetic inspection image"
-                        onClick={() => setPhoto(true)}
-                      >
-                        <img
-                          src={observation.image_path}
-                          onError={() => setPhotoFailed(true)}
-                          alt="Synthetic illustration of a rutted, waterlogged construction access road"
-                        />
-                        <span className="image-expand">
-                          <Expand size={14} />
-                        </span>
-                      </button>
-                    ) : (
-                      <div
-                        className="aerial-detail"
-                        style={{
-                          backgroundImage: "url(/imagery/site-aerial.jpg)",
-                        }}
-                        role="img"
-                        aria-label="Historical aerial context, not a current ground inspection"
-                      />
-                    )}
-                    <span className="image-type">
-                      {observation?.image_path && !photoFailed
-                        ? "SYNTHETIC INSPECTION"
-                        : "HISTORICAL AERIAL CONTEXT"}
-                    </span>
-                  </div>
+                  <CameraEvidence
+                    key={zone.id}
+                    zoneId={zone.id}
+                    observation={observation}
+                  />
                   <div className="observation-stamp">
                     <span>
                       <Radio size={12} />
@@ -576,7 +546,7 @@ export default function App() {
                         : "No observation"}
                     </span>
                     <span className={fresh ? "fresh-tag" : "stale-tag"}>
-                      {fresh ? "Current evidence" : "Refresh required"}
+                      {fresh ? "Current demo evidence" : "Refresh required"}
                     </span>
                   </div>
                   <p className="observation-note">
@@ -740,15 +710,12 @@ export default function App() {
       </div>
       <dialog
         ref={dialog}
-        className={photo ? "photo-dialog" : "source-dialog"}
+        className="source-dialog"
         onCancel={closeDialog}
         onClose={() => {
           setSources(false);
-          setPhoto(false);
         }}
-        aria-label={
-          photo ? "Synthetic inspection image" : "Data sources and provenance"
-        }
+        aria-label="Data sources and provenance"
       >
         <button
           className="dialog-close"
@@ -757,56 +724,49 @@ export default function App() {
         >
           <X size={20} />
         </button>
-        {photo ? (
-          <>
-            <img
-              src={observation?.image_path || ""}
-              alt="Enlarged synthetic inspection scene"
-            />
-            <p>{observation?.image_caption}</p>
-          </>
-        ) : (
-          <>
-            <span className="eyebrow">TRANSPARENT BY DESIGN</span>
-            <h2>Every observation has a source.</h2>
-            <p>
-              The base aerial is real. The operating scenario, equipment,
-              measurements and inspection illustration are synthetic.
-            </p>
-            <dl>
-              <dt>Aerial base</dt>
-              <dd>
-                USDA NAIP · USGS National Map
-                <br />
-                Acquired May 19, 2022 · 0.6 m source resolution
-                <br />
-                Public domain. Cupertino, California area.
-              </dd>
-              <dt>Inspection illustration</dt>
-              <dd>
-                Generated with OpenAI ImageGen. It depicts a fictional muddy
-                road and is not an observation of the mapped location.
-              </dd>
-              <dt>Ground measurements</dt>
-              <dd>
-                Explicit synthetic fixtures. Photographs do not determine
-                bearing capacity or soil moisture in this prototype.
-              </dd>
-              <dt>Source confidence</dt>
-              <dd>
-                Confidence assigned to each demo observation. It is not a
-                calibrated probability that a machine can operate safely.
-              </dd>
-            </dl>
-            <a
-              href="https://www.usgs.gov/centers/eros/science/usgs-eros-archive-aerial-photography-national-agriculture-imagery-program-naip"
-              target="_blank"
-              rel="noreferrer"
-            >
-              View USGS source documentation <ArrowUpRight size={14} />
-            </a>
-          </>
-        )}
+        <>
+          <span className="eyebrow">TRANSPARENT BY DESIGN</span>
+          <h2>Every observation has a source.</h2>
+          <p>
+            The base aerial is real. The operating scenario, equipment,
+            measurements and inspection illustration are synthetic. The default
+            camera source is a disconnected demo stub. External camera snapshots
+            require an explicitly configured adapter and do not update these
+            measurements.
+          </p>
+          <dl>
+            <dt>Aerial base</dt>
+            <dd>
+              USDA NAIP · USGS National Map
+              <br />
+              Acquired May 19, 2022 · 0.6 m source resolution
+              <br />
+              Public domain. Cupertino, California area.
+            </dd>
+            <dt>Inspection illustration</dt>
+            <dd>
+              Generated with OpenAI ImageGen. It depicts a fictional muddy road
+              and is not an observation of the mapped location.
+            </dd>
+            <dt>Ground measurements</dt>
+            <dd>
+              Explicit synthetic fixtures. Photographs do not determine bearing
+              capacity or soil moisture in this prototype.
+            </dd>
+            <dt>Source confidence</dt>
+            <dd>
+              Confidence assigned to each demo observation. It is not a
+              calibrated probability that a machine can operate safely.
+            </dd>
+          </dl>
+          <a
+            href="https://www.usgs.gov/centers/eros/science/usgs-eros-archive-aerial-photography-national-agriculture-imagery-program-naip"
+            target="_blank"
+            rel="noreferrer"
+          >
+            View USGS source documentation <ArrowUpRight size={14} />
+          </a>
+        </>
       </dialog>
     </div>
   );

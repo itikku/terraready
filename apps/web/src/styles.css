@@ -1549,3 +1549,17 @@ dialog::backdrop {
     scroll-behavior: auto !important;
   }
 }
+
+.camera-source {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0.65rem 0;
+  overflow-wrap: anywhere;
+}
+.camera-source p {
+  margin: 0 0 0.4rem;
+}
+.camera-source .secondary-button {
+  font-size: 0.7rem;
+  padding: 0.35rem 0.55rem;
+}

@@ -29,3 +29,5 @@ DM Sans and IBM Plex Mono are bundled through Fontsource (SIL Open Font License)
 ## Application screenshots
 
 The screenshots under `docs/images/` show TerraReady's synthetic scenario over the attributed aerial above. `local-assistant.png` and `local-assistant-mobile.png` are explicitly labeled protocol-stub interaction captures. `gpu-recovery-approved.png` is an unmodified full-page capture from the private single-L4 test on October 25, 2026, showing genuine Qwen3-4B analysis, separate human approval and local briefs. No real customer data or credentials are shown. Historical native and GPU results are independently recorded under `docs/verification/`; screenshots alone are not benchmark evidence.
+
+Camera-interface captures: `camera-stub.png` shows the explicit disconnected demo source. `camera-adapter-mobile.png` supplies the same synthetic illustration through a mocked snapshot adapter for contract/UI verification; it is not a hardware-camera capture. Both retain the imagery/synthetic-data boundaries above.

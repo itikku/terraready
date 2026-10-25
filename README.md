@@ -2,6 +2,8 @@
 
 TerraReady is a local-first, multimodal shift-planning prototype for dynamic ground conditions. It joins aerial context, inspection evidence, weather, equipment constraints, and site rules to produce an auditable **go / inspect / no-go** decision and a revised shift plan.
 
+**Demo status:** operating data is synthetic and the default camera feed is a disconnected stub. A [bring-your-own snapshot adapter](docs/CAMERAS.md) is available; physical camera integrations have not been tested.
+
 ## The operating primitive
 
 > Can this asset perform this task, in this place, at this time, under evidence-backed operating constraints?
@@ -76,6 +78,14 @@ flowchart TD
 - **Private deployment keeps the same architecture.** During the GPU test, web, API, database and model ran together on one temporary host. Only SSH was exposed; browser access used authenticated forwarding to loopback services. This is not a public service or a production authentication design.
 
 See [architecture decisions](docs/DECISIONS.md) for rationale and [the assistant contract](docs/LOCAL_AGENT.md) for exact tools, limits and model setup.
+
+## Camera integration status
+
+**Camera feeds are stubbed in the default demo.** The inspection picture is a fixed AI-generated illustration, not a real-time camera capture. Soil measurements and current conditions are synthetic fixtures; neither the model nor the image produces them.
+
+For bring-your-own cameras, a typed read-only snapshot interface and opt-in folder adapter let your camera exporter supply PNG/JPEG bytes, a camera/capture ID and capture time. The UI labels external snapshots separately and shows unavailable captures honestly. This does not ingest measurements or change readiness/approval. See [camera adapter setup and contract](docs/CAMERAS.md). Physical camera hardware and vendor protocols have not been tested. The extension passed **296 backend tests and 49 browser tests**, plus an actual folder → API → browser check using a synthetic image. Camera snapshots do not refresh numerical ground evidence.
+
+![Evidence card explicitly labels the disconnected demo camera stub](docs/images/camera-stub.png)
 
 ## Current build
 

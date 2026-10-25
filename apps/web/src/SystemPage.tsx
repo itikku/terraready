@@ -313,7 +313,10 @@ export default function SystemPage() {
                 Typed LanceDB records carry units, timestamps, completion and
                 references. Real aerial context and the synthetic inspection
                 illustration do not establish soil measurements. No image
-                embeddings or visual inference are implemented.
+                embeddings or visual inference are implemented. Camera
+                integration defaults to a disconnected demo stub; optional
+                snapshot adapters provide pictures, not trusted ground
+                measurements.
               </p>
             </article>
             <article>

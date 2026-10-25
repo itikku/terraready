@@ -265,3 +265,16 @@ export interface SystemEvidence {
   };
   gpu_verification?: SystemEvidence["verification"];
 }
+
+export interface CameraView {
+  mode: "demo_stub" | "external_snapshot";
+  status: "stub" | "available" | "unavailable";
+  snapshot: null | {
+    camera_id: string;
+    snapshot_id: string;
+    captured_at: string;
+    media_type: "image/jpeg" | "image/png";
+    sha256: string;
+    image_base64: string;
+  };
+}

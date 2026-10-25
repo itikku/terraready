@@ -1,4 +1,5 @@
 import type {
+  CameraView,
   Approval,
   AssistRun,
   Evaluation,
@@ -142,3 +143,9 @@ export const approveRecovery = (plan: RecoveryPlan, signal: AbortSignal) =>
 
 export const getSystemEvidence = (signal: AbortSignal) =>
   json<SystemEvidence>("/api/system", signal, undefined, "system");
+
+export const getCamera = (zoneId: string, signal: AbortSignal) =>
+  json<CameraView>(
+    `/api/scenarios/post-rain/zones/${encodeURIComponent(zoneId)}/camera`,
+    signal,
+  );

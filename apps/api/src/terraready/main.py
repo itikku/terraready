@@ -4,13 +4,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi import Path as ApiPath
 from fastapi.responses import JSONResponse
 from pydantic import AwareDatetime
 
 from terraready.agent import ModelClient, assist
 from terraready.agent_models import AssistRequest, AssistRun
+from terraready.camera import CameraProvider, CameraView, DemoCameraProvider, camera_view
 from terraready.engine import InvalidEvaluation, UnknownEntity, evaluate, evaluate_zone
 from terraready.model_client import LocalModel
 from terraready.models import (
@@ -44,12 +45,14 @@ def create_app(
     db_path: Path | None = None,
     model_client: ModelClient | None = None,
     verification_dir: Path | None = None,
+    camera_provider: CameraProvider | None = None,
 ) -> FastAPI:
     api = FastAPI(
         title="TerraReady",
         version="0.1.0",
         description="Synthetic ground-readiness demo. All decisions require supervisor approval.",
     )
+    camera = camera_provider if camera_provider is not None else DemoCameraProvider()
     path = db_path or database_path()
     inference = model_client or LocalModel(Path(".data/runtime/inference.key"))
 
@@ -111,6 +114,14 @@ def create_app(
     @api.get("/api/scenarios/{scenario_id}", response_model=SiteSnapshot)
     def site(scenario_id: ScenarioId) -> SiteSnapshot:
         return scenario_snapshot(scenario_id)
+
+    @api.get("/api/scenarios/{scenario_id}/zones/{zone_id}/camera", response_model=CameraView)
+    def zone_camera(scenario_id: ScenarioId, zone_id: ScenarioId, response: Response) -> CameraView:
+        response.headers["Cache-Control"] = "no-store"
+        site = scenario_snapshot(scenario_id)
+        if not any(zone.id == zone_id for zone in site.zones):
+            raise HTTPException(status_code=404, detail="Zone not found.")
+        return camera_view(camera, scenario_id, zone_id)
 
     @api.get("/api/scenarios/{scenario_id}/readiness", response_model=Readiness)
     def readiness(
