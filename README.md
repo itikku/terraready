@@ -52,9 +52,11 @@ Ground eligibility is only one gate. The recovery engine also rejects unfinished
 
 The shared-demo policy treats cost as an admission and resource-lifecycle constraint: **$1.50 per Los Angeles day across all visitors/runs**, **$5 lifetime usage**, and **two active hours maximum from first use**. Startup, idle, disk and cleanup count. Joining never renews an allowance; the separate $10 prepaid funding limit is not a usage budget.
 
-The [local Cloudflare ledger](apps/controller/README.md) reserves conservative whole-host costs atomically, persists deadlines and holds reservations until termination and billing reconciliation. Unknown accounting blocks another start. Proposed setup/idle cutoffs are twenty/ten minutes; cost can end a run sooner. One shared model loop and a bounded visitor queue avoid automatic GPU scale-out. Per-visitor workspaces keep approvals and audits separate.
+The [Cloudflare ledger](apps/controller/README.md) reserves conservative whole-host costs atomically and persists deadlines. Setup and idle cutoffs are twenty and ten minutes; cost can end a run sooner. One model loop and a bounded visitor queue share fixed GPU capacity. Per-visitor workspaces separate approvals and audits.
 
-**Status:** budget/deadline policy and shared-origin isolation/queueing are locally tested. Provider start/stop, independent cleanup and live cost reconciliation remain deployment gates. This is not yet a hosted service or a provider-enforced dollar cap. [Implementation and verification boundaries](docs/HOSTED_DEMO.md) explain the policy and remaining proof.
+**Private preview verified; currently stopped.** Owner email-code sign-in, the signed gateway, production workspace and genuine Qwen inference ran on a temporary L4. An external agent guard deleted the unused Pod after its idle cutoff and verified absence. Starts and provider deletion were operator-controlled; self-service restarts, automatic Cloudflare provider cleanup and invoice reconciliation remain unfinished. This is not a provider-enforced dollar cap.
+
+Reservations and conservative budget debits are not final provider bills. Delayed invoices keep allowance held; reconciliation must replace provisional debits without double-counting. [Preview status, accounting and remaining work](docs/HOSTED_DEMO.md) explain the boundary.
 
 ## Run locally
 
@@ -87,9 +89,10 @@ For actual inference, follow the pinned downloads/hash checks in [model setup](d
 
 | Evidence | Result and scope |
 | --- | --- |
-| [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | 328 backend, 60 browser and 36 local controller/gateway tests, with formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
+| [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | Backend, browser and controller/gateway tests, formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
 | [Private L4 integration](docs/verification/gpu-agent.json) | Real Qwen inference: 3/3 smoke cases and 10/10 warm API requests. Warm end-to-end p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests. |
-| Same GPU test | Sampled peaks **3,274 MiB GPU**, **5.94 GiB container**; real approval/briefs, stopped-model fallback and expiry checked. Temporary Pod terminated; provider charge **$0.1461** including disk. |
+| Same GPU test | Sampled peaks **3,274 MiB GPU**, **5.94 GiB container**; real approval/briefs, stopped-model fallback and expiry checked. Temporary Pod terminated; later provider billing revised the charge to **$0.1555** including disk; the artifact retains the earlier billing snapshot. |
+| [Private hosted preview](docs/HOSTED_DEMO.md#verified-preview) | Production workspace, protected owner access and one genuine two-response model loop (**1,111 ms**). A smoke check, not a new latency benchmark or multiuser load test. |
 | [Camera interface tests](docs/CAMERAS.md#what-has-been-verified) | Synthetic folder exporter → API → browser, plus missing/invalid capture handling. No physical-camera test. |
 
 The GPU run used source `45ff57e`, before the camera extension. These small samples establish integration, not reliability, cold-cache behavior, absolute memory peaks or production safety. Container memory includes caches. Jetson, power efficiency and enforced backend outbound-network denial are unverified. The [native artifact](docs/verification/local-agent.json) is separate; the System page distinguishes recorded tests from current model reachability.
@@ -106,7 +109,7 @@ Verification uses disposable test databases and explicit protocol fixtures. Stop
 
 The working vertical is construction. The same **asset × operation × location × evidence time** question motivates a planter on wet soil, a haul truck on a rain-soft mining road or a forestry harvester on a protected route. Those are transfer opportunities, not three additional implementations.
 
-This is a planning POC, not a safety-certified system, validated soil model or machinery controller. It has no live weather/telemetry ingestion, visual model, external messaging, authenticated multiuser service or optimal schedule. Camera pictures remain separate context. [On-demand sharing and the daily cost policy](docs/reviews/HOSTING_DESIGN.md) have a tested local budget ledger; access and GPU lifecycle are not deployed or enforced features.
+This is a planning POC, not a safety-certified system, validated soil model or machinery controller. It has no live weather/telemetry ingestion, visual model, external messaging or optimal schedule. Camera pictures remain separate context. Private owner access was verified; guest use and a complete [on-demand shared service](docs/reviews/HOSTING_DESIGN.md) still need live validation and provider lifecycle integration.
 
 References: [data/rules contract](docs/DATA_CONTRACT.md), [model/tools](docs/LOCAL_AGENT.md), [camera adapters](docs/CAMERAS.md), [architecture decisions](docs/DECISIONS.md), [research rationale](docs/RESEARCH.md).
 
