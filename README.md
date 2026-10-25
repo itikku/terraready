@@ -209,7 +209,7 @@ Once the runtimes are installed, `make verify` runs the complete backend, fronte
 
 Playwright starts isolated services on ports 8001/5174 and uses `.data/e2e-lancedb/`, leaving your running demo and approvals untouched. The test-only reset script drops only the approval table in that fixed disposable database. The browser suite blocks all external requests and uses an intentionally invalid Mapbox token for provider-failure coverage. It verifies equipment changes, zone evidence, route outcomes, evidence expiry, plan approval, persisted reload, both teammate briefs, clipboard/download, recovery states, keyboard controls, mobile layout, accessibility and a screenshot baseline. Failure traces, screenshots and videos are saved locally. Browser tests do not need your real Mapbox token.
 
-CI runs backend and workspace checks independently and retains browser failure artifacts for seven days. CI has not yet run on GitHub because this repository has not been pushed. The visual baseline allows 3% pixel variation for cross-platform rendering; updates require deliberate review.
+CI runs backend and workspace checks independently on each push and pull request; see [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) for current results. Browser failure artifacts are retained for seven days. The visual baseline allows 3% pixel variation for cross-platform rendering; updates require deliberate review.
 
 ### Reproduction status — October 25, 2026
 
@@ -219,7 +219,7 @@ A separate clean local Git checkout installed locked Python/npm dependencies and
 - Two explicit fixture seeds and live HTTP ground/recovery checks passed. A separate browser run against the **real API without a model installed** verified fallback, manual approval, correct copied brief, persisted reload, evidence expiry and mobile layout. It made no external browser requests.
 - `uv build` produced backend source/wheel packages; member review found no credential/database/cache paths and confirmed source-package attribution. Two allowlisted source exports were byte-identical, with all member hashes checked and both reviewed native/GPU evidence artifacts retained.
 
-The checked application revision was `a6c39d4`; final source-package/attribution and manual-demo checks used `82feb5a`. Later README/checkpoint edits do not change application behavior. GitHub CI has not run remotely and no public service is deployed. Browser request blocking does not prove backend outbound-network isolation. Existing npm ESLint-support and lazy Mapbox bundle-size advisories remain; dependency upgrades are outside this verified slice.
+The checked application revision was `a6c39d4`; final source-package/attribution and manual-demo checks used `82feb5a`. These results predate the camera adapter in `9249889`, whose verification is documented in [camera integration](docs/CAMERAS.md). Current remote CI results are linked above; no public app/model service is deployed. Browser request blocking does not prove backend outbound-network isolation. Existing npm ESLint-support and lazy Mapbox bundle-size advisories remain; dependency upgrades are outside this verified slice.
 
 ## POC boundaries
 
