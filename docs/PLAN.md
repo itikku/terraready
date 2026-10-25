@@ -100,7 +100,7 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 4A — Decision-first work contract and recovery engine
 
-**Status:** Active next implementation slice — revised direction approved by the user on 2026-10-24; application code has not changed for this extension.
+**Status:** Complete — 155 backend tests, live recovery smoke and 24 browser regression tests pass. UI tuning remains deferred.
 
 **Boundary and design**
 
@@ -128,7 +128,7 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 4B — Shift-first decision experience
 
-**Status:** Planned — approval gate after Phase 4A.
+**Status:** Deferred at the user's request on 2026-10-24. Keep the current UI functional; backend/agent work may proceed without cosmetic tuning.
 
 **Experience**
 
@@ -146,7 +146,7 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 5 — Real local agent with a bounded tool surface
 
-**Status:** Planned — approval gate after Phase 4B. No hosted model API or paid GPU needed to write/test the integration.
+**Status:** Active — Phase 4A verified. User authorized autonomous continuation while away, deferring UI tuning. No hosted model API or paid GPU needed to write/test the integration. Stop for material ambiguity, missing account access or expanded spending/exposure, not routine implementation approval.
 
 **Architecture and bounds**
 

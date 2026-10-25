@@ -24,6 +24,8 @@ The first demo focuses on construction earthworks, but the underlying planning p
 
 The visual workspace runs against the local FastAPI service and typed LanceDB tables. Select equipment to update ground readiness, inspect a zone's evidence, compare access routes, and advance the evidence clock to see stale observations require inspection.
 
+The backend now also exposes a seven-package work docket and deterministic recovery API at `/api/scenarios/post-rain/recovery`. It models actual completion/prerequisites and paired-resource capacity, reroutes interrupted hauling, pulls forward eligible yard work and keeps the west successor blocked. This richer decision flow is not yet wired into a redesigned shift UI; UI tuning is deferred. See the [v2 data/recovery contract](docs/DATA_CONTRACT.md#version-2-work-docket-and-recovery).
+
 ![Construction ground-readiness workspace](docs/images/workspace-desktop.png)
 
 The aerial is real USGS/USDA NAIP imagery; operational overlays and measurements are synthetic. The inspection photo is an AI-generated illustration, explicitly labeled in the UI and never used to infer quantitative ground conditions. See [asset provenance](ATTRIBUTIONS.md).
@@ -63,6 +65,8 @@ make web
 Open `http://localhost:5173`. The default local aerial, fonts, evidence and decision flow require no external connection. Select **Satellite** to opt into Mapbox; a missing token, failed request or unavailable WebGL falls back to the local aerial. Both modes use the same georeferenced synthetic work zones and backend decisions. Mapbox imagery is not bundled.
 
 The API listens at `http://127.0.0.1:8000`; interactive API documentation is at `http://127.0.0.1:8000/docs`. `make seed` resets the six fixture tables: stop the API before reseeding. A seventh approval table is created on first approval; its history is retained across seeds, but approval is shown only for an exactly matching snapshot/clock/planner fingerprint. The database lives in ignored `.data/lancedb/`. `TERRAREADY_DB_DIR` can point to a different local directory. Run only one API process; concurrent reseeding and multiple writers are outside the POC boundary.
+
+`make seed` explicitly layers `data/fixtures/shift-docket.json` onto the original ground fixture. Back up any needed database history before upgrading; there is no automatic startup migration/reset. Legacy v1 data can still serve the original workspace, but the new recovery API requires v2. Use `/recovery/evaluate` to validate explicit candidate selections and `/recovery/approvals` for fingerprint-bound local approval; neither approval completes a task or sends a message.
 
 ```sh
 curl -sS http://127.0.0.1:8000/api/scenarios/post-rain

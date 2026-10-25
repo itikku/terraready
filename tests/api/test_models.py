@@ -63,7 +63,7 @@ def test_fixture_rejects_invalid_data(snapshot, case):
         case "naive-time":
             data["scenario"]["as_of"] = "2026-10-24T07:00:00"
         case "unsupported-version":
-            data["scenario"]["schema_version"] = 2
+            data["scenario"]["schema_version"] = 3
         case "closure-without-reason":
             data["zones"][0]["closed"] = True
         case "future-rain":

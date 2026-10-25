@@ -90,6 +90,7 @@ SCHEMAS = {
             ("max_slope_deg", pa.float64()),
             ("max_moisture_fraction", pa.float64()),
             ("operations", pa.list_(pa.string())),
+            ("available_hours", pa.float64()),
         ]
     ),
     "routes": pa.schema(
@@ -113,6 +114,12 @@ SCHEMAS = {
             ("quantity_unit", pa.string()),
             ("assigned_machine_id", pa.string()),
             ("route_id", pa.string()),
+            ("bucket", pa.string()),
+            ("state", pa.string()),
+            ("prerequisite_ids", pa.list_(pa.string())),
+            ("progress_fraction", pa.float64()),
+            ("estimated_remaining_hours", pa.float64()),
+            ("completed_at", UTC_TIME),
         ]
     ),
     "observations": pa.schema(

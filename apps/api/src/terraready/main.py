@@ -17,11 +17,15 @@ from terraready.models import (
     EvaluationRequest,
     Model,
     Readiness,
+    RecoveryApprovalRequest,
+    RecoveryPlan,
+    RecoveryRequest,
     Scenario,
     ShiftPlan,
     SiteSnapshot,
 )
 from terraready.planner import build_plan, make_approval
+from terraready.recovery import build_recovery, make_recovery_approval
 from terraready.seed import database_path
 from terraready.storage import ApprovalUnavailable, DataUnavailable, SiteStore
 
@@ -141,6 +145,43 @@ def create_app(db_path: Path | None = None) -> FastAPI:
                 status_code=409, detail="All work is held. Fresh evidence is required."
             )
         return SiteStore(path).save_approval(make_approval(site, proposal, datetime.now(UTC)))
+
+    def recovery_proposal(scenario_id: str, body: RecoveryRequest) -> RecoveryPlan:
+        try:
+            result = build_recovery(scenario_snapshot(scenario_id), body)
+        except InvalidEvaluation as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        result.approval = SiteStore(path).approval(result.id)
+        return result
+
+    @api.get("/api/scenarios/{scenario_id}/recovery", response_model=RecoveryPlan)
+    def recovery(scenario_id: ScenarioId, as_of: AwareDatetime | None = None) -> RecoveryPlan:
+        return recovery_proposal(scenario_id, RecoveryRequest(as_of=as_of))
+
+    @api.post("/api/scenarios/{scenario_id}/recovery/evaluate", response_model=RecoveryPlan)
+    def recovery_evaluation(scenario_id: ScenarioId, body: RecoveryRequest) -> RecoveryPlan:
+        return recovery_proposal(scenario_id, body)
+
+    @api.post("/api/scenarios/{scenario_id}/recovery/approvals", response_model=Approval)
+    def recovery_approval(scenario_id: ScenarioId, body: RecoveryApprovalRequest) -> Approval:
+        site = scenario_snapshot(scenario_id)
+        try:
+            proposal = build_recovery(
+                site, RecoveryRequest(as_of=body.as_of, candidate_ids=body.candidate_ids)
+            )
+        except InvalidEvaluation as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if proposal.id != body.plan_id:
+            raise HTTPException(
+                status_code=409, detail="Recovery proposal changed. Review it again."
+            )
+        if not proposal.selected_candidate_ids:
+            raise HTTPException(
+                status_code=409, detail="No eligible work is selected for approval."
+            )
+        return SiteStore(path).save_approval(
+            make_recovery_approval(site, proposal, datetime.now(UTC))
+        )
 
     return api
 

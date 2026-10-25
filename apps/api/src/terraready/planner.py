@@ -1,8 +1,6 @@
 """Deterministic route comparison and local briefs; no dispatch or model calls."""
 
-import hashlib
-import json
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from terraready.engine import SEVERITY, evaluate
@@ -14,21 +12,33 @@ from terraready.models import (
     PlanItem,
     ShiftPlan,
     SiteSnapshot,
+    TaskState,
     TeamUpdate,
+    WorkBucket,
 )
-
-
-def _canonical_time(value: object) -> str:
-    if isinstance(value, datetime):
-        return value.astimezone(UTC).isoformat()
-    raise TypeError("Unsupported fingerprint value")
+from terraready.planning import blocking_tasks, capacity_hours, evidence_review_by, fingerprint
 
 
 def build_plan(site: SiteSnapshot, as_of: datetime | None = None) -> ShiftPlan:
     clock = as_of or site.scenario.as_of
     items = []
     routes = {route.id: route for route in site.routes}
-    for task in sorted(site.tasks, key=lambda task: (task.priority, task.id)):
+    capacity = capacity_hours(site, clock)
+    reserved = {
+        machine.id: sum(
+            task.remaining_hours
+            for task in site.tasks
+            if task.state == TaskState.IN_PROGRESS and task.assigned_machine_id == machine.id
+        )
+        for machine in site.machines
+    }
+    remaining = {key: max(0, capacity[key] - reserved[key]) for key in capacity}
+    baseline_remaining = remaining.copy()
+    original_eligible = 0
+    for task in sorted(
+        (t for t in site.tasks if t.bucket == WorkBucket.TODAY and t.state != TaskState.COMPLETED),
+        key=lambda task: (task.state != TaskState.IN_PROGRESS, task.priority, task.id),
+    ):
         candidates = [
             evaluate(
                 site,
@@ -50,55 +60,63 @@ def build_plan(site: SiteSnapshot, as_of: datetime | None = None) -> ShiftPlan:
                 result.route_id,
             ),
         )
+        blockers = blocking_tasks(site, task)
+        budget = (
+            capacity[task.assigned_machine_id]
+            - reserved[task.assigned_machine_id]
+            + task.remaining_hours
+            if task.state == TaskState.IN_PROGRESS
+            else remaining[task.assigned_machine_id]
+        )
+        permitted = not blockers and task.remaining_hours <= budget
+        baseline = next(result for result in candidates if result.route_id == task.route_id)
+        baseline_budget = (
+            budget
+            if task.state == TaskState.IN_PROGRESS
+            else baseline_remaining[task.assigned_machine_id]
+        )
+        baseline_permitted = not blockers and task.remaining_hours <= baseline_budget
+        if baseline.status == DecisionStatus.GO and baseline_permitted:
+            original_eligible += 1
+            if task.state != TaskState.IN_PROGRESS:
+                baseline_remaining[task.assigned_machine_id] -= task.remaining_hours
+        selected = best.route_id if best.status == DecisionStatus.GO and permitted else None
+        if selected and task.state != TaskState.IN_PROGRESS:
+            remaining[task.assigned_machine_id] -= task.remaining_hours
         items.append(
             PlanItem(
                 task_id=task.id,
-                baseline=next(result for result in candidates if result.route_id == task.route_id),
+                baseline=baseline,
                 alternatives=candidates,
-                selected_route_id=best.route_id if best.status == DecisionStatus.GO else None,
-                status=best.status,
+                selected_route_id=selected,
+                status=best.status
+                if permitted or best.status == DecisionStatus.NO_GO
+                else DecisionStatus.INSPECT,
+                blocking_task_ids=blockers,
             )
         )
-    # Every eligible observation used by the proposed routes constrains review time.
-    used_evidence = {
-        evidence_id
+    selected_results = [
+        result
         for item in items
         for result in item.alternatives
         if result.route_id == item.selected_route_id
-        for evidence_id in result.evidence_ids
-    }
-    expiries = [
-        obs.observed_at + timedelta(hours=site.scenario.max_evidence_age_hours)
-        for obs in site.observations
-        if obs.id in used_evidence
-        and obs.observed_at >= site.scenario.rain_ended_at
-        and obs.observed_at <= clock
-        and obs.confidence >= site.scenario.min_evidence_confidence
-        and obs.observed_at + timedelta(hours=site.scenario.max_evidence_age_hours) >= clock
     ]
-    fingerprint = hashlib.sha256(
-        json.dumps(
-            {"snapshot": site.model_dump(), "as_of": clock, "planner_version": "routes-v1"},
-            sort_keys=True,
-            default=_canonical_time,
-            separators=(",", ":"),
-        ).encode()
-    ).hexdigest()
     return ShiftPlan(
-        id=fingerprint,
+        id=fingerprint(site, clock, "routes-v2"),
         scenario_id=site.scenario.id,
         as_of=clock,
-        review_by=min(expiries) if expiries else None,
+        review_by=evidence_review_by(site, clock, selected_results),
         items=items,
-        baseline_eligible_count=sum(item.baseline.status == DecisionStatus.GO for item in items),
-        proposed_eligible_count=sum(item.status == DecisionStatus.GO for item in items),
+        baseline_eligible_count=original_eligible,
+        proposed_eligible_count=len(selected_results),
         assumptions=[
             "Assigned equipment is fixed. Eligible routes rank by synthetic distance, "
             "then route ID.",
             "Eligibility is assessed now, not guaranteed for the planned duration. Recheck after "
             "conditions change and before the evidence-review deadline.",
-            "Targets are not production forecasts. Task dependencies, shared resources, "
-            "travel time and shift scheduling are not modeled.",
+            "Targets are not production forecasts. Prerequisites must actually be complete; "
+            "approval does not complete work. Resource-hour budgets are synthetic estimates; "
+            "travel time and exact shift scheduling are not modeled.",
             "Approval is a local demo record, not a safety clearance or machine dispatch.",
         ],
     )

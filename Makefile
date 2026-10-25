@@ -2,7 +2,7 @@
 
 # Run from the repository root after: uv sync --frozen --extra dev
 seed:
-	.venv/bin/terraready-seed
+	.venv/bin/terraready-seed --docket data/fixtures/shift-docket.json
 
 api:
 	.venv/bin/uvicorn terraready.main:app --host 127.0.0.1 --port 8000

@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "available_hours": {
+    "tracked-excavator": 8,
+    "loaded-hauler": 8,
+    "utility-rover": 8
+  },
+  "additional_routes": [
+    {
+      "id": "yard-loop",
+      "name": "Service yard internal access",
+      "zone_ids": ["service-yard"],
+      "path": [{"x_m": 389, "y_m": 366}, {"x_m": 420, "y_m": 330}],
+      "distance_m": 48
+    }
+  ],
+  "tasks": [
+    {
+      "id": "east-haul",
+      "name": "Haul material from east cut",
+      "zone_id": "east-cut",
+      "operation": "haul",
+      "priority": 1,
+      "duration_hours": 4,
+      "target_quantity": 320,
+      "quantity_unit": "m3",
+      "assigned_machine_id": "loaded-hauler",
+      "route_id": "north-to-east",
+      "bucket": "today",
+      "state": "not_started",
+      "prerequisite_ids": ["east-batch-ready"]
+    },
+    {
+      "id": "east-excavation",
+      "name": "Prepare east cut",
+      "zone_id": "east-cut",
+      "operation": "excavate",
+      "priority": 1,
+      "duration_hours": 3,
+      "target_quantity": 180,
+      "quantity_unit": "m3",
+      "assigned_machine_id": "tracked-excavator",
+      "route_id": "north-to-east",
+      "bucket": "today",
+      "state": "not_started"
+    },
+    {
+      "id": "west-inspection",
+      "name": "Inspect west stockpile ground",
+      "zone_id": "west-stockpile",
+      "operation": "inspect",
+      "priority": 2,
+      "duration_hours": 0.5,
+      "target_quantity": 1,
+      "quantity_unit": "inspection",
+      "assigned_machine_id": "utility-rover",
+      "route_id": "north-to-west",
+      "bucket": "today",
+      "state": "not_started"
+    },
+    {
+      "id": "east-batch-ready",
+      "name": "Prepare prior-shift haul batch",
+      "zone_id": "east-cut",
+      "operation": "excavate",
+      "priority": 1,
+      "duration_hours": 3,
+      "target_quantity": 320,
+      "quantity_unit": "m3",
+      "assigned_machine_id": "tracked-excavator",
+      "route_id": "north-to-east",
+      "bucket": "prior",
+      "state": "completed",
+      "progress_fraction": 1,
+      "completed_at": "2026-10-23T14:00:00-07:00",
+      "estimated_remaining_hours": 0
+    },
+    {
+      "id": "yard-drainage",
+      "name": "Clear service-yard drainage trench",
+      "zone_id": "service-yard",
+      "operation": "excavate",
+      "priority": 2,
+      "duration_hours": 2,
+      "target_quantity": 60,
+      "quantity_unit": "m3",
+      "assigned_machine_id": "tracked-excavator",
+      "route_id": "yard-loop",
+      "bucket": "upcoming",
+      "state": "not_started"
+    },
+    {
+      "id": "yard-inspection",
+      "name": "Inspect service-yard drainage outlets",
+      "zone_id": "service-yard",
+      "operation": "inspect",
+      "priority": 2,
+      "duration_hours": 1,
+      "target_quantity": 1,
+      "quantity_unit": "inspection",
+      "assigned_machine_id": "utility-rover",
+      "route_id": "yard-loop",
+      "bucket": "upcoming",
+      "state": "not_started"
+    },
+    {
+      "id": "west-followup",
+      "name": "Verify west-stockpile layout",
+      "zone_id": "west-stockpile",
+      "operation": "inspect",
+      "priority": 3,
+      "duration_hours": 0.5,
+      "target_quantity": 1,
+      "quantity_unit": "inspection",
+      "assigned_machine_id": "utility-rover",
+      "route_id": "north-to-west",
+      "bucket": "upcoming",
+      "state": "not_started",
+      "prerequisite_ids": ["west-inspection"]
+    }
+  ]
+}
