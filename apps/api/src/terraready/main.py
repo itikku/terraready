@@ -1,5 +1,6 @@
 """Run from the repository root: uvicorn terraready.main:app --host 127.0.0.1."""
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -46,6 +47,7 @@ def create_app(
     model_client: ModelClient | None = None,
     verification_dir: Path | None = None,
     camera_provider: CameraProvider | None = None,
+    assist_runner: Callable[[SiteSnapshot, AssistRequest, ModelClient], AssistRun] | None = None,
 ) -> FastAPI:
     api = FastAPI(
         title="TerraReady",
@@ -55,6 +57,7 @@ def create_app(
     camera = camera_provider if camera_provider is not None else DemoCameraProvider()
     path = db_path or database_path()
     inference = model_client or LocalModel(Path(".data/runtime/inference.key"))
+    run_assistance = assist_runner or assist
 
     @api.get("/api/system", response_model=SystemEvidence)
     def system_evidence() -> SystemEvidence:
@@ -225,7 +228,7 @@ def create_app(
     @api.post("/api/scenarios/{scenario_id}/assist", response_model=AssistRun)
     def assistance(scenario_id: ScenarioId, body: AssistRequest) -> AssistRun:
         try:
-            run = assist(scenario_snapshot(scenario_id), body, inference)
+            run = run_assistance(scenario_snapshot(scenario_id), body, inference)
         except InvalidEvaluation as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         try:

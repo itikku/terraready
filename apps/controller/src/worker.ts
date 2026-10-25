@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { gateway, type GatewayBindings } from "./gateway.js";
 import {
   assertLedger,
   initialLedger,
@@ -53,13 +54,7 @@ export class BudgetLedger extends DurableObject<unknown> {
 }
 
 export default {
-  fetch() {
-    return Response.json(
-      {
-        status: "unavailable",
-        reason: "Shared access and provider lifecycle are not configured.",
-      },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
+  fetch(request: Request, env: GatewayBindings, ctx: ExecutionContext) {
+    return gateway(request, env, ctx);
   },
 };

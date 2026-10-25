@@ -1,0 +1,362 @@
+import assert from "node:assert/strict";
+import { createHmac, createHash } from "node:crypto";
+import { test } from "node:test";
+import { gateway, signedOriginRequest } from "../dist/gateway.js";
+import { initialLedger, transition } from "../dist/policy.js";
+
+const secret = "ab".repeat(32); // Public test value, not a deployment credential.
+const audience = "synthetic-access-audience";
+const base = "https://demo.example";
+function context(email = "owner@example.org", uuid = "synthetic-owner") {
+  return {
+    access: {
+      aud: audience,
+      getIdentity: async () => ({ email, user_uuid: uuid }),
+    },
+  };
+}
+function request(path, method = "GET", extra = {}) {
+  return new Request(base + path, {
+    method,
+    ...(method === "POST" ? { headers: { Origin: base } } : {}),
+    ...extra,
+  });
+}
+async function fixture(ready = true) {
+  let state = initialLedger();
+  const events = [];
+  const stub = {
+    async apply(event) {
+      events.push(event);
+      const result = transition(state, event, Date.now());
+      state = result.state;
+      return result;
+    },
+  };
+  const env = {
+    BUDGET: {
+      getByName: (name) => {
+        assert.equal(name, "terraready-project");
+        return stub;
+      },
+    },
+    ACCESS_AUD: audience,
+    OWNER_EMAIL: "owner@example.org",
+    ORIGIN_SECRET: secret,
+  };
+  if (ready) {
+    await stub.apply({
+      type: "reserve",
+      key: "synthetic-run",
+      quote: {
+        id: "synthetic-quote",
+        hourly: 100_000,
+        fixed: 0,
+        validUntil: Date.now() + 60_000,
+      },
+    });
+    await stub.apply({
+      type: "created",
+      key: "synthetic-run",
+      resourceId: "syntheticpod01",
+    });
+    await stub.apply({ type: "ready", key: "synthetic-run" });
+  }
+  return { env, stub, events, state: () => state };
+}
+
+test("configuration, audience and platform identity all fail closed; spoofed headers grant nothing", async () => {
+  const f = await fixture();
+  assert.equal((await gateway(request("/api/status"), {}, {})).status, 503);
+  const spoof = request("/api/status", "GET", {
+    headers: {
+      "Cf-Access-Authenticated-User-Email": "owner@example.org",
+      "Cf-Access-Jwt-Assertion": "invented-token",
+    },
+  });
+  assert.equal((await gateway(spoof, f.env, {})).status, 403);
+  const wrong = context();
+  wrong.access.aud = "other-application";
+  assert.equal(
+    (await gateway(request("/api/status"), f.env, wrong)).status,
+    403,
+  );
+  assert.equal(
+    (await gateway(request("/api/status"), f.env, context("", ""))).status,
+    403,
+  );
+  assert.equal(f.events.filter((e) => e.type === "open").length, 0);
+});
+
+test("status polling never starts or extends active use and hides resource/accounting internals", async () => {
+  const f = await fixture();
+  const result = await gateway(
+    request("/api/status"),
+    f.env,
+    context("guest@example.org", "guest"),
+  );
+  const body = await result.json();
+  assert.equal(body.phase, "ready");
+  assert.equal(body.owner, false);
+  assert.equal(body.dailyLimit, 1.5);
+  assert.equal(body.lifetimeLimit, 5);
+  assert.equal(body.timezone, "America/Los_Angeles");
+  assert.equal(result.headers.get("Cache-Control"), "no-store");
+  assert.equal(f.state().runs[0].firstUseAt, null);
+  assert.ok(!JSON.stringify(body).includes("syntheticpod01"));
+});
+
+test("invited users cannot start/stop; owner startup stays disabled behind provider gates", async () => {
+  const f = await fixture();
+  for (const path of ["/api/start", "/api/stop"]) {
+    assert.equal(
+      (
+        await gateway(
+          request(path, "POST"),
+          f.env,
+          context("guest@example.org", "guest"),
+        )
+      ).status,
+      403,
+    );
+  }
+  const started = await gateway(
+    request("/api/start", "POST"),
+    f.env,
+    context(),
+  );
+  assert.equal(started.status, 503);
+  assert.equal(f.events.filter((e) => e.type === "reserve").length, 1);
+  const stopped = await gateway(request("/api/stop", "POST"), f.env, context());
+  assert.equal(stopped.status, 202);
+  assert.equal((await stopped.json()).shutdownConfirmed, false);
+  assert.equal(f.state().runs[0].phase, "stopping");
+});
+
+test("CSRF, control methods and oversized declared bodies are rejected before a ledger mutation", async () => {
+  const f = await fixture();
+  for (const extra of [
+    { headers: {} },
+    { headers: { Origin: "https://other.example" } },
+  ]) {
+    assert.equal(
+      (await gateway(request("/api/open", "POST", extra), f.env, context()))
+        .status,
+      403,
+    );
+  }
+  assert.equal(
+    (await gateway(request("/api/open"), f.env, context())).status,
+    405,
+  );
+  assert.equal(
+    (await gateway(request("/api/status", "POST"), f.env, context())).status,
+    405,
+  );
+  assert.equal(
+    (
+      await gateway(
+        request("/api/open", "POST", {
+          headers: { Origin: base, "Content-Length": "20000" },
+        }),
+        f.env,
+        context(),
+      )
+    ).status,
+    413,
+  );
+  assert.equal(f.state().runs[0].firstUseAt, null);
+});
+
+test("first deliberate open starts once; joining does not renew the shared active deadline", async () => {
+  const f = await fixture();
+  const first = await gateway(request("/api/open", "POST"), f.env, context());
+  assert.equal((await first.json()).accepted, true);
+  const deadline = f.state().runs[0].activeEndAt;
+  const joined = await gateway(
+    request("/api/open", "POST"),
+    f.env,
+    context("guest@example.org", "guest"),
+  );
+  assert.equal((await joined.json()).accepted, true);
+  assert.equal(f.state().runs[0].activeEndAt, deadline);
+  assert.equal(
+    (
+      await gateway(
+        request("/api/scenarios/post-rain"),
+        (await fixture(false)).env,
+        context(),
+      )
+    ).status,
+    503,
+  );
+});
+
+test("accounting holds and stopping runs cannot reach the origin", async () => {
+  const f = await fixture();
+  await f.stub.apply({ type: "stop", key: "synthetic-run" });
+  assert.equal(
+    (await gateway(request("/api/scenarios/post-rain"), f.env, context()))
+      .status,
+    503,
+  );
+  await f.stub.apply({
+    type: "terminated",
+    key: "synthetic-run",
+    resourceId: "syntheticpod01",
+  });
+  await f.stub.apply({
+    type: "settle",
+    key: "synthetic-run",
+    actual: { "2026-10-25": 2_000_000 },
+  });
+  assert.equal(f.state().accountingHold, true);
+  assert.equal(
+    (await gateway(request("/api/open", "POST"), f.env, context())).status,
+    503,
+  );
+});
+
+test("origin signing binds method, encoded query, body and opaque user; no browser credentials forward", async () => {
+  const body = '{"question":"What can continue?"}';
+  const input = request("/api/scenarios/post-rain/assist?x=%2F", "POST", {
+    body,
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: "private-cookie",
+      Authorization: "Bearer private-token",
+      "X-TR-Visitor": "spoof",
+    },
+  });
+  const out = await signedOriginRequest(
+    input,
+    "syntheticpod01",
+    "a".repeat(64),
+    secret,
+  );
+  assert.equal(
+    out.url,
+    "https://syntheticpod01-8000.proxy.runpod.net/api/scenarios/post-rain/assist?x=%2F",
+  );
+  assert.equal(out.headers.get("Cookie"), null);
+  assert.equal(out.headers.get("Authorization"), null);
+  assert.equal(out.headers.get("X-TR-Visitor"), "a".repeat(64));
+  assert.equal(out.redirect, "manual");
+  const canonical = [
+    "terraready-origin-v1",
+    out.headers.get("X-TR-Time"),
+    out.headers.get("X-TR-Nonce"),
+    "a".repeat(64),
+    "POST",
+    "/api/scenarios/post-rain/assist?x=%2F",
+    createHash("sha256").update(body).digest("hex"),
+  ].join("\n");
+  assert.equal(
+    out.headers.get("X-TR-Signature"),
+    createHmac("sha256", secret).update(canonical).digest("hex"),
+  );
+  assert.equal(await out.text(), body);
+  await assert.rejects(
+    signedOriginRequest(
+      request("/api/x"),
+      "https://evil.example",
+      "a".repeat(64),
+      secret,
+    ),
+  );
+  await assert.rejects(
+    signedOriginRequest(request("/api/x"), "syntheticpod01", "spoof", secret),
+  );
+  await assert.rejects(
+    signedOriginRequest(
+      request("/api/x"),
+      "syntheticpod01",
+      "a".repeat(64),
+      "short",
+    ),
+  );
+});
+
+test("unknown-length chunked requests are bounded before signing", async () => {
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array(16_385));
+      controller.close();
+    },
+  });
+  await assert.rejects(
+    signedOriginRequest(
+      request("/api/x", "POST", { body, duplex: "half" }),
+      "syntheticpod01",
+      "a".repeat(64),
+      secret,
+    ),
+    RangeError,
+  );
+});
+
+test("proxy preserves overload feedback and updates idle only after accepted actions", async (t) => {
+  const f = await fixture();
+  await gateway(request("/api/open", "POST"), f.env, context());
+  let code = 429;
+  const forwarded = [];
+  t.mock.method(globalThis, "fetch", async (input) => {
+    forwarded.push(input);
+    return new Response("{}", {
+      status: code,
+      headers: {
+        "Content-Type": "application/json",
+        "Retry-After": "10",
+        "Set-Cookie": "private-origin-cookie",
+      },
+    });
+  });
+  const ask = () =>
+    request("/api/scenarios/post-rain/assist", "POST", {
+      body: "{}",
+      headers: { Origin: base, "Content-Type": "application/json" },
+    });
+  const busy = await gateway(ask(), f.env, context());
+  assert.equal(busy.status, 429);
+  assert.equal(busy.headers.get("Retry-After"), "10");
+  assert.equal(busy.headers.get("Set-Cookie"), null);
+  assert.equal(f.events.filter((e) => e.type === "activity").length, 0);
+  code = 200;
+  assert.equal((await gateway(ask(), f.env, context())).status, 200);
+  assert.equal(f.events.filter((e) => e.type === "activity").length, 1);
+  assert.equal(
+    (
+      await gateway(
+        request("/api/scenarios/post-rain"),
+        f.env,
+        context("guest@example.org", "guest"),
+      )
+    ).status,
+    200,
+  );
+  assert.notEqual(
+    forwarded[0].headers.get("X-TR-Visitor"),
+    forwarded[2].headers.get("X-TR-Visitor"),
+  );
+  assert.equal(f.events.filter((e) => e.type === "activity").length, 1);
+  code = 302;
+  assert.equal((await gateway(ask(), f.env, context())).status, 502);
+});
+
+test("identity/provider errors reveal no secrets and never turn into success", async (t) => {
+  const f = await fixture();
+  const failed = context();
+  failed.access.getIdentity = async () => {
+    throw new Error(secret);
+  };
+  const failure = await gateway(request("/api/status"), f.env, failed);
+  assert.equal(failure.status, 503);
+  assert.ok(!(await failure.text()).includes(secret));
+  await gateway(request("/api/open", "POST"), f.env, context());
+  t.mock.method(globalThis, "fetch", async () => {
+    throw new Error(secret);
+  });
+  const offline = await gateway(request("/api/system"), f.env, context());
+  assert.equal(offline.status, 503);
+  assert.ok(!(await offline.text()).includes(secret));
+});

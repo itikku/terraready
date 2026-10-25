@@ -1,6 +1,6 @@
 # Shared-demo controller readiness
 
-This is the local budget/deadline proof for the approved Cloudflare Free design. It is **not a deployed service**. Every public Worker request returns 503. There is no Runpod client, credential, invitation flow, app proxy or live provisioning code.
+This contains the local budget/deadline proof and authenticated API-gateway boundary for the approved Cloudflare Free design. It is **not a deployed service**. With its bindings/access unconfigured, every public Worker request returns 503. There is no Runpod lifecycle client, deployment credential, configured invitation policy, hosted start page or live provisioning.
 
 From the repository root, after `npm ci`:
 
@@ -18,10 +18,18 @@ The Node tests run the policy and Cloudflare's workerd/SQLite emulator. They use
 - A deliberate `open` event starts the active clock after readiness. Joins and accepted activity refresh only the ten-minute idle deadline. Polling does neither. Earlier cost/setup/idle deadlines prevail.
 - Exact resource identity, confirmed termination and reconciled billing are required before releasing a reservation. Unexpected charges are recorded and put accounting on hold.
 
-The internal `apply` binding accepts trusted server events only; timestamps come from the controller. A future authenticated gateway must never pass arbitrary browser events or quote/billing inputs through to it. Domain data remains in LanceDB.
+The internal `apply` binding accepts trusted server events only; timestamps come from the controller. The gateway derives open/activity/stop events from authenticated actions; it never passes arbitrary browser events or quote/billing inputs through. Domain data remains in LanceDB.
+
+## Access boundary
+
+The gateway requires Cloudflare's platform-authenticated `ctx.access` for the configured application audience and a user identity. Browser-supplied identity headers grant no access. Invited users may open/join a ready run; only the owner can request stop. Startup is disabled until provider readiness passes. A stop response says shutdown is **unconfirmed**, because this slice only persists intent.
+
+API forwarding uses an HMAC envelope tied to the verified visitor, method, encoded target, body digest, timestamp and fresh nonce. Browser cookies/tokens never forward to the GPU. The [shared origin](../../docs/HOSTED_DEMO.md) verifies the envelope and separates visitor LanceDB state. Thirty-one origin/queue tests and ten gateway tests supplement the original 26 policy/storage tests, including ten signed HTTP clients. Gateway identity fixtures exercise authorization logic; only a real Access deployment can prove sign-in/invitation configuration.
+
+This design uses a Worker without a Static Assets binding: the current platform does not pass `ctx.access` through the internal assets router. The eventual frontend must come through the protected origin, or use separately verified JWT validation if that routing changes. [Cloudflare Access context and limitations](https://developers.cloudflare.com/workers/configuration/cloudflare-access/#ctxaccess-limitations)
 
 ## Gates still open
 
-Alarms persist a **shutdown intent**; no provider deletion occurs. Real termination/retries, an independent cleanup fallback, account/free-plan eligibility, invitation/JWT and direct-origin protection, per-visitor workspaces, build/provenance, quote/billing integration and Free-tier CPU/quota measurements remain unverified. Passing these tests does not establish a provider spending guarantee.
+Alarms persist a **shutdown intent**; no provider deletion occurs. Real termination/retries, an independent cleanup fallback, account/free-plan eligibility, deployed invitation/access and direct-origin checks, frontend/runtime packaging, quote/billing integration and Free-tier CPU/quota measurements remain unverified. Local signature/workspace tests do not establish a provider spending guarantee or deployed multiuser service.
 
 Tooling is pinned to the Miniflare beta used by Wrangler 4.152.0, with its official v4 configuration converter. The root lockfile overrides only the emulator's HTTP dependency to patched Undici 7.30.1. No frontend dependency version changed. See [hosting design](../../docs/reviews/HOSTING_DESIGN.md) for deployment gates.

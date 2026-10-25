@@ -48,6 +48,14 @@ The browser reaches the API; it never calls the model or database directly. The 
 
 Ground eligibility is only one gate. The recovery engine also rejects unfinished prerequisites, incompatible resources and conflicting selections. Hour budgets describe serial planned effort, not a time-optimized schedule or measured productivity savings. Rules-only planning remains available when inference fails.
 
+## Budget controls
+
+The shared-demo policy treats cost as an admission and resource-lifecycle constraint: **$1.50 per Los Angeles day across all visitors/runs**, **$5 lifetime usage**, and **two active hours maximum from first use**. Startup, idle, disk and cleanup count. Joining never renews an allowance; the separate $10 prepaid funding limit is not a usage budget.
+
+The [local Cloudflare ledger](apps/controller/README.md) reserves conservative whole-host costs atomically, persists deadlines and holds reservations until termination and billing reconciliation. Unknown accounting blocks another start. Proposed setup/idle cutoffs are twenty/ten minutes; cost can end a run sooner. One shared model loop and a bounded visitor queue avoid automatic GPU scale-out. Per-visitor workspaces keep approvals and audits separate.
+
+**Status:** budget/deadline policy and shared-origin isolation/queueing are locally tested. Provider start/stop, independent cleanup and live cost reconciliation remain deployment gates. This is not yet a hosted service or a provider-enforced dollar cap. [Implementation and verification boundaries](docs/HOSTED_DEMO.md) explain the policy and remaining proof.
+
 ## Run locally
 
 Requires Python **3.12**, Node **24 LTS** (or 22.13+), npm and [uv](https://docs.astral.sh/uv/getting-started/installation/). Locked installs were verified with uv **0.13.5**. Setup downloads dependencies; runtime model assets are an explicit optional setup.
@@ -79,7 +87,7 @@ For actual inference, follow the pinned downloads/hash checks in [model setup](d
 
 | Evidence | Result and scope |
 | --- | --- |
-| [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | 297 backend, 60 browser and 26 local controller tests, with formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
+| [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | 328 backend, 60 browser and 36 local controller/gateway tests, with formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
 | [Private L4 integration](docs/verification/gpu-agent.json) | Real Qwen inference: 3/3 smoke cases and 10/10 warm API requests. Warm end-to-end p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests. |
 | Same GPU test | Sampled peaks **3,274 MiB GPU**, **5.94 GiB container**; real approval/briefs, stopped-model fallback and expiry checked. Temporary Pod terminated; provider charge **$0.1461** including disk. |
 | [Camera interface tests](docs/CAMERAS.md#what-has-been-verified) | Synthetic folder exporter → API → browser, plus missing/invalid capture handling. No physical-camera test. |
