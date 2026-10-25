@@ -31,6 +31,7 @@ from terraready.planner import build_plan, make_approval
 from terraready.recovery import build_recovery, make_recovery_approval
 from terraready.seed import database_path
 from terraready.storage import ApprovalUnavailable, AssistUnavailable, DataUnavailable, SiteStore
+from terraready.system_evidence import RuntimeStatus, SystemEvidence, load_evidence
 
 ScenarioId = Annotated[str, ApiPath(pattern=r"^[a-z][a-z0-9-]{0,63}$")]
 
@@ -39,7 +40,11 @@ class Health(Model):
     status: str
 
 
-def create_app(db_path: Path | None = None, model_client: ModelClient | None = None) -> FastAPI:
+def create_app(
+    db_path: Path | None = None,
+    model_client: ModelClient | None = None,
+    verification_dir: Path | None = None,
+) -> FastAPI:
     api = FastAPI(
         title="TerraReady",
         version="0.1.0",
@@ -47,6 +52,24 @@ def create_app(db_path: Path | None = None, model_client: ModelClient | None = N
     )
     path = db_path or database_path()
     inference = model_client or LocalModel(Path(".data/runtime/inference.key"))
+
+    @api.get("/api/system", response_model=SystemEvidence)
+    def system_evidence() -> SystemEvidence:
+        try:
+            SiteStore(path).load()
+            data_ready = True
+        except DataUnavailable:
+            data_ready = False
+        return SystemEvidence(
+            data_ready=data_ready,
+            runtime=RuntimeStatus(
+                reachable=inference.available(),
+                mode=inference.mode,
+                model_id=inference.model_id,
+                checked_at=datetime.now(UTC),
+            ),
+            verification=load_evidence(verification_dir or Path("docs/verification")),
+        )
 
     def snapshot() -> SiteSnapshot:
         return SiteStore(path).load()

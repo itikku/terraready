@@ -173,7 +173,7 @@ export default function AssistPanel({
               </button>
             )}
             <span>
-              Up to 2 minutes on CPU. Manual review above stays available.
+              Two-minute request limit. Manual review above stays available.
             </span>
           </div>
         </form>

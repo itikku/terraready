@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "kind": "real_local_model_smoke",
+  "recorded_at": "2026-10-25T06:51:04.551793Z",
+  "source_base_commit": "77af88c9ea9b2eb065e3c509beef576e3304c9e1",
+  "working_tree_dirty": true,
+  "source_sha256": {
+    "apps/api/src/terraready/agent.py": "643809df2f63d92209f25acaf133380dafeb69940ac6ac8d35cddafbaf6263e0",
+    "apps/api/src/terraready/model_client.py": "35f25ab25e380469cd049686e8b3059d5592c698a599bcc6b3a83918042d2f29",
+    "scripts/evaluate_agent.py": "a296e3cae18104ca711d3ece395067c7089f9468d215c5590ff23590fc6ee60d"
+  },
+  "dataset_sha256": "f4069079cda6cb06961948e5ff771048c1aded9075a5c5e6cec95ef806e33de9",
+  "model": {
+    "model_id": "qwen3-4b-q4_k_m",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "weights_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "license": "Apache-2.0",
+    "runtime_tag": "b11669",
+    "runtime_commit": "620d2225cc436ab0b001e3200e590e3b286ef9ab"
+  },
+  "hardware": {
+    "host": "Apple M1",
+    "os": "macOS-26.3.2-arm64-arm-64bit",
+    "architecture": "arm64",
+    "host_memory_bytes": 8589934592,
+    "gpu_layers_requested": 99,
+    "cpu_threads": 2,
+    "context_size": 4096
+  },
+  "cases": [
+    {
+      "name": "reroute",
+      "passed": true,
+      "mode": "local_model",
+      "elapsed_ms": 24843,
+      "tools": [
+        "get_shift",
+        "evaluate_candidates",
+        "finish_analysis"
+      ],
+      "task_ids": [
+        "east-haul",
+        "west-inspection",
+        "west-followup"
+      ],
+      "evidence_ids": [
+        "east-morning",
+        "north-morning",
+        "south-morning",
+        "west-yesterday",
+        "yard-morning"
+      ]
+    },
+    {
+      "name": "redeploy",
+      "passed": true,
+      "mode": "local_model",
+      "elapsed_ms": 30221,
+      "tools": [
+        "get_shift",
+        "evaluate_candidates",
+        "finish_analysis"
+      ],
+      "task_ids": [
+        "yard-drainage",
+        "yard-inspection",
+        "west-inspection",
+        "west-followup"
+      ],
+      "evidence_ids": [
+        "north-morning",
+        "west-yesterday",
+        "yard-morning"
+      ]
+    },
+    {
+      "name": "blocked",
+      "passed": true,
+      "mode": "local_model",
+      "elapsed_ms": 13270,
+      "tools": [
+        "get_shift",
+        "get_evidence",
+        "finish_analysis"
+      ],
+      "task_ids": [
+        "west-inspection",
+        "west-followup"
+      ],
+      "evidence_ids": [
+        "north-morning",
+        "west-yesterday",
+        "yard-morning"
+      ]
+    }
+  ],
+  "completed": true,
+  "limitations": [
+    "Three task-specific smoke cases, not a reliability/latency benchmark or full-stack egress-denial proof.",
+    "GPU layers are requested launch configuration, not a VRAM measurement.",
+    "No Jetson or Runpod test. Peak RAM/VRAM, power and provider charges not measured.",
+    "No verified full-stack external-access denial. Offline flag/browser blocking are not proof."
+  ]
+}

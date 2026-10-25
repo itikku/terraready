@@ -24,6 +24,13 @@ def health() -> dict[str, str]:
     return {"mode": "test_stub"}
 
 
+@stub.get("/v1/models")
+def models(request: Request) -> JSONResponse:
+    if request.headers.get("authorization") != "Bearer " + KEY:
+        return JSONResponse(status_code=401, content={"error": "test authentication"})
+    return JSONResponse(content={"data": [{"id": "protocol-test-only"}]})
+
+
 @stub.post("/v1/chat/completions")
 async def completion(request: Request) -> JSONResponse:
     if request.headers.get("authorization") != "Bearer " + KEY:

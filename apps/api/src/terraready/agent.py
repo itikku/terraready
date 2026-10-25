@@ -46,6 +46,8 @@ class ModelClient(Protocol):
     mode: Literal["local_model", "test_stub"]
     model_id: str
 
+    def available(self) -> bool: ...
+
     def complete(
         self, messages: list[dict[str, Any]], tools: list[dict[str, Any]], timeout: float
     ) -> dict[str, Any]: ...

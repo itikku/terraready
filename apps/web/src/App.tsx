@@ -206,6 +206,13 @@ export default function App() {
         >
           <FileImage size={21} />
         </button>
+        <a
+          href="/system"
+          className="rail-item"
+          aria-label="System & deployment"
+        >
+          <ShieldCheck size={21} />
+        </a>
         <button
           ref={sourceTrigger}
           className="rail-item rail-bottom"

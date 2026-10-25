@@ -20,6 +20,33 @@ class LocalModel:
         self.key_file = key_file
         self.port = port
 
+    def available(self) -> bool:
+        """Bounded authenticated reachability check, never presented as successful inference."""
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=1)
+        try:
+            key = self.key_file.read_text().strip()
+            if len(key) != 64 or any(c not in "0123456789abcdef" for c in key):
+                return False
+            connection.request("GET", "/v1/models", headers={"Authorization": "Bearer " + key})
+            response = connection.getresponse()
+            if response.status != 200:
+                return False
+            raw = response.read(16385)
+            if len(raw) > 16384:
+                return False
+            body = json.loads(raw)
+            return (
+                isinstance(body, dict)
+                and isinstance(body.get("data"), list)
+                and any(
+                    isinstance(row, dict) and row.get("id") == self.model_id for row in body["data"]
+                )
+            )
+        except (OSError, ValueError, RecursionError, http.client.HTTPException):
+            return False
+        finally:
+            connection.close()
+
     def complete(
         self, messages: list[dict[str, Any]], tools: list[dict[str, Any]], timeout: float
     ) -> dict[str, Any]:

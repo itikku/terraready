@@ -35,6 +35,16 @@ def main() -> None:
     )
     client = LocalModel(ROOT / ".data/runtime/inference.key")
     records = []
+    host_info = {}
+    if platform.system() == "Darwin":
+        host_info = {
+            "cpu_name": subprocess.check_output(
+                ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
+            ).strip(),
+            "host_memory_bytes": int(
+                subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True)
+            ),
+        }
     destination = ROOT / ".data/reports/local-agent.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
     report = {
@@ -55,6 +65,7 @@ def main() -> None:
             ]
         },
         "hardware": {
+            **host_info,
             "architecture": platform.machine(),
             "os": platform.platform(),
             "runtime_configuration": json.loads((ROOT / ".data/runtime/launch.json").read_text()),

@@ -40,6 +40,9 @@ class Stub:
     mode: Literal["local_model", "test_stub"] = "test_stub"
     model_id = "protocol-test-only"
 
+    def available(self):
+        return True
+
     def __init__(self, replies):
         self.replies = iter(replies)
         self.messages = []
@@ -218,21 +221,37 @@ def test_joint_capacity_is_rechecked_at_finish(docket, monkeypatch):
 
 def test_duplicate_final_and_invented_output_rejected(docket):
     key = selected(docket)
-    for ids in [[key, key], ["invented"]]:
+    for ids, held in [([key, key], []), (["invented"], []), ([key], ["east-haul"]), ([], [])]:
         client = Stub(
             [
-                reply("get_shift", {}),
+                reply("get_shift", {"focus": "reroute"}),
                 reply("evaluate_candidates", {"candidate_ids": [key]}),
                 reply(
                     "finish_analysis",
-                    {"focus": "reroute", "candidate_ids": ids, "held_task_ids": []},
+                    {"focus": "reroute", "candidate_ids": ids, "held_task_ids": held},
                 ),
             ]
         )
-        assert (
-            assist(docket, AssistRequest(question="Reroute?"), client).fallback_reason
-            == "invalid_output"
-        )
+        run = assist(docket, AssistRequest(question="Reroute?"), client)
+        assert run.fallback_reason == "invalid_output"
+        assert len(run.trace) == 3 and run.trace[-1].outcome == "rejected"
+
+
+def test_scope_cannot_change_after_a_valid_candidate_check(docket):
+    key = selected(docket)
+    client = Stub(
+        [
+            reply("get_shift", {"focus": "reroute"}),
+            reply("evaluate_candidates", {"candidate_ids": [key]}),
+            reply(
+                "finish_analysis",
+                {"focus": "overview", "candidate_ids": [key], "held_task_ids": []},
+            ),
+        ]
+    )
+    run = assist(docket, AssistRequest(question="Reroute?"), client)
+    assert run.fallback_reason == "invalid_output"
+    assert len(run.trace) == 3 and run.trace[-1].outcome == "rejected"
 
 
 def test_evidence_is_data_and_injection_has_no_privileges(docket):

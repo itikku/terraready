@@ -30,7 +30,7 @@ The backend now also exposes a seven-package work docket and deterministic recov
 
 The aerial is real USGS/USDA NAIP imagery; operational overlays and measurements are synthetic. The inspection photo is an AI-generated illustration, explicitly labeled in the UI and never used to infer quantitative ground conditions. See [asset provenance](ATTRIBUTIONS.md).
 
-Below the map, the plan review compares the original access routes with a deterministic proposal for every assigned asset. The default scenario preserves both priority-one work packages: the loaded hauler takes south access while the tracked excavator retains north access; west-stockpile inspection stays held. Review the evidence and planning limits, then approve locally to save a typed LanceDB record and prepare field-lead and haul-coordinator updates. Copy an update or download the Markdown shift brief. Nothing is sent or dispatched.
+Below the map, the original route-only review compares access routes for each assigned asset. Its shortest-eligible-route policy sends both priority-one packages through south access; west-stockpile inspection stays held. The richer recovery planner instead retains an eligible original route before introducing changes, so the excavator can retain north access while hauling reroutes south. Review evidence and planning limits, then approve locally to save a typed LanceDB record and prepare field-lead/haul-coordinator updates. Copy an update or download the route-review Markdown brief. Nothing is sent or dispatched.
 
 Eligibility applies at the selected evidence clock, not for the entire planned duration. The review deadline is 10:15 PDT for the default snapshot; a changed clock or evidence snapshot requires a different approval. Approval is an idempotent local demo artifact, not authenticated sign-off, safety clearance, or a production schedule. The v2 backend checks dependencies and paired-resource hour budgets; neither planner models travel or a timed schedule. Multimodal similarity retrieval remains unfinished; stored image references are not embeddings or visual inference.
 
@@ -41,6 +41,14 @@ In **Ask about the recovery**, choose an example or ask a question, inspect cite
 Interaction-QA artifact below uses the explicitly labeled **test stub**, not real model output or a performance measurement. Actual three-case local-model results are recorded separately in the project state and sanitized smoke report.
 
 ![Local assistant review and human approval, protocol-test artifact](docs/images/local-assistant.png)
+
+### System & deployment evidence
+
+Open [the local System page](http://localhost:5173/system), or use the shield link in the workspace rail. It explains the implemented dataflow, deterministic/model/approval boundaries, edge design intent and actual hardware evidence. A separate authenticated local model-list probe reports current reachability; it does not run inference or turn past tests into a live-quality guarantee.
+
+The page reads a validated, sanitized three-case real-model artifact from `docs/verification/local-agent.json`. It records model/runtime revisions and hashes, dataset/source provenance, host configuration and observed task timings. Missing, corrupt, incomplete or stub artifacts never become sample measurements. No Jetson, cloud-GPU, peak-memory/power, latency-percentile or full-stack egress-denial result is claimed.
+
+`make agent-smoke` records actual inference under ignored `.data/reports/`; `python scripts/export_verification.py` prints only the typed public projection for deliberate review/promotion. Never publish the raw local database, model key, `.env.local` or an unreviewed report. Current implementation and verification state: [project state](docs/STATE.md).
 
 The seed demonstrates four distinct outcomes:
 

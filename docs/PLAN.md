@@ -167,7 +167,15 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 6 — System & deployment evidence page
 
-**Status:** Next active slice — Phase 5 verified; autonomous continuation approved. No account/spending needed. Keep the shift-first redesign deferred; build only the system/evidence page and its bounded artifact/runtime-status contract.
+**Status:** Complete — directly addressable page, typed sanitized artifact and separate live runtime probe verified. Full `make verify`: 245 backend tests / 99.40% coverage, frontend checks/build and 41 browser tests pass. Exact evidence in `STATE.md`; shift-first redesign remains deferred.
+
+**Implementation boundary**
+
+- Use `/system` with ordinary browser navigation/deep-link/back behavior; reuse the established fonts/colors, no routing/design-system dependency.
+- Add one read-only `/api/system` response: local data readiness, a bounded authenticated fixed-loopback runtime reachability probe (not an inference benchmark), and validated last-recorded verification artifacts. No external calls, uploads or user-selected file paths.
+- Export a small typed, sanitized artifact from the actual local-model report: source commit/dirty state and file hashes, dataset/model/runtime identifiers, host/configuration, per-case outcomes/timings and explicit limitations. Never manufacture sample metrics when missing/corrupt; do not treat a protocol stub as hardware evidence.
+- Page content: evidence/LanceDB → focused read-only model tools → independent constraints → human approval → local briefs; trust/failure boundaries; implemented vs edge-intent vs hardware-tested; provenance and unmeasured GPU/Jetson/offline-isolation/memory/cost fields. Last recorded results and current runtime state must be separate.
+- Tests: artifact validation and missing/corrupt/oversized files, runtime unavailable/stub identity, data-unavailable behavior; browser navigation/deep link/back, loading/error/retry, invalid/missing evidence, truthful status, accessibility and mobile. Then full `make verify`, record exact results and commit before private-deployment preparation.
 
 **Acceptance criteria**
 

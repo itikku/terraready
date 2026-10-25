@@ -1,0 +1,272 @@
+.system-brand {
+  text-decoration: none;
+}
+.system-page .topbar nav {
+  display: flex;
+  gap: 22px;
+  font-size: 12px;
+}
+.system-page .topbar nav a {
+  text-underline-offset: 6px;
+}
+.system-page .topbar nav [aria-current] {
+  font-weight: 600;
+}
+.system-main {
+  max-width: 1390px;
+  padding: 30px 40px 50px;
+}
+.system-back {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  text-decoration: none;
+  font-size: 12px;
+  color: #4b6052;
+}
+.system-intro {
+  padding: 48px 0 40px;
+  max-width: 850px;
+}
+.system-intro h1 {
+  font-size: clamp(35px, 4.4vw, 62px);
+  line-height: 1.07;
+  letter-spacing: -2.2px;
+  margin: 18px 0 22px;
+  font-weight: 500;
+}
+.system-intro > p {
+  max-width: 660px;
+  color: #4b6052;
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 28px;
+}
+.system-label {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.4px;
+  line-height: 1.8;
+  color: #4b6052;
+}
+.system-section {
+  border-top: 1px solid #d6ded1;
+  padding: 30px 0 34px;
+}
+.system-section h2 {
+  font-size: 25px;
+  letter-spacing: -0.7px;
+  font-weight: 500;
+  margin: 10px 0 22px;
+}
+.system-section h3 {
+  font-size: 16px;
+  margin: 16px 0 10px;
+  line-height: 1.5;
+}
+.system-section p,
+.system-section li {
+  font-size: 12px;
+  color: #4b6052;
+  line-height: 1.8;
+}
+.system-section small {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #54685a;
+}
+.system-flow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  list-style: none;
+  padding: 0;
+  gap: 12px;
+  margin: 0;
+}
+.system-flow li {
+  position: relative;
+  background: #eef1e6;
+  border: 1px solid #d5decf;
+  border-radius: 9px;
+  padding: 22px 18px;
+}
+.system-flow h3 {
+  color: #243c32;
+}
+.system-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.system-step small {
+  font-family: "IBM Plex Mono", monospace;
+}
+.flow-arrow {
+  position: absolute;
+  right: -15px;
+  top: 29px;
+  z-index: 1;
+  color: #245943;
+  background: #eef1e6;
+  border-radius: 50%;
+}
+.system-section-heading,
+.system-measurement-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.system-section-heading h2 {
+  margin-bottom: 0;
+}
+.system-live-grid,
+.system-decision-grid,
+.system-deployment-grid {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+.system-live-grid,
+.system-decision-grid {
+  grid-template-columns: 1fr 1fr;
+}
+.system-deployment-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+.system-live-grid article,
+.system-decision-grid article,
+.system-deployment-grid article,
+.system-unmeasured {
+  background: #fffef9;
+  border: 1px solid #d6ded1;
+  border-radius: 9px;
+  padding: 22px;
+}
+.system-live-grid h3,
+.system-unmeasured h3,
+.system-decision-grid h3 {
+  margin-top: 0;
+}
+.system-live-grid .eyebrow + h3 {
+  margin-top: 12px;
+}
+.system-case-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  list-style: none;
+  padding: 0;
+  gap: 18px;
+}
+.system-case-grid li {
+  padding: 20px;
+  background: #eef1e6;
+  border-radius: 9px;
+  overflow-wrap: anywhere;
+}
+.system-case-grid h3 {
+  color: #243c32;
+  margin-top: 12px;
+}
+.system-provenance {
+  font-size: 12px;
+  margin-top: 24px;
+}
+.system-provenance dl {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: 12px 24px;
+  padding: 22px;
+  border: 1px solid #d6ded1;
+  border-radius: 9px;
+  background: #fffef9;
+}
+.system-provenance dt {
+  font-weight: 600;
+}
+.system-provenance dd {
+  margin: 0;
+  font:
+    11px/1.8 "IBM Plex Mono",
+    monospace;
+  color: #4b6052;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.system-hash {
+  display: contents;
+}
+.system-limitations,
+.system-unmeasured ul {
+  padding-left: 20px;
+}
+.system-limitations li,
+.system-unmeasured li {
+  margin-block: 8px;
+}
+.system-deployment-grid + .system-unmeasured {
+  margin-top: 20px;
+}
+.system-footer {
+  border-top: 1px solid #d6ded1;
+  padding-top: 20px;
+  font-size: 12px;
+  color: #4b6052;
+  line-height: 1.8;
+}
+.system-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+@media (max-width: 1000px) {
+  .system-flow {
+    grid-template-columns: 1fr 1fr;
+  }
+  .flow-arrow {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .system-main {
+    padding-inline: 20px;
+  }
+  .system-intro {
+    padding-top: 35px;
+  }
+  .system-intro h1 {
+    letter-spacing: -1.2px;
+  }
+  .system-flow,
+  .system-live-grid,
+  .system-case-grid,
+  .system-decision-grid,
+  .system-deployment-grid {
+    grid-template-columns: 1fr;
+  }
+  .system-section-heading,
+  .system-measurement-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .system-section-heading button {
+    width: 100%;
+  }
+  .system-provenance dl {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 16px;
+  }
+  .system-provenance dt {
+    margin-top: 8px;
+  }
+  .system-page .topbar nav {
+    gap: 16px;
+  }
+  .system-section h2 {
+    font-size: 23px;
+  }
+}

@@ -6,13 +6,14 @@ import type {
   RecoveryPlan,
   ShiftPlan,
   Site,
+  SystemEvidence,
 } from "./types";
 
 async function json<T>(
   url: string,
   signal: AbortSignal,
   body?: object,
-  context: "site" | "plan" | "approval" | "assist" = "site",
+  context: "site" | "plan" | "approval" | "assist" | "system" = "site",
 ): Promise<T> {
   const response = await fetch(url, {
     signal,
@@ -25,6 +26,10 @@ async function json<T>(
       : {}),
   });
   if (!response.ok) {
+    if (context === "system")
+      throw new Error(
+        "System status could not be checked. The evidence workspace remains available; retry this local check.",
+      );
     if (response.status === 409)
       throw new Error(
         "This proposal changed or no work is eligible. Refresh the plan and review again.",
@@ -134,3 +139,6 @@ export const approveRecovery = (plan: RecoveryPlan, signal: AbortSignal) =>
     },
     "approval",
   );
+
+export const getSystemEvidence = (signal: AbortSignal) =>
+  json<SystemEvidence>("/api/system", signal, undefined, "system");

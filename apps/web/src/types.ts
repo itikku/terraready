@@ -178,3 +178,51 @@ export interface RecoveryPlan {
   assumptions: string[];
   approval: Approval | null;
 }
+
+export interface SystemEvidence {
+  data_ready: boolean;
+  runtime: {
+    reachable: boolean;
+    mode: "local_model" | "test_stub";
+    model_id: string;
+    checked_at: string;
+    meaning: string;
+  };
+  verification: {
+    status: "recorded" | "missing" | "invalid";
+    evidence: null | {
+      recorded_at: string;
+      source_base_commit: string;
+      working_tree_dirty: boolean;
+      source_sha256: Record<string, string>;
+      dataset_sha256: string;
+      model: {
+        model_id: string;
+        revision: string;
+        weights_sha256: string;
+        license: string;
+        runtime_tag: string;
+        runtime_commit: string;
+      };
+      hardware: {
+        host: string;
+        os: string;
+        architecture: string;
+        host_memory_bytes: number | null;
+        gpu_layers_requested: number;
+        cpu_threads: number;
+        context_size: number;
+      };
+      cases: {
+        name: string;
+        passed: boolean;
+        mode: string;
+        elapsed_ms: number;
+        tools: string[];
+        task_ids: string[];
+        evidence_ids: string[];
+      }[];
+      limitations: string[];
+    };
+  };
+}
