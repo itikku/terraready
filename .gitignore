@@ -1,0 +1,12 @@
+# Local credentials
+.env.local
+.env.*.local
+!.env.example
+
+# Generated artifacts
+__pycache__/
+.pytest_cache/
+node_modules/
+dist/
+playwright-report/
+test-results/
