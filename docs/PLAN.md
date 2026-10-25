@@ -192,14 +192,17 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 7 — Private single-GPU integration test
 
-**Status:** At the account/funding readiness gate. Phases 5–6 are complete; no resources exist. Primary billing docs describe $10 non-refundable starting credits, above the authorized $5 outlay; actual account checkout/quote and isolation controls remain unverified. See `GPU_READINESS.md`. Await user account/deposit direction before paid provisioning; no budget, exposure or acceptance expansion is inferred.
+**Status:** Readiness preparation approved. On 2026-10-25 the user approved up to $10 of prepaid credits if required, while retaining the $5 cumulative usage ceiling, and is creating the Runpod account. No resources or spending have occurred. Actual account checkout/quote, Linux/CUDA packaging, private access and isolation controls remain unverified. See `GPU_READINESS.md`; no public exposure or acceptance expansion is inferred.
+
+User-requested agent setup is installed: official plugin 1.8.0 and 16 global skills, with the bundled MCP connection registered. Full desktop-app restart and human OAuth are the immediate access gate; authenticated Pod listing has not occurred. Do not equate installation with a working account connection or a deployment. The source-bundle preparation below remains planned, not implemented.
 
 **Readiness / spending gate**
 
 - Check the actual available instance quote, compute plus storage, account minimum/deposit and remaining budget. Prefer one modest 24 GB GPU; no cluster, always-on service or unrestricted automatic GPU substitution.
-- A required deposit above the approved $5 outlay, a higher budget, new payment details or public exposure requires explicit user approval. Keep credentials outside Git and never read/upload the existing Mapbox `.env.local`; use the bundled aerial remotely.
+- Up to $10 of prepaid credits is approved if required, not $10 of usage. A larger deposit, usage above $5, new payment details or public exposure requires explicit user approval. Keep credentials outside Git and never read/upload the existing Mapbox `.env.local`; use the bundled aerial remotely.
 - Prepare/pin the image, dependencies, weights and fixtures before the paid test where practical. Show the expected maximum runtime/cost and a shutdown deadline with margin; establish external cleanup/control independent of the workload's outbound network.
 - Use a private tunnel/access path; do not expose the current unauthenticated API or inference server publicly. Start only the identified test resource; preserve artifact IDs for exact cleanup.
+- Preparation slice: create a reproducible source-only bundle from one clean committed revision, with an explicit allowlist and per-file hashes. Exclude local credentials, databases, prebuilt frontend output, caches and runtime keys. Test exclusion, dirty-tree refusal, symlink refusal and archive provenance before using it remotely. This is not a tested Linux deployment or proof of network isolation.
 
 **Acceptance criteria**
 
