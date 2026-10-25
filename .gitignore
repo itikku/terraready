@@ -1,6 +1,6 @@
 # Local credentials
-.env.local
-.env.*.local
+.env
+.env.*
 !.env.example
 
 # Generated artifacts
