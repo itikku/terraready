@@ -9,7 +9,10 @@ from fastapi import Path as ApiPath
 from fastapi.responses import JSONResponse
 from pydantic import AwareDatetime
 
+from terraready.agent import ModelClient, assist
+from terraready.agent_models import AssistRequest, AssistRun
 from terraready.engine import InvalidEvaluation, UnknownEntity, evaluate, evaluate_zone
+from terraready.model_client import LocalModel
 from terraready.models import (
     Approval,
     ApprovalRequest,
@@ -27,7 +30,7 @@ from terraready.models import (
 from terraready.planner import build_plan, make_approval
 from terraready.recovery import build_recovery, make_recovery_approval
 from terraready.seed import database_path
-from terraready.storage import ApprovalUnavailable, DataUnavailable, SiteStore
+from terraready.storage import ApprovalUnavailable, AssistUnavailable, DataUnavailable, SiteStore
 
 ScenarioId = Annotated[str, ApiPath(pattern=r"^[a-z][a-z0-9-]{0,63}$")]
 
@@ -36,13 +39,14 @@ class Health(Model):
     status: str
 
 
-def create_app(db_path: Path | None = None) -> FastAPI:
+def create_app(db_path: Path | None = None, model_client: ModelClient | None = None) -> FastAPI:
     api = FastAPI(
         title="TerraReady",
         version="0.1.0",
         description="Synthetic ground-readiness demo. All decisions require supervisor approval.",
     )
     path = db_path or database_path()
+    inference = model_client or LocalModel(Path(".data/runtime/inference.key"))
 
     def snapshot() -> SiteSnapshot:
         return SiteStore(path).load()
@@ -182,6 +186,18 @@ def create_app(db_path: Path | None = None) -> FastAPI:
         return SiteStore(path).save_approval(
             make_recovery_approval(site, proposal, datetime.now(UTC))
         )
+
+    @api.post("/api/scenarios/{scenario_id}/assist", response_model=AssistRun)
+    def assistance(scenario_id: ScenarioId, body: AssistRequest) -> AssistRun:
+        try:
+            run = assist(scenario_snapshot(scenario_id), body, inference)
+        except InvalidEvaluation as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        try:
+            return SiteStore(path).save_assist(run)
+        except AssistUnavailable:
+            # Analysis is still usable, but never pretend its audit trail is durable.
+            return run
 
     return api
 

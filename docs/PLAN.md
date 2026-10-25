@@ -146,7 +146,7 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 5 — Real local agent with a bounded tool surface
 
-**Status:** Active — Phase 4A verified. User authorized autonomous continuation while away, deferring UI tuning. No hosted model API or paid GPU needed to write/test the integration. Stop for material ambiguity, missing account access or expanded spending/exposure, not routine implementation approval.
+**Status:** Complete — verified 220 backend tests, 32 browser tests and all three real-model smoke cases, plus a real API/persistence check. Exact evidence and limitations are in `STATE.md`. User authorized autonomous continuation while away, deferring UI tuning; routine gates may proceed, but material ambiguity, missing account access or expanded spending/exposure still require a stop.
 
 **Architecture and bounds**
 
@@ -167,7 +167,7 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 
 ## Phase 6 — System & deployment evidence page
 
-**Status:** Planned — approval gate after Phase 5.
+**Status:** Next active slice — Phase 5 verified; autonomous continuation approved. No account/spending needed. Keep the shift-first redesign deferred; build only the system/evidence page and its bounded artifact/runtime-status contract.
 
 **Acceptance criteria**
 

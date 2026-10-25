@@ -8,6 +8,7 @@ from typing import TypeVar
 import lancedb
 import pyarrow as pa
 
+from terraready.agent_models import AssistRun
 from terraready.models import (
     Approval,
     Machine,
@@ -24,6 +25,57 @@ Record = TypeVar("Record", bound=Model)
 POINT = pa.struct([("x_m", pa.float64()), ("y_m", pa.float64())])
 UTC_TIME = pa.timestamp("us", tz="UTC")
 APPROVAL_LOCK = Lock()
+ASSIST_LOCK = Lock()
+ASSIST_SCHEMA = pa.schema(
+    [
+        ("id", pa.string()),
+        ("scenario_id", pa.string()),
+        ("source_plan_id", pa.string()),
+        ("evaluated_at", UTC_TIME),
+        ("created_at", UTC_TIME),
+        ("mode", pa.string()),
+        ("model_id", pa.string()),
+        ("agent_version", pa.string()),
+        ("focus", pa.string()),
+        ("candidate_ids", pa.list_(pa.string())),
+        ("held_task_ids", pa.list_(pa.string())),
+        (
+            "facts",
+            pa.list_(
+                pa.struct(
+                    [
+                        ("task_id", pa.string()),
+                        ("candidate_id", pa.string()),
+                        ("text", pa.string()),
+                        ("evidence_ids", pa.list_(pa.string())),
+                    ]
+                )
+            ),
+        ),
+        (
+            "trace",
+            pa.list_(
+                pa.struct(
+                    [
+                        ("step", pa.int64()),
+                        ("tool", pa.string()),
+                        ("outcome", pa.string()),
+                        ("reference_ids", pa.list_(pa.string())),
+                        ("evidence_ids", pa.list_(pa.string())),
+                        ("elapsed_ms", pa.int64()),
+                        ("inference_ms", pa.int64()),
+                        ("completion_tokens", pa.int64()),
+                    ]
+                )
+            ),
+        ),
+        ("elapsed_ms", pa.int64()),
+        ("completion_tokens", pa.int64()),
+        ("fallback_reason", pa.string()),
+        ("saved_locally", pa.bool_()),
+        ("requires_approval", pa.bool_()),
+    ]
+)
 APPROVAL_SCHEMA = pa.schema(
     [
         ("plan_id", pa.string()),
@@ -149,6 +201,10 @@ class ApprovalUnavailable(RuntimeError):
     """Approval persistence failed; never imply success or disclose local paths."""
 
 
+class AssistUnavailable(RuntimeError):
+    """Optional assistant audit record could not be saved."""
+
+
 class SiteStore:
     def __init__(self, path: Path):
         self.connection = lancedb.connect(str(path))
@@ -229,3 +285,16 @@ class SiteStore:
                 raise ApprovalUnavailable(
                     "Local approval could not be saved. Please retry."
                 ) from exc
+
+    def save_assist(self, run: AssistRun) -> AssistRun:
+        with ASSIST_LOCK:
+            try:
+                saved = run.model_copy(update={"saved_locally": True})
+                table = self.connection.create_table(
+                    "assist_runs", schema=ASSIST_SCHEMA, exist_ok=True
+                )
+                rows = pa.Table.from_pylist([saved.model_dump()], schema=ASSIST_SCHEMA)
+                table.merge_insert("id").when_not_matched_insert_all().execute(rows)
+                return saved
+            except (ValueError, OSError, RuntimeError, pa.ArrowException) as exc:
+                raise AssistUnavailable("Assistant audit record unavailable.") from exc
