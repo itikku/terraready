@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { getEvaluation, getReadiness, getSite } from "./api";
 import OfflineSiteMap from "./map/OfflineSiteMap";
+import PlanReview from "./PlanReview";
 import type { Evaluation, Machine, Readiness, Site, Status } from "./types";
 
 const ConnectedMap = lazy(() => import("./map/MapboxSiteMap"));
@@ -705,6 +706,11 @@ export default function App() {
                   )}
                 </div>
               </section>
+              <PlanReview
+                key={asOf ?? site.scenario.as_of}
+                site={site}
+                asOf={asOf}
+              />
               <footer className="workspace-footer">
                 <span>
                   <Leaf size={14} />

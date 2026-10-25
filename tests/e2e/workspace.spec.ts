@@ -70,7 +70,9 @@ test("machine changes update readiness using backend decisions", async ({
       .getByText("Go", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Prepare east cut" }),
+    page
+      .getByLabel("Task and route assessment")
+      .getByRole("heading", { name: "Prepare east cut" }),
   ).toBeVisible();
 });
 

@@ -74,7 +74,7 @@ Build the map-first frontend with an offline aerial fallback and optional connec
 
 ## Phase 3 — Replanning and communications
 
-**Status:** Active — user authorized continuation on 2026-10-24, including after the desktop-app crash.
+**Status:** Original bounded slice complete — 97 backend tests and 24 browser tests pass. The user has identified a broader workflow gap; agree the follow-up below before advancing.
 
 Add deterministic alternative-plan comparison, approval state, and role-specific shift updates.
 
@@ -97,6 +97,16 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 - Recompute the proposal on approval and reject a mismatched snapshot fingerprint or a proposal with no eligible work. Persist one idempotent, typed local approval record per fingerprint in LanceDB.
 - Generate copyable/exportable updates only after approval. No external messages, real identities, dispatch, or authentication claims.
 - Verify planner edge cases, durable/idempotent approval, stale-proposal rejection, browser approval/error/reload/clock flows, clipboard/export, mobile and accessibility. Commit backend and UI as separately verified slices.
+
+## Follow-up scope gate — Decision-first operations and technical evidence
+
+**Status:** Proposed — requirements raised by the user on 2026-10-24; architecture/scope clarification pending. Do not implement yet.
+
+- Put the day's planned work, targets and dependencies before asset-readiness scores. Make the actual disruption visible against the original plan.
+- Show feasible resource redeployment and pull-forward work, excluding tasks whose prerequisites remain incomplete. The existing route-only planner is not sufficient evidence of these capabilities.
+- Consider a local, bounded-tool agent for analysis and recommendations; keep deterministic constraint checking and human approval outside model authority. User clarified Jetson deployment is NOT intended: propose a low-cost, single-cloud-GPU integration test instead. Agree provider, cost ceiling and private/public exposure before provisioning. Do not claim cloud benchmarks validate Jetson performance.
+- Add a System & deployment experience explaining the implemented dataflow, design tradeoffs, offline behavior, model/tool boundary, failure modes, and measured runtime footprint. Distinguish implemented, designed-for-edge and hardware-validated claims.
+- Define observable acceptance criteria and update this plan after user agreement. This gate takes precedence over treating the next step as cosmetic README polish.
 
 ## Phase 4 — Demo hardening
 

@@ -13,7 +13,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   snapshotPathTemplate: "{testDir}/__screenshots__/{testFilePath}/{arg}{ext}",
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: "http://127.0.0.1:5174",
     ...devices["Desktop Chrome"],
     channel: "chromium",
     viewport: { width: 1512, height: 1100 },
@@ -24,16 +24,18 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "make seed && make api",
-      url: "http://127.0.0.1:8000/ready",
-      reuseExistingServer: !process.env.CI,
+      command:
+        "make seed && .venv/bin/uvicorn terraready.main:app --host 127.0.0.1 --port 8001",
+      env: { TERRAREADY_DB_DIR: ".data/e2e-lancedb" },
+      url: "http://127.0.0.1:8001/ready",
+      reuseExistingServer: false,
       timeout: 30000,
     },
     {
-      command: "npm run dev",
-      env: { VITE_MAPBOX_TOKEN: "test-token" },
-      url: "http://127.0.0.1:5173",
-      reuseExistingServer: !process.env.CI,
+      command: "npx vite apps/web --host 127.0.0.1 --port 5174 --strictPort",
+      env: { VITE_MAPBOX_TOKEN: "test-token", TERRAREADY_BROWSER_TEST: "1" },
+      url: "http://127.0.0.1:5174",
+      reuseExistingServer: false,
       timeout: 30000,
     },
   ],

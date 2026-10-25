@@ -85,9 +85,39 @@ export interface Readiness {
   zones: ZoneDecision[];
 }
 export interface Evaluation {
+  route_id: string;
   status: Status;
   reasons: Reason[];
   zone_decisions: ZoneDecision[];
   mitigations: string[];
   as_of: string;
+}
+export interface PlanItem {
+  task_id: string;
+  baseline: Evaluation;
+  alternatives: Evaluation[];
+  selected_route_id: string | null;
+  status: Status;
+}
+export interface TeamUpdate {
+  role: "Field lead" | "Haul coordinator";
+  title: string;
+  body: string;
+}
+export interface Approval {
+  plan_id: string;
+  evaluated_at: string;
+  approved_at: string;
+  approved_by: string;
+  updates: TeamUpdate[];
+}
+export interface ShiftPlan {
+  id: string;
+  as_of: string;
+  review_by: string | null;
+  items: PlanItem[];
+  baseline_eligible_count: number;
+  proposed_eligible_count: number;
+  assumptions: string[];
+  approval: Approval | null;
 }

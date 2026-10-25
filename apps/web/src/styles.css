@@ -1045,6 +1045,9 @@ p {
 .skip-link:focus {
   top: 10px;
 }
+.skip-link:not(:focus) {
+  clip-path: inset(50%);
+}
 dialog {
   border: 1px solid #d0dcc4;
   border-radius: 12px;
