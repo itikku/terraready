@@ -78,10 +78,22 @@ def test_source_symlinks_cannot_import_an_existing_file(boot, tmp_path):
 def test_download_checks_hash_size_https_and_refuses_overwrite(boot, tmp_path, monkeypatch):
     payload = b"synthetic download"
     sha = hashlib.sha256(payload).hexdigest()
-    monkeypatch.setattr(boot.urllib.request, "urlopen", lambda *a, **k: io.BytesIO(payload))
+    calls = []
+
+    def curl(args, **kwargs):
+        calls.append((args, kwargs))
+        kwargs["stdout"].write(payload)
+
+    monkeypatch.setattr(boot.subprocess, "run", curl)
     path = tmp_path / "public-asset"
     boot.download("https://example.org/asset", path, sha, len(payload))
     assert path.read_bytes() == payload
+    args, options = calls[0]
+    assert args[0] == "curl" and "--fail" in args and "--max-filesize" in args
+    assert args[args.index("--proto") + 1] == "=https"
+    assert args[args.index("--proto-redir") + 1] == "=https"
+    assert options["check"] is True
+    assert all(not key.startswith("TR_") for key in options["env"])
     with pytest.raises(ValueError, match="destination"):
         boot.download("https://example.org/asset", path, sha, len(payload))
     with pytest.raises(ValueError, match="destination"):
@@ -101,6 +113,17 @@ def test_archive_cannot_write_outside_runtime_directory(boot, tmp_path):
     with pytest.raises(tarfile.FilterError):
         boot.extract(archive, tmp_path / "runtime")
     assert not (tmp_path / "escape").exists()
+
+
+def test_failure_diagnostic_names_stage_location_without_leaking_exception_values(boot, capsys):
+    try:
+        raise ValueError("synthetic-sensitive-value-must-not-appear")
+    except ValueError as error:
+        boot.report_failure(error)
+    output = capsys.readouterr().err
+    assert "ValueError at test_hosted_boot.py:" in output
+    assert "controller must terminate" in output
+    assert "synthetic-sensitive-value" not in output
 
 
 def test_boot_refuses_other_platforms_and_provider_keys_before_any_download(

@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tarfile
 import time
+import traceback
 import urllib.request
 from pathlib import Path, PurePosixPath
 from urllib.error import URLError
@@ -72,13 +73,35 @@ def verify_source(root: Path, commit: str) -> None:
 def download(url: str, path: Path, sha256: str, maximum: int) -> None:
     if not url.startswith("https://") or path.exists():
         raise ValueError("Invalid download destination.")
-    size = 0
-    with urllib.request.urlopen(url, timeout=30) as response, path.open("xb") as target:
-        while chunk := response.read(1024 * 1024):
-            size += len(chunk)
-            if size > maximum:
-                raise ValueError("Download exceeds expected size.")
-            target.write(chunk)
+    print(f"Hosted startup: downloading {path.name}", flush=True)
+    # The base image's system HTTPS client already fetched the verified source.
+    # Use its CA store rather than inheriting a Python distribution's CA bundle.
+    with path.open("xb") as target:
+        subprocess.run(
+            [
+                "curl",
+                "--fail",
+                "--location",
+                "--silent",
+                "--show-error",
+                "--proto",
+                "=https",
+                "--proto-redir",
+                "=https",
+                "--max-time",
+                "600",
+                "--max-filesize",
+                str(maximum),
+                url,
+            ],
+            stdout=target,
+            env={
+                k: v for k, v in os.environ.items() if not k.startswith(("TR_", "VITE_", "LLAMA_"))
+            },
+            check=True,
+        )
+    if path.stat().st_size > maximum:
+        raise ValueError("Download exceeds expected size.")
     if checksum(path) != sha256:
         raise ValueError("Download checksum mismatch.")
 
@@ -90,6 +113,7 @@ def extract(archive: Path, target: Path) -> None:
 
 
 def main() -> None:
+    print("Hosted startup: validating Linux configuration", flush=True)
     if (platform.system(), platform.machine()) != ("Linux", "x86_64"):
         raise ValueError("The hosted bootstrap requires a fresh Linux x86_64 Pod.")
     if os.environ.get("RUNPOD_API_KEY"):
@@ -97,7 +121,9 @@ def main() -> None:
     secret = os.environ.get("TR_ORIGIN_SECRET", "")
     if len(secret) != 64 or any(c not in "0123456789abcdef" for c in secret):
         raise ValueError("New gateway secret missing.")
+    print("Hosted startup: verifying source manifest", flush=True)
     verify_source(ROOT, os.environ.get("TR_SOURCE_COMMIT", ""))
+    print("Hosted startup: source manifest verified", flush=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith(("VITE_", "LLAMA_", "TR_"))}
     env["UV_NO_ENV_FILE"] = "1"
     os.umask(0o077)
@@ -210,10 +236,20 @@ def main() -> None:
             model.wait()
 
 
+def report_failure(error: BaseException) -> None:
+    frames = traceback.extract_tb(error.__traceback__)
+    where = f" at {Path(frames[-1].filename).name}:{frames[-1].lineno}" if frames else ""
+    # Class and source location only: never the exception message or locals.
+    print(
+        f"Hosted startup failed ({type(error).__name__}{where}); "
+        "controller must terminate this run.",
+        file=sys.stderr,
+    )
+
+
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, ValueError, KeyError, tarfile.TarError, subprocess.SubprocessError):
-        # Never print provider environment, keys, full subprocess args or bodies.
-        print("Hosted startup failed; controller must terminate this run.", file=sys.stderr)
+    except (OSError, ValueError, KeyError, tarfile.TarError, subprocess.SubprocessError) as error:
+        report_failure(error)
         raise SystemExit(1) from None
