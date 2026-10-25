@@ -42,4 +42,4 @@ Updated: 2026-10-24. Active slice: **Phase 6 — System & deployment evidence pa
 
 ## Single next step
 
-Commit the verified assistant UI/protocol-browser slice after backend **3ba7798**, then implement Phase 6: directly addressable System page, validated sanitized verification artifacts, separate truthful runtime probe. Missing/invalid artifacts = **not measured**; distinguish M1 hardware evidence, edge intent and pending cloud/Jetson validation. Test deep-link/back/navigation/mobile/accessibility/error states. Follow `PLAN.md`; GPU provisioning still waits for readiness/cost gate and account access.
+Phase 5 backend committed **3ba7798**, UI/protocol-browser slice **b647a33**. Implement Phase 6: directly addressable System page, validated sanitized verification artifacts, separate truthful runtime probe. Missing/invalid artifacts = **not measured**; distinguish M1 hardware evidence, edge intent and pending cloud/Jetson validation. Test deep-link/back/navigation/mobile/accessibility/error states. Follow `PLAN.md`; GPU provisioning still waits for readiness/cost gate and account access.
