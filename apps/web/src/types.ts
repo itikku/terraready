@@ -121,3 +121,60 @@ export interface ShiftPlan {
   assumptions: string[];
   approval: Approval | null;
 }
+
+export interface AssistRun {
+  id: string;
+  source_plan_id: string;
+  mode: "local_model" | "test_stub" | "deterministic_fallback";
+  model_id: string;
+  focus: "overview" | "reroute" | "redeploy" | "blocked";
+  candidate_ids: string[];
+  held_task_ids: string[];
+  facts: {
+    task_id: string;
+    candidate_id: string | null;
+    text: string;
+    evidence_ids: string[];
+  }[];
+  trace: {
+    step: number;
+    tool: string;
+    outcome: string;
+    reference_ids: string[];
+    evidence_ids: string[];
+    elapsed_ms: number;
+    inference_ms: number;
+    completion_tokens: number;
+  }[];
+  elapsed_ms: number;
+  fallback_reason: string | null;
+  saved_locally: boolean;
+}
+
+export interface RecoveryPlan {
+  id: string;
+  as_of: string;
+  review_by: string | null;
+  selected_candidate_ids: string[];
+  candidates: {
+    id: string;
+    task_id: string;
+    machine_id: string;
+    route_id: string;
+    required_hours: number;
+  }[];
+  items: {
+    task_id: string;
+    disposition: string;
+    reasons: Reason[];
+    blocking_task_ids: string[];
+  }[];
+  resources: {
+    machine_id: string;
+    available_hours: number;
+    proposed_hours: number;
+    unallocated_hours: number;
+  }[];
+  assumptions: string[];
+  approval: Approval | null;
+}

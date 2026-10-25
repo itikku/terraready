@@ -28,6 +28,7 @@ import {
 import { getEvaluation, getReadiness, getSite } from "./api";
 import OfflineSiteMap from "./map/OfflineSiteMap";
 import PlanReview from "./PlanReview";
+import AssistPanel from "./AssistPanel";
 import type { Evaluation, Machine, Readiness, Site, Status } from "./types";
 
 const ConnectedMap = lazy(() => import("./map/MapboxSiteMap"));
@@ -708,6 +709,11 @@ export default function App() {
               </section>
               <PlanReview
                 key={asOf ?? site.scenario.as_of}
+                site={site}
+                asOf={asOf}
+              />
+              <AssistPanel
+                key={`assist-${asOf ?? site.scenario.as_of}`}
                 site={site}
                 asOf={asOf}
               />

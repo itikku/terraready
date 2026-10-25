@@ -25,7 +25,14 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "make seed && .venv/bin/uvicorn terraready.main:app --host 127.0.0.1 --port 8001",
+        ".venv/bin/uvicorn scripts.browser_api:stub --host 127.0.0.1 --port 8082",
+      url: "http://127.0.0.1:8082/health",
+      reuseExistingServer: false,
+      timeout: 30000,
+    },
+    {
+      command:
+        "make seed && .venv/bin/uvicorn scripts.browser_api:app --host 127.0.0.1 --port 8001",
       env: { TERRAREADY_DB_DIR: ".data/e2e-lancedb" },
       url: "http://127.0.0.1:8001/ready",
       reuseExistingServer: false,

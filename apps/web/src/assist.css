@@ -1,0 +1,105 @@
+.assist-content {
+  padding: 0 28px 24px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.assist-content p {
+  color: #4b6052;
+}
+.assist-prompts,
+.assist-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.assist-content form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.assist-content textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 75px;
+  border: 1px solid #b9c8b7;
+  border-radius: 8px;
+  background: #fffef9;
+  color: #243d2d;
+  padding: 12px;
+  font: inherit;
+  margin-bottom: 12px;
+}
+.assist-content textarea:focus-visible {
+  outline: 3px solid #46967a;
+  outline-offset: 2px;
+}
+.assist-actions span,
+.assist-meta,
+.assist-facts small,
+.assist-boundary {
+  font-size: 11px;
+  color: #54685a;
+}
+.assist-result,
+.assist-review {
+  border-top: 1px solid #d6ded1;
+  margin-top: 22px;
+  padding-top: 18px;
+}
+.assist-content h3 {
+  font-size: 15px;
+  margin-top: 0;
+}
+.assist-content li {
+  margin-block: 10px;
+}
+.assist-content ul,
+.assist-content ol {
+  padding-left: 20px;
+}
+.assist-facts p {
+  margin: 0 0 4px;
+}
+.assist-content details {
+  margin-block: 16px;
+}
+.assist-trace span {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+.assist-trace strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+.assist-approval {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+  background: #eef1e6;
+  padding: 18px;
+  border-radius: 8px;
+}
+.assist-review article {
+  border: 1px solid #d6ded1;
+  padding: 16px;
+  margin-top: 16px;
+  border-radius: 8px;
+}
+.assist-review h4 {
+  margin: 0 0 12px;
+}
+.assist-boundary {
+  margin: 24px 0 0;
+}
+@media (max-width: 700px) {
+  .assist-content {
+    padding-inline: 16px;
+  }
+  .assist-actions > .primary-button,
+  .assist-approval > button {
+    width: 100%;
+  }
+}
