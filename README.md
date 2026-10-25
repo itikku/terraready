@@ -20,6 +20,58 @@ The first demo focuses on construction earthworks, but the underlying planning p
 - The superintendent approves a revised plan and produces role-specific updates for a field lead and haul coordinator.
 - The same user flow works offline with local data. A connected Mapbox map is an optional visual enhancement.
 
+## How the system works
+
+**The model helps choose what to review. Rules decide what is feasible. A person decides what to approve.**
+
+One host serves the React interface, Python API and optional local model server. LanceDB stores the site's records on that same host; the superintendent uses a browser to reach the interface. The browser sends requests to the API; it never calls the model or database directly.
+
+```mermaid
+flowchart TD
+    Person["Superintendent: inspect, ask, review"] --> UI["React interface: map, evidence and recovery"]
+    UI --> API["FastAPI: validate requests and coordinate the workflow"]
+    API <--> DB[("Local LanceDB: site records, approvals and audits")]
+    API --> Rules["Deterministic rules: ground, freshness, prerequisites and capacity"]
+    API <--> Agent["Bounded assistant: read-only tool loop"]
+    Agent <--> Model["Local llama.cpp: Qwen3-4B Q4_K_M"]
+    Agent --> Rules
+    Rules --> Review["Checked options, evidence and held work"]
+    Review --> UI
+    UI --> Approval["Separate human approval request"]
+    Approval --> Recheck["API rechecks selection and snapshot fingerprint"]
+    Recheck --> DB
+    Recheck --> Briefs["Local teammate briefs: copy or export"]
+```
+
+### Follow one decision
+
+1. **Read the evidence.** In the synthetic post-rain scenario, north access is too soft for the loaded hauler. Stored records include timestamped observations, source confidence and machine-specific limits. The aerial gives location context; its pixels do not establish soil conditions.
+2. **Check the work.** Python rules evaluate the destination and every route zone, then check prerequisites, equipment compatibility and combined resource budgets. South access can preserve hauling; stale west-stockpile evidence keeps inspection work held, and its unfinished prerequisite blocks the successor.
+3. **Use optional assistance.** The model selects a focused view of the shift, reads stored evidence and asks the rules to check relevant recovery candidates. The API builds the displayed facts from checked records rather than displaying model-authored operational claims.
+4. **Review the exact selection.** The superintendent sees proposed work, held/deferred work, evidence references, resource assumptions and the evidence deadline. The model cannot approve its own proposal.
+5. **Recheck before saving.** Approval sends the chosen selection back to the API. A fingerprint identifies the snapshot, clock and planning policy; changed or expired evidence requires a fresh review. A valid approval is saved locally and produces role-specific briefs. Approval does not complete work, send messages or dispatch machinery.
+
+### What each part owns
+
+| Part | Responsibility | Implementation |
+| --- | --- | --- |
+| Browser interface | Show evidence, compare options, collect explicit review and approval | [React workspace](apps/web/src/App.tsx), [assistant panel](apps/web/src/AssistPanel.tsx) |
+| API and typed contracts | Validate requests and stored records; coordinate analysis and approval | [FastAPI routes](apps/api/src/terraready/main.py), [domain models](apps/api/src/terraready/models.py) |
+| Ground and recovery rules | Determine `GO` / `INSPECT` / `NO_GO`; enforce prerequisites and resource budgets | [Ground engine](apps/api/src/terraready/engine.py), [recovery engine](apps/api/src/terraready/recovery.py) |
+| Optional assistant | Select relevant checked records through a small read-only tool allowlist | [Tool loop](apps/api/src/terraready/agent.py), [model transport](apps/api/src/terraready/model_client.py) |
+| Local storage | Keep six fixture tables plus approval and assistant-audit history | [Typed LanceDB storage](apps/api/src/terraready/storage.py), [data contract](docs/DATA_CONTRACT.md) |
+| Verification evidence | Keep recorded native/GPU measurements separate from current service availability | [Artifact validation](apps/api/src/terraready/system_evidence.py), [System page](apps/web/src/SystemPage.tsx) |
+
+### Why these boundaries matter
+
+- **Rules remain authoritative.** A plausible answer cannot override a ground restriction, stale observation, unfinished prerequisite or resource conflict. The model has no write, approval, shell, SQL or arbitrary-network tool.
+- **Assistance can fail without blocking manual planning.** An unavailable model, invalid response or exhausted budget produces a labeled rules-only fallback. Each turn is bounded to five model responses, 960 completion tokens and 120 seconds; there is no hosted-model fallback.
+- **The useful record is the checked decision.** Audits retain typed facts, references, tool trace and timings. Questions, free-form model output and hidden reasoning are not retained. An audit-save failure is shown explicitly.
+- **Local storage keeps the prototype small.** One API process and one local database support this single-site demo. LanceDB is used for typed records; image embeddings, vector retrieval and visual ground inference are not implemented.
+- **Private deployment keeps the same architecture.** During the GPU test, web, API, database and model ran together on one temporary host. Only SSH was exposed; browser access used authenticated forwarding to loopback services. This is not a public service or a production authentication design.
+
+See [architecture decisions](docs/DECISIONS.md) for rationale and [the assistant contract](docs/LOCAL_AGENT.md) for exact tools, limits and model setup.
+
 ## Current build
 
 The visual workspace runs against the local FastAPI service and typed LanceDB tables. Select equipment to update ground readiness, inspect a zone's evidence, compare access routes, and advance the evidence clock to see stale observations require inspection.
@@ -46,7 +98,19 @@ Interaction-QA artifact below uses the explicitly labeled **test stub**, not rea
 
 Open [the local System page](http://localhost:5173/system), or use the shield link in the workspace rail. It explains the implemented dataflow, deterministic/model/approval boundaries, edge design intent and actual hardware evidence. A separate authenticated local model-list probe reports current reachability; it does not run inference or turn past tests into a live-quality guarantee.
 
-The page reads a validated, sanitized three-case real-model artifact from `docs/verification/local-agent.json`. It records model/runtime revisions and hashes, dataset/source provenance, host configuration and observed task timings. Missing, corrupt, incomplete or stub artifacts never become sample measurements. No Jetson, cloud-GPU, peak-memory/power, latency-percentile or full-stack egress-denial result is claimed.
+The page independently validates two sanitized historical artifacts: [native Mac smoke](docs/verification/local-agent.json) and [private GPU integration](docs/verification/gpu-agent.json). They record model/runtime revisions and hashes, dataset/source provenance, host configuration and observed results. Missing, corrupt, incomplete or stub artifacts never become sample measurements.
+
+The private test on **2026-10-25** ran the complete stack on one NVIDIA L4 with a fresh synthetic database and source bundle from commit `45ff57e`:
+
+| Observation | Recorded result |
+| --- | --- |
+| Real inference | 3/3 task smoke cases and 10/10 warm API requests passed |
+| Warm end-to-end API latency | p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests |
+| Sampled memory peaks | **3,274 MiB GPU**, **5.94 GiB container**, 419 nominal one-second samples |
+| Workflow and failures | Human review/approval/briefs, stopped-model fallback and evidence expiry passed; restart reachability recovered |
+| Cleanup and cost | Temporary Pod terminated; no Pods or network volumes remained. Observed balance decrease **$0.16**; detailed provider billing pending |
+
+These are bounded integration observations, not reliability guarantees or absolute memory high-water marks. Container memory includes caches. Startup followed preload; cold-cache performance was not established. Full-stack outbound-network denial remains deferred/unverified. No Jetson, power-efficiency or production-safety result is claimed. The local regression suite passed **267 backend tests and 44 browser tests**; those browser tests use a labeled protocol stub and are separate from real inference evidence.
 
 `make agent-smoke` records actual inference under ignored `.data/reports/`; `python scripts/export_verification.py` prints only the typed public projection for deliberate review/promotion. Never publish the raw local database, model key, `.env.local` or an unreviewed report. Current implementation and verification state: [project state](docs/STATE.md).
 
