@@ -69,6 +69,7 @@ def create_app(
                 checked_at=datetime.now(UTC),
             ),
             verification=load_evidence(verification_dir or Path("docs/verification")),
+            gpu_verification=load_evidence(verification_dir or Path("docs/verification"), gpu=True),
         )
 
     def snapshot() -> SiteSnapshot:

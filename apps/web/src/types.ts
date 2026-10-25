@@ -179,6 +179,43 @@ export interface RecoveryPlan {
   approval: Approval | null;
 }
 
+export interface GpuTestEvidence {
+  provider: "Runpod";
+  gpu_name: string;
+  gpu_count: 1;
+  gpu_vram_mib: number;
+  driver_version: string;
+  region: string;
+  container_image_sha256: string;
+  container_memory_limit_bytes: number;
+  allocated_vcpu: number;
+  cpu_quota_cores: number;
+  sampled_peak_gpu_mib: number;
+  sampled_peak_container_memory_bytes: number;
+  sampled_services_rss_kib: number;
+  resource_sample_count: number;
+  sample_interval_seconds: number;
+  stack_ready_seconds: number;
+  first_request_ms: number;
+  warm_request_ms: number[];
+  warm_passed: number;
+  warm_p50_ms: number;
+  warm_p95_ms: number;
+  browser_journey_passed: boolean;
+  model_outage_passed: boolean;
+  evidence_expiry_passed: boolean;
+  restart_probe_passed: boolean;
+  operating_snapshot_unchanged: boolean;
+  cleanup_verified: boolean;
+  started_at: string;
+  terminated_at: string;
+  billing_status: "pending" | "recorded";
+  observed_balance_decrease_usd: number | null;
+  provider_charge_usd: number | null;
+  usage_ceiling_usd: 5;
+  egress_denial: "deferred_unverified";
+}
+
 export interface SystemEvidence {
   data_ready: boolean;
   runtime: {
@@ -223,6 +260,8 @@ export interface SystemEvidence {
         evidence_ids: string[];
       }[];
       limitations: string[];
+      gpu_test?: GpuTestEvidence | null;
     };
   };
+  gpu_verification?: SystemEvidence["verification"];
 }

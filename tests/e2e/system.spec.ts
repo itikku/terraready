@@ -64,9 +64,12 @@ test("deep link shows actual recorded cases, provenance and explicit limits", as
     })
     .click();
   await expect(
-    page.getByText(body.verification.evidence.model.weights_sha256, {
-      exact: true,
-    }),
+    page
+      .locator(".system-provenance")
+      .first()
+      .getByText(body.verification.evidence.model.weights_sha256, {
+        exact: true,
+      }),
   ).toBeVisible();
   await expect(
     page.getByText(/Working tree had changes|Clean working tree at capture/),
@@ -77,7 +80,7 @@ test("deep link shows actual recorded cases, provenance and explicit limits", as
     }),
   ).toBeVisible();
   await expect(
-    page.getByText(/latency percentiles and production reliability/),
+    page.getByText("Power and production reliability.", { exact: true }),
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({
@@ -117,6 +120,7 @@ for (const status of ["missing", "invalid"] as const) {
   }) => {
     await systemResponse(page, (body) => {
       body.verification = { status, evidence: null };
+      body.gpu_verification = { status, evidence: null };
     });
     await page.goto("/system");
     await expect(
@@ -229,5 +233,109 @@ test("mobile provenance, keyboard skip and navigation stay accessible", async ({
   await page.getByRole("link", { name: "Workspace", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Good ground. Better decisions." }),
+  ).toBeVisible();
+});
+
+test("recorded GPU measurements stay separate from live reachability and pending cost", async ({
+  page,
+  request,
+}) => {
+  const body = await (await request.get("/api/system")).json();
+  const gpu = body.gpu_verification.evidence.gpu_test;
+  await systemResponse(page, (response) => {
+    response.runtime.reachable = false;
+    response.runtime.mode = "local_model";
+    response.gpu_verification!.evidence!.gpu_test!.billing_status = "pending";
+    response.gpu_verification!.evidence!.gpu_test!.provider_charge_usd = null;
+  });
+  await page.goto("/system");
+  const recorded = page.getByLabel("Recorded private GPU verification");
+  await expect(
+    page.getByRole("heading", { name: "Local runtime unavailable" }),
+  ).toBeVisible();
+  await expect(
+    recorded.getByRole("heading", { name: "1 × NVIDIA L4" }),
+  ).toBeVisible();
+  await expect(
+    recorded.getByRole("heading", {
+      name: `p50 ${(gpu.warm_p50_ms / 1000).toFixed(2)}s · p95 ${(gpu.warm_p95_ms / 1000).toFixed(2)}s`,
+    }),
+  ).toBeVisible();
+  await expect(
+    recorded.getByText(
+      "Final provider charge pending reconciliation; no zero-cost claim. Usage ceiling: $5.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    recorded.getByText(/Observed account balance decrease: \$0.16/),
+  ).toBeVisible();
+  await expect(recorded.getByText(/Provider-recorded charge/)).toHaveCount(0);
+  await expect(
+    recorded.getByText("Temporary Pod terminated · cleanup verified", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "3 of 3 task checks passed" }),
+  ).toBeVisible();
+  await recorded
+    .getByText("GPU source, allocation and cleanup provenance", { exact: true })
+    .click();
+  await expect(
+    recorded.getByText(gpu.container_image_sha256, { exact: true }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({
+    path: "docs/images/gpu-system-mobile.png",
+    fullPage: true,
+  });
+});
+
+test("provider-recorded cost is displayed only when billing is reconciled", async ({
+  page,
+}) => {
+  await systemResponse(page, (body) => {
+    const gpu = body.gpu_verification!.evidence!.gpu_test!;
+    gpu.billing_status = "recorded";
+    gpu.provider_charge_usd = 0.125;
+  });
+  await page.goto("/system");
+  await expect(
+    page.getByText("Provider-recorded charge: $0.1250. Usage ceiling: $5.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Final provider charge pending reconciliation; no zero-cost claim. Usage ceiling: $5.",
+      { exact: true },
+    ),
+  ).toHaveCount(0);
+});
+
+test("invalid GPU artifact cannot borrow the native smoke's measurements", async ({
+  page,
+}) => {
+  await systemResponse(page, (body) => {
+    body.gpu_verification = { status: "invalid", evidence: null };
+  });
+  await page.goto("/system");
+  await expect(
+    page.getByRole("heading", {
+      name: "GPU artifact invalid · not measured here",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Recorded private GPU verification"),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "3 of 3 task checks passed" }),
   ).toBeVisible();
 });

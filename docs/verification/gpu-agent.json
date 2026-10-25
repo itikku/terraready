@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "kind": "real_local_model_smoke",
+  "recorded_at": "2026-10-25T14:17:51.723788Z",
+  "source_base_commit": "45ff57e02f0b5fffc902c56b62c81ce7eba27549",
+  "working_tree_dirty": false,
+  "source_sha256": {
+    "apps/api/src/terraready/agent.py": "643809df2f63d92209f25acaf133380dafeb69940ac6ac8d35cddafbaf6263e0",
+    "apps/api/src/terraready/model_client.py": "35f25ab25e380469cd049686e8b3059d5592c698a599bcc6b3a83918042d2f29",
+    "config/local-model.json": "31b66e119fa7735bf8a0d07ee910157f3b8e4341ad1f2141b5097f9fc04d359b",
+    "scripts/serve_model.py": "4c68dbdc71e67832f32aacffafbf438a2c59226a8751cd41fa0c219c3c092fb0"
+  },
+  "dataset_sha256": "f4069079cda6cb06961948e5ff771048c1aded9075a5c5e6cec95ef806e33de9",
+  "model": {
+    "model_id": "qwen3-4b-q4_k_m",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "weights_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "license": "Apache-2.0",
+    "runtime_tag": "b11669",
+    "runtime_commit": "620d2225cc436ab0b001e3200e590e3b286ef9ab"
+  },
+  "hardware": {
+    "host": "Runpod NVIDIA L4 (single temporary GPU)",
+    "os": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+    "architecture": "x86_64",
+    "host_memory_bytes": null,
+    "gpu_layers_requested": 99,
+    "cpu_threads": 2,
+    "context_size": 4096
+  },
+  "cases": [
+    {
+      "name": "reroute",
+      "passed": true,
+      "mode": "local_model",
+      "elapsed_ms": 2557,
+      "tools": [
+        "get_shift",
+        "evaluate_candidates",
+        "finish_analysis"
+      ],
+      "task_ids": [
+        "east-haul",
+        "west-inspection",
+        "west-followup"
+      ],
+      "evidence_ids": [
+        "east-morning",
+        "north-morning",
+        "south-morning",
+        "west-yesterday",
+        "yard-morning"
+      ]
+    },
+    {
+      "name": "redeploy",
+      "passed": true,
+      "mode": "local_model",
+      "elapsed_ms": 3231,
+      "tools": [
+        "get_shift",
+        "evaluate_candidates",
+        "finish_analysis"
+      ],
+      "task_ids": [
+        "yard-drainage",
+        "yard-inspection",
+        "west-inspection",
+        "west-followup"
+      ],
+      "evidence_ids": [
+        "north-morning",
+        "west-yesterday",
+        "yard-morning"
+      ]
+    },
+    {
+      "name": "blocked",
+      "passed": true,
+      "mode": "local_model",
+      "elapsed_ms": 1671,
+      "tools": [
+        "get_shift",
+        "get_evidence",
+        "finish_analysis"
+      ],
+      "task_ids": [
+        "west-inspection",
+        "west-followup"
+      ],
+      "evidence_ids": [
+        "north-morning",
+        "west-yesterday",
+        "yard-morning"
+      ]
+    }
+  ],
+  "completed": true,
+  "limitations": [
+    "One temporary Runpod L4; three task smoke cases and ten warm requests are not a reliability benchmark.",
+    "Memory peaks sampled at nominal one-second intervals; container memory includes caches and service RSS can double-count shared pages.",
+    "Startup and first-request observations followed preload; OS caches were not controlled. No cold-cache benchmark.",
+    "Enforced full-stack external-access denial is deferred and unverified; browser blocking is not that proof.",
+    "Synthetic fixtures and a new remote database only. Approval did not complete work or dispatch anything.",
+    "Pod termination and absence of residual network volumes verified. Final provider charge pending reconciliation.",
+    "Source-only export from a clean committed revision; external test harness hashes are retained with local sanitized evidence.",
+    "No Jetson deployment, power-efficiency measurement or production-safety claim. Native M1 evidence is preserved separately."
+  ],
+  "gpu_test": {
+    "provider": "Runpod",
+    "gpu_name": "NVIDIA L4",
+    "gpu_count": 1,
+    "gpu_vram_mib": 23034,
+    "driver_version": "595.91.07",
+    "region": "US-MO-2",
+    "container_image_sha256": "602afab6d10c5932bd9824c4f23119ca20b68d9a03423e4b3e9c612ff1431ddf",
+    "container_memory_limit_bytes": 93999996928,
+    "allocated_vcpu": 16,
+    "cpu_quota_cores": 13.6,
+    "sampled_peak_gpu_mib": 3274,
+    "sampled_peak_container_memory_bytes": 6376538112,
+    "sampled_services_rss_kib": 3242136,
+    "resource_sample_count": 419,
+    "sample_interval_seconds": 1.0,
+    "stack_ready_seconds": 4.362,
+    "first_request_ms": 2618.25,
+    "warm_request_ms": [
+      2349.38,
+      2958.15,
+      1713.37,
+      2236.62,
+      3040.02,
+      1719.17,
+      2239.2,
+      2977.62,
+      1722.2,
+      2228.01
+    ],
+    "warm_passed": 10,
+    "warm_p50_ms": 2236.62,
+    "warm_p95_ms": 3040.02,
+    "browser_journey_passed": true,
+    "model_outage_passed": true,
+    "evidence_expiry_passed": true,
+    "restart_probe_passed": true,
+    "operating_snapshot_unchanged": true,
+    "cleanup_verified": true,
+    "started_at": "2026-10-25T14:10:04.111000Z",
+    "terminated_at": "2026-10-25T14:25:42Z",
+    "billing_status": "pending",
+    "observed_balance_decrease_usd": 0.16,
+    "provider_charge_usd": null,
+    "usage_ceiling_usd": 5,
+    "egress_denial": "deferred_unverified"
+  }
+}

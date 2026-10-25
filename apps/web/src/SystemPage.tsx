@@ -12,6 +12,7 @@ import { getSystemEvidence } from "./api";
 import type { SystemEvidence } from "./types";
 import "./plan.css";
 import "./system.css";
+import GpuVerification from "./GpuVerification";
 
 const flow = [
   [
@@ -63,6 +64,7 @@ export default function SystemPage() {
     return () => c.abort();
   }, [attempt]);
   const proof = data?.verification.evidence;
+  const gpu = data?.gpu_verification?.evidence?.gpu_test;
   return (
     <div className="system-page">
       <a href="#system-main" className="skip-link">
@@ -289,6 +291,7 @@ export default function SystemPage() {
                   ))}
                 </dl>
               </details>
+              <p>Limits of the native smoke above:</p>
               <ul className="system-limitations">
                 {proof.limitations.map((text) => (
                   <li key={text}>{text}</li>
@@ -297,6 +300,7 @@ export default function SystemPage() {
             </div>
           )}
         </section>
+        <GpuVerification artifact={data?.gpu_verification} />
         <section
           aria-labelledby="boundaries-heading"
           className="system-section"
@@ -367,30 +371,39 @@ export default function SystemPage() {
             </article>
             <article>
               <span className="system-label">HARDWARE EVIDENCE</span>
-              <h3>{proof ? proof.hardware.host : "Not measured here"}</h3>
+              <h3>
+                {gpu?.gpu_name || proof?.hardware.host || "Not measured here"}
+              </h3>
               <p>
-                {proof
-                  ? "Only the recorded local smoke above. CPU-only 4B inference hit the 120-second deadline on the M1 trial; Metal is the native default. This is not Jetson validation."
-                  : "No valid artifact loaded. No hardware pass is inferred from the architecture."}
+                {gpu
+                  ? "The separate native smoke and private single-GPU test are recorded above. The cloud Pod was temporary; this is not Jetson or power-efficiency validation."
+                  : proof
+                    ? "Only the recorded local smoke above. CPU-only 4B inference hit the 120-second deadline on the M1 trial; Metal is the native default. This is not Jetson validation."
+                    : "No valid artifact loaded. No hardware pass is inferred from the architecture."}
               </p>
             </article>
           </div>
           <div className="system-unmeasured">
             <h3>Not measured yet</h3>
             <ul>
+              {!gpu && (
+                <li>
+                  Private cloud-GPU integration and observed provider charges
+                  are not established by a native artifact.
+                </li>
+              )}
+              {gpu?.billing_status === "pending" && (
+                <li>Final provider charges: reconciliation pending.</li>
+              )}
               <li>
-                Private cloud-GPU integration and observed provider charges. No
-                paid resources created; approved usage ceiling is $5, with
-                account/deposit/readiness gates still pending.
+                Full-stack external-access denial after preload is deferred and
+                unverified. A runtime offline flag or blocked browser requests
+                alone is not that proof.
               </li>
               <li>
-                Full-stack external-access denial after preload. A runtime
-                offline flag or blocked browser requests alone is not that
-                proof.
-              </li>
-              <li>
-                Peak workload RAM/VRAM, power, latency percentiles and
-                production reliability.
+                {gpu
+                  ? "Power and production reliability."
+                  : "Peak workload RAM/VRAM, power, latency percentiles and production reliability."}
               </li>
               <li>Jetson: not deployed and not planned for this POC.</li>
             </ul>
