@@ -25,3 +25,7 @@ This historical aerial provides visual context only. North Ridge, its operationa
 ## Fonts, icons and connected maps
 
 DM Sans and IBM Plex Mono are bundled through Fontsource (SIL Open Font License). The full font licenses are included in `apps/web/public/licenses/` so they accompany the built site. Lucide icons use the ISC License. Optional Mapbox imagery and software retain Mapbox's terms and attribution; no Mapbox tiles or imagery are bundled or redistributed under MIT.
+
+## Application screenshots
+
+The screenshots under `docs/images/` show TerraReady's synthetic scenario over the attributed aerial above. `local-assistant.png` and `local-assistant-mobile.png` are explicitly labeled protocol-stub interaction captures. `gpu-recovery-approved.png` is an unmodified full-page capture from the private single-L4 test on October 25, 2026, showing genuine Qwen3-4B analysis, separate human approval and local briefs. No real customer data or credentials are shown. Historical native and GPU results are independently recorded under `docs/verification/`; screenshots alone are not benchmark evidence.

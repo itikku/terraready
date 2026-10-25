@@ -12,13 +12,18 @@ TerraReady is a local-first, multimodal shift-planning prototype for dynamic gro
 
 The first demo focuses on construction earthworks, but the underlying planning primitive applies across physical operations.
 
-## What the v1 demo will show
+## Demo walkthrough
 
-- A site superintendent reviews a post-rain shift on a visual site map.
-- The system assesses machine-and-zone feasibility using explicit, deterministic rules.
-- A marginal or stale-evidence condition becomes **Inspect**, never invented certainty.
-- The superintendent approves a revised plan and produces role-specific updates for a field lead and haul coordinator.
-- The same user flow works offline with local data. A connected Mapbox map is an optional visual enhancement.
+Start with the local setup below. The default demo needs no Mapbox token, model download or Runpod account.
+
+1. **See the disruption.** Keep **HT-02 · Loaded hauler** selected. North access is `NO_GO` after rain. Select the zone to inspect the timestamped synthetic observations and machine-specific reasons.
+2. **Compare a recovery.** Choose **South access → east cut** under the current work package. Hauling becomes eligible under the demo rules; the west inspection remains held. The route review below compares the original and revised work.
+3. **Review and approve.** Read the holds, evidence deadline and planning limits in **Keep the work. Change the plan.** Check the review box, approve, and copy or download a teammate brief. Reload to see the locally saved approval. Nothing is sent or dispatched.
+4. **Try optional assistance.** With the pinned model running, choose **Reroute**, **Redeploy** or **Blocked work** in **Ask about the recovery**. Inspect the facts and tool trace, then choose **Review these recovery options** and approve that exact subset separately. Without a model, the panel labels its rules-only fallback and manual review remains available.
+5. **Make evidence expire.** Advance the evidence clock to **12:00**. Stale observations require inspection; the earlier approval cannot authorize the changed snapshot. Return to the shift-start clock to repeat the original scenario.
+6. **Inspect the proof.** Open **System & deployment** using the shield link. Current model availability and historical native/GPU test results are shown separately.
+
+The map-first workspace and focused recovery panel are implemented. A complete shift-first screen redesign is deferred. Actual completion, prerequisites and resource budgets are already enforced by the recovery backend.
 
 ## How the system works
 
@@ -90,7 +95,7 @@ An optional [bounded local assistant](docs/LOCAL_AGENT.md) uses Qwen3-4B Q4_K_M 
 
 In **Ask about the recovery**, choose an example or ask a question, inspect cited records and the observable tool trace, then **Review these recovery options**. The model chooses a focused read view before seeing dense data; only checked options in that view may be proposed. Manual route review above remains available if the model is absent or fails. Recovery approval is fingerprint-bound, never automatic, and produces separate copyable teammate updates. Unselected work stays explicitly held or deferred. The panel labels real local inference, test stubs and rules-only fallback distinctly.
 
-Interaction-QA artifact below uses the explicitly labeled **test stub**, not real model output or a performance measurement. Actual three-case local-model results are recorded separately in the project state and sanitized smoke report.
+Interaction-QA artifact below uses the explicitly labeled **test stub**, not real model output or a performance measurement. Actual native and GPU model results are recorded separately in the typed verification artifacts. [View the real GPU analysis → review → approved-briefs capture](docs/images/gpu-recovery-approved.png); it uses the same synthetic scenario and genuine Qwen inference, not the protocol stub.
 
 ![Local assistant review and human approval, protocol-test artifact](docs/images/local-assistant.png)
 
@@ -127,10 +132,12 @@ These are synthetic demonstrations, not engineering recommendations. Evidence co
 
 ## Run locally
 
-Requires Python 3.12 and [uv](https://docs.astral.sh/uv/getting-started/installation/). From the repository root:
+Requires **Python 3.12**, **Node.js 24 LTS** (or Node 22.13+), npm and [uv](https://docs.astral.sh/uv/getting-started/installation/). Locked installs were verified with uv 0.13.5. Python and Node dependency downloads require internet during setup; model assets are a separate optional download. No credentials are required for the bundled demo.
+
+From a fresh checkout of this repository:
 
 ```sh
-uv sync --frozen --extra dev
+uv sync --frozen --extra dev --python 3.12
 make seed
 make api
 ```
@@ -142,7 +149,9 @@ npm ci
 make web
 ```
 
-Open `http://localhost:5173`. The default local aerial, fonts, evidence and decision flow require no external connection. Select **Satellite** to opt into Mapbox; a missing token, failed request or unavailable WebGL falls back to the local aerial. Both modes use the same georeferenced synthetic work zones and backend decisions. Mapbox imagery is not bundled.
+Open `http://localhost:5173`. Stop each development service with Ctrl-C in its terminal. Ports 5173 (web) and 8000 (API) must be free; the optional model uses 8080. These are local development servers, not a public deployment.
+
+The default local aerial, fonts, evidence and decision flow require no external connection. Select **Satellite** to opt into Mapbox; a missing token, failed request or unavailable WebGL falls back to the local aerial. Both modes use the same georeferenced synthetic work zones and backend decisions. Mapbox imagery is not bundled.
 
 The API listens at `http://127.0.0.1:8000`; interactive API documentation is at `http://127.0.0.1:8000/docs`. `make seed` resets the six fixture tables: stop the API before reseeding. A seventh approval table and eighth assistant-audit table are created on first use; their history is retained across seeds, but approval is shown only for an exactly matching snapshot/clock/planner fingerprint. The database lives in ignored `.data/lancedb/`. `TERRAREADY_DB_DIR` can point to a different local directory. Run only one API process; concurrent reseeding and multiple writers are outside the POC boundary.
 
@@ -158,6 +167,16 @@ curl -sS http://127.0.0.1:8000/api/scenarios/post-rain/evaluate \
 Switch `route_id` to `south-to-east` to compare the alternate route. An optional timezone-aware `as_of` later than the fixed scenario clock demonstrates evidence expiry.
 
 `/health` checks process liveness; `/ready` validates the stored site snapshot. An unseeded or incomplete database returns `503` with a recovery instruction. Invalid requests return `422`, and unknown records return `404`.
+
+### Common setup and demo issues
+
+| Symptom | What to do |
+| --- | --- |
+| API says the data is not ready | In a new checkout, run `make seed` before starting the API. On an existing demo, stop the API and preserve needed history before deliberately reseeding. |
+| Assistant says the model is unavailable | This is expected without optional [model setup](docs/LOCAL_AGENT.md). Use manual review, or complete the pinned downloads and start `make model` in another terminal. No hosted-model key is needed. |
+| The map provider fails or no token is configured | Use **Local aerial**. The bundled map and decision workflow do not require Mapbox. |
+| Approval disappears after changing the clock | The earlier approval belongs to its exact evidence snapshot and selection. Review the updated proposal; stale or all-held work cannot be approved. |
+| A service cannot bind its port | Stop your duplicate process or use a separate checkout with explicit test ports. Do not kill unrelated services or reset an existing database. |
 
 ## Verify
 
@@ -184,7 +203,7 @@ CI runs backend and workspace checks independently and retains browser failure a
 
 ## POC boundaries
 
-TerraReady is not a safety-certified system, trafficability model, or machine-control product. All v1 operational layers and inspection evidence are synthetic and visibly labeled as such. The final README will include a real aerial base-map attribution and visual cross-vertical examples.
+TerraReady is not a safety-certified system, trafficability model, or machine-control product. All v1 operational layers and inspection evidence are synthetic and visibly labeled as such. The bundled real aerial is attributed in [asset provenance](ATTRIBUTIONS.md). Agriculture, mining and forestry illustrate the shared decision pattern above; they are not separate implemented demos.
 
 ## Project documents
 
@@ -201,4 +220,4 @@ The frontend reads optional `VITE_MAPBOX_TOKEN` from the repository-root `.env.l
 
 ## License
 
-Code and original project assets are released under the [MIT License](LICENSE). Third-party and public-domain data are identified separately in `ATTRIBUTIONS.md` when added.
+Code and original project assets are released under the [MIT License](LICENSE). Third-party and public-domain materials retain their own terms, recorded in [ATTRIBUTIONS.md](ATTRIBUTIONS.md); bundled font licenses accompany the web build. Model weights are Apache-2.0 and llama.cpp is MIT, with pinned sources in [model setup](docs/LOCAL_AGENT.md).
