@@ -18,6 +18,7 @@
 - Added browser CI, a reviewed screenshot baseline and desktop/mobile README images. All external requests are blocked in the core browser suite.
 - Phase 3 backend slice: pure deterministic route planner, evidence-review deadline, snapshot fingerprint, approval API and typed idempotent local LanceDB approval records with both teammate briefs.
 - Phase 3 UI slice verified: original/proposed route comparison, review acknowledgment, durable approval display, role-specific copyable updates and Markdown export. This remains route comparison, not a complete shift/dependency/redeployment engine.
+- User approved the revised decision-first scope, genuine local agent, System & deployment page and private $5 GPU-test ceiling. Updated `GOALS.md`, `PLAN.md` and `DECISIONS.md` with bounded contracts, observable acceptance criteria, verification commands, safety/security boundaries, cost controls and explicit inter-phase approval gates. Phase 4A is the next active implementation slice; this planning update does not change app behavior.
 
 ## Evidence
 
@@ -41,6 +42,7 @@
 - Phase 3 live `make smoke`: all three decision outcomes passed against the restored manual API. Final `make verify` passed: backend formatting/lint/types and 97 tests (98.63% coverage), frontend formatting/types/lint/production build, and 24 browser tests. Post-verification test-artifact focus cleanup also passed formatting and whitespace checks. The optional lazy Mapbox bundle-size advisory remains unchanged.
 - Targeted post-cleanup desktop/mobile approval browser run: 2 passed (16.3s). Artifacts refreshed without diagnostic skip-link focus; no screenshot baseline changed.
 - Final screenshot QA corrected offscreen skip-link painting in oversized component captures (unfocused link is clipped; keyboard focus still reveals it). Reran `make web-check` successfully and the full 24-test browser suite successfully after this surgical correction. Desktop/mobile approval artifacts were visually inspected; the existing map regression baseline remains unchanged.
+- Revised-scope planning verification: `git diff --check` and ignored-credential check passed; reviewed the goals/plan/state/decisions for consistent scope and phase gates. Application code and dependencies are unchanged, so prior application test evidence remains the baseline, not a new test run. Confirmed manual preview/API listeners remain on loopback ports 5173/8000.
 
 ## Decisions in force
 
@@ -50,10 +52,14 @@
 - Go / inspect / no-go and revised-plan decisions are deterministic and approval-gated.
 - The fixed demo clock is 2026-10-24 07:00 America/Los_Angeles. Later evaluation clocks demonstrate evidence expiry; earlier clocks are rejected.
 - The engine evaluates every route zone and the destination. Static closures/capability limits block operation; fresh conflicting observations require inspection. Source confidence is not a safety probability.
+- Revised planning scope is one site, three paired equipment/operator resources and 6–8 work packages. Explicit completion/prerequisites and resource availability gate recovery; no general scheduler or manufactured productivity savings.
+- Model assistance will be real, local and read-only, bounded by deterministic feasibility and human approval. Exact model/runtime selection is a measured Phase 5 task, not an already-implemented capability.
+- Runpod private single-GPU testing is approved in principle with cumulative usage ceiling $5. Higher deposits/budgets or public exposure require separate approval. No Jetson deployment or multi-node cluster is planned.
 
 ## Risks / unresolved work
 
 - Current planner only compares routes for fixed assigned assets. It does NOT model the day's complete work docket, dependency eligibility, resource redeployment or a local LLM agent. The user explicitly flagged this product gap; do not present route comparison as full shift replanning.
+- System & deployment page, real model/runtime selection and private GPU validation are planned, not implemented. No Runpod account access, model weights, benchmark artifacts or paid resources have been established through this task. These do not block Phase 4A's local deterministic work.
 - Multimodal similarity retrieval remains unfinished: image references are persisted, but there is no image embedding/search pipeline yet.
 - Mapbox imagery requests currently return HTTP 429 in the live check. Do not infer a specific account/billing cause without further evidence. Default local aerial and all core interactions work without it.
 - Seed replacement is not a cross-table transaction; run it with the API stopped. Stored data is validated before evaluation; broken or unseeded snapshots yield a recovery-oriented `503`.
@@ -63,4 +69,4 @@
 
 ## Next step
 
-Agree revised scope BEFORE more implementation: the user wants a decision-first experience organized around planned work → disruption → feasible resource redeployment / pull-forward tasks (with explicit prerequisites), not an asset-scoring dashboard. They also want evidence of behind-the-scenes design and physical-AI viability, potentially a System & deployment page. Latest clarification: they do NOT intend to deploy on Jetson; prefer an inexpensive actual cloud GPU integration test. Do not keep asking for Jetson hardware. Propose one rented GPU (not a cluster), a genuine local model over bounded read-only tools, and no external inference after preload. Cloud GPU validation is not Jetson validation. Agree provider, spending ceiling and private test vs public demo before provisioning or exposing services. No paid resources or accounts have been created. Keep deterministic fallback and human approval. These requests supersede simply proceeding to README polish; update PLAN after agreement. Chrome preview: `http://localhost:5173`; keep it running. Mapbox 429 remains optional-provider only.
+Implement Phase 4A in `docs/PLAN.md`: extend the typed work docket and deterministic recovery engine with actual completion state, prerequisites and compatible available-resource alternatives; verify backend/storage/API behavior and live smoke, update this record and commit. Do not begin the shift-view redesign (4B), agent integration (5), evidence page (6) or paid deployment (7) until their phase gates. Latest planning commit contains no application changes. Chrome preview remains `http://localhost:5173`; preserve the user's database/approvals, keep preview services available, never read `.env.local`. Mapbox 429 is optional-provider only. Do not ask about Jetson hardware; later GPU readiness requires actual account access, quote and deposit checks within the approved private $5 test boundary.

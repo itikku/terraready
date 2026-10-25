@@ -1,6 +1,6 @@
 # Build plan
 
-Only the active phase may be implemented. Complete its acceptance criteria and verification steps before advancing.
+Only the active phase may be implemented. Complete its acceptance criteria and verification steps before advancing. The user approved the revised product direction and a private $5 GPU-test ceiling on 2026-10-24. That is not blanket permission for larger deposits, public exposure, extra integrations or skipping the phase gates below.
 
 ## Phase 0 — Foundation and product contract
 
@@ -98,26 +98,119 @@ Add deterministic alternative-plan comparison, approval state, and role-specific
 - Generate copyable/exportable updates only after approval. No external messages, real identities, dispatch, or authentication claims.
 - Verify planner edge cases, durable/idempotent approval, stale-proposal rejection, browser approval/error/reload/clock flows, clipboard/export, mobile and accessibility. Commit backend and UI as separately verified slices.
 
-## Follow-up scope gate — Decision-first operations and technical evidence
+## Phase 4A — Decision-first work contract and recovery engine
 
-**Status:** Proposed — requirements raised by the user on 2026-10-24; architecture/scope clarification pending. Do not implement yet.
+**Status:** Active next implementation slice — revised direction approved by the user on 2026-10-24; application code has not changed for this extension.
 
-- Put the day's planned work, targets and dependencies before asset-readiness scores. Make the actual disruption visible against the original plan.
-- Show feasible resource redeployment and pull-forward work, excluding tasks whose prerequisites remain incomplete. The existing route-only planner is not sufficient evidence of these capabilities.
-- Consider a local, bounded-tool agent for analysis and recommendations; keep deterministic constraint checking and human approval outside model authority. User clarified Jetson deployment is NOT intended: propose a low-cost, single-cloud-GPU integration test instead. Agree provider, cost ceiling and private/public exposure before provisioning. Do not claim cloud benchmarks validate Jetson performance.
-- Add a System & deployment experience explaining the implemented dataflow, design tradeoffs, offline behavior, model/tool boundary, failure modes, and measured runtime footprint. Distinguish implemented, designed-for-edge and hardware-validated claims.
-- Define observable acceptance criteria and update this plan after user agreement. This gate takes precedence over treating the next step as cosmetic README polish.
+**Boundary and design**
 
-## Phase 4 — Demo hardening
+- Keep one synthetic site, three assets, the existing local imagery and fixed evidence clock. Extend to 6–8 work packages spanning completed, today's planned and upcoming work. Treat equipment/operator as a paired resource; do not add a separate workforce system.
+- Define typed prerequisites, explicit completion/progress state, planned targets/durations, priority and resource compatibility. Validate unknown IDs, self-dependencies and cycles at the input boundary. Store new fields as queryable typed LanceDB records, not opaque blobs.
+- Preserve the original plan separately from recommended changes. Distinguish ground eligibility, dependency eligibility, resource availability and priority; do not compress all four into one unexplained score.
+- Reuse the existing evaluator for every candidate task/asset/route. Generate a small deterministic set of feasible reroute or pull-forward/redeployment choices, with stable ordering. No global optimization or LLM-generated feasibility.
+- Approval does not complete work or satisfy prerequisites. Simultaneous suggestions must not double-book the same paired resource. Respect remaining modeled capacity, and distinguish planned capacity from measured savings.
+- Include reroute recovery, a genuinely held package, its blocked successor, and at least one compatible ready alternative. Support both reroute and redeployment through the core docket; additional edge cases may be isolated test fixtures rather than a new scenario-management UI.
+- Bind approvals to the full relevant snapshot, clock, decision/planning policy versions and selected proposal. Recompute constraints before saving; old route-only approvals must not approve a new assignment plan.
 
-Finish visual assets, README visuals, empty/error states, accessibility checks, CI, and a reproducible demo path.
+**Observable acceptance criteria**
+
+1. The API exposes original commitments and their direct/downstream disruption, with explicit reason/evidence references.
+2. A held predecessor excludes its successor; a completed prerequisite permits evaluation but never overrides ground or asset constraints.
+3. A compatible available resource can be offered ready backlog work; incompatible, over-capacity and conflicting assignments are rejected.
+4. Reroute recovery and genuine redeployment are separately demonstrated. All-held/expired-evidence cases cannot be approved.
+5. Existing machine-specific readiness and durable approval behavior remain correct. Fixture/schema changes have an explicit seed/recovery path; no silent database reset.
+
+**Verification and commit gate**
+
+- `make check`: model, planner, storage and API tests covering every criterion, plus repeat-seed/round-trip and unchanged legacy ground rules.
+- Extend `make smoke` with real HTTP assertions for disruption, dependency exclusion and redeployment.
+- Update `docs/DATA_CONTRACT.md`, `docs/STATE.md` and decisions; commit the verified backend slice. Present results and obtain approval before Phase 4B.
+
+## Phase 4B — Shift-first decision experience
+
+**Status:** Planned — approval gate after Phase 4A.
+
+**Experience**
+
+- Default entry: **Today’s shift** → **What changed** → **Recovery options** → **Approve & brief**. Show targets, prerequisites, resource allocation and clearly labeled assumptions before the asset scores.
+- Keep the map/evidence workspace accessible as the supporting investigation view. Preserve attribution, imagery fallback and machine-specific analysis; do not rebuild the visual foundation.
+- Show original versus proposed work and why each excluded alternative is ineligible. Present model assistance later as optional support, not a mandatory chat interface.
+- Keep meaningful loading/empty/error states and keyboard/mobile navigation. Use small view components instead of expanding a monolithic app component; no new design system or routing dependency unless demonstrably needed.
+
+**Acceptance and verification**
+
+- Playwright completes the superintendent journey without external requests: identify disrupted commitment, inspect evidence, choose a feasible recovery, see blocked successors stay held, approve and copy/download the correct teammate briefs.
+- Assert displayed impact/capacity numbers against API results. Test stale proposal, expired evidence, no alternatives, API failure/retry, persisted reload, keyboard use and 390px mobile layout.
+- `make verify`; zero critical-flow axe violations; visually inspect revised desktop/mobile artifacts. Review actual screenshot differences before changing baselines.
+- Update state and commit the verified UX slice. Obtain approval before Phase 5.
+
+## Phase 5 — Real local agent with a bounded tool surface
+
+**Status:** Planned — approval gate after Phase 4B. No hosted model API or paid GPU needed to write/test the integration.
+
+**Architecture and bounds**
+
+- Serve one small quantized instruction model via a pinned local runtime, initially evaluate llama.cpp. Pick and record an exact model revision, license, quantization, hash and compatible tool template after a bounded smoke evaluation (at most two candidates); do not call an untested adapter a working agent.
+- Implement a minimal backend tool loop, not a general agent framework. Allow only structured read-only operations: inspect shift/prerequisites, retrieve stored evidence, list checked recovery candidates and evaluate a candidate through existing rules. No shell, arbitrary SQL, filesystem, arbitrary URL, dispatch or approval tools.
+- Bound steps, tokens, response size and wall time; validate tool arguments and final referenced IDs. Treat observation text as data, not instructions. Numeric impacts come from checked backend results, not model arithmetic.
+- The model may compare/explain validated options; it cannot change completion state, manufacture evidence, relax constraints or self-approve. Approval always revalidates the chosen assignment.
+- Record observable tool calls/results, IDs, timings and user-facing rationale—not hidden chain-of-thought. Persist useful typed run metadata locally. Distinguish actual inference from deterministic fallback in the UI.
+- Model timeout, unavailable runtime, malformed output, unknown references or exhausted budgets must fail safely to manual deterministic planning. No silent cloud fallback.
+- Evidence retrieval initially uses real stored records. Do not claim image embeddings/visual inference; genuine multimodal similarity search remains a separately scoped enhancement.
+
+**Acceptance and verification**
+
+- Unit/API tests exercise allowlist enforcement, injection-like evidence, invented IDs, invalid arguments/output, timeout and budget exhaustion; no unsafe candidate can reach an approved plan.
+- Playwright covers assist → visible grounded recommendation/trace → human review, plus inference-unavailable fallback and retry. CI uses a labeled deterministic fake server for reproducible protocol/error tests; this does NOT count as a real-model test.
+- A separately labeled real-model smoke/evaluation run must demonstrate tool use on reroute, redeployment and blocked-prerequisite questions. Save exact runtime/model identifiers and outcomes. Local CPU execution is acceptable for early integration; performance claims wait for Phase 7.
+- `make verify`; record evidence and commit. Obtain approval before Phase 6.
+
+## Phase 6 — System & deployment evidence page
+
+**Status:** Planned — approval gate after Phase 5.
 
 **Acceptance criteria**
 
-- README includes cross-vertical visual narrative, business rationale, setup, demo flow, and attribution.
-- CI runs all applicable checks.
-- Playwright captures screenshots, traces, and video on test failure.
+- A navigable, directly addressable page explains the actual dataflow: local evidence/LanceDB → bounded model tools → deterministic checks → human approval → local briefs.
+- Link design decisions to observable behavior: typed local storage, freshness rules, dependency/capability gates, model failure fallback, fingerprinted approval and absence of external dispatch.
+- Show actual runtime availability separately from last test results. Label **implemented here**, **designed for edge** and **hardware-tested** accurately; no green badges for planned work or browser-only network blocking presented as full-stack offline proof.
+- Read sanitized verification artifacts with commit, dataset/model/runtime versions, hardware, test outcomes and timings. Missing artifacts display **not measured**, never sample metrics masquerading as measurements.
+- Explain that NAIP imagery is real, operational values/inspection illustration are synthetic, and images do not establish soil measurements. Cross-vertical architecture is a thesis, not four implemented applications.
+- Phase 7 adds actual GPU/offline/cost results through the same artifact contract; no fabricated preliminary results.
 
 **Verification**
 
-- Full local verification suite and clean-clone setup test.
+- `make verify`; browser navigation/deep-link/back behavior, missing/invalid artifacts, truthful unavailable states, accessibility and mobile checks. Inspect page screenshots, update state and commit. Obtain approval at the GPU readiness gate before Phase 7.
+
+## Phase 7 — Private single-GPU integration test
+
+**Status:** Approved in principle: Runpod, private temporary test, cumulative usage ceiling $5. Provisioning waits for completed local slices, account access and a documented readiness gate; no resources currently exist.
+
+**Readiness / spending gate**
+
+- Check the actual available instance quote, compute plus storage, account minimum/deposit and remaining budget. Prefer one modest 24 GB GPU; no cluster, always-on service or unrestricted automatic GPU substitution.
+- A required deposit above the approved $5 outlay, a higher budget, new payment details or public exposure requires explicit user approval. Keep credentials outside Git and never read/upload the existing Mapbox `.env.local`; use the bundled aerial remotely.
+- Prepare/pin the image, dependencies, weights and fixtures before the paid test where practical. Show the expected maximum runtime/cost and a shutdown deadline with margin; establish external cleanup/control independent of the workload's outbound network.
+- Use a private tunnel/access path; do not expose the current unauthenticated API or inference server publicly. Start only the identified test resource; preserve artifact IDs for exact cleanup.
+
+**Acceptance criteria**
+
+1. Run frontend, API, local LanceDB and the actual local model together. Browser tests complete disruption → recovery → grounded assistance → approval → teammate briefs.
+2. After preload, deny workload external access using verified platform/container controls. A deliberately attempted external probe fails while local inference, retrieval, planning and the browser journey continue. Browser request blocking alone is insufficient; do not block the provider control/cleanup path accidentally.
+3. Exercise inference failure and evidence expiry on the real deployment; deterministic manual review remains available and holds never become unjustified `GO` decisions.
+4. Record GPU/host identity, software/model hashes, cold/warm timings, peak memory/VRAM, a declared bounded latency sample (with count and p50/p95), outcomes and observed provider charges. Report resource/measurement limits honestly; no Jetson, power-efficiency or production safety claims.
+5. Export only sanitized reports/screenshots/traces. Terminate the exact test instance and remove unneeded test storage after verifying exports; confirm no residual billable resources. Record final usage against the $5 ceiling. A proposed ceiling is not a provider-enforced hard cap; do not claim otherwise.
+
+**Verification and handoff**
+
+- Local `make verify` plus the documented private-deployment browser suite, real inference evaluation, backend egress-denial probe and cleanup/billing checks.
+- Save sanitized results for the system page and README; preserve enough identifiers to reproduce the test, never credentials. Update state, commit and present results. Obtain approval before final publication/hardening.
+
+## Phase 8 — Reproducible portfolio handoff
+
+**Status:** Planned — approval gate after Phase 7.
+
+- README includes the decision-first demo flow, cross-vertical visual narrative/images, business rationale, architecture tradeoffs, honest implementation/validation limits, setup, actual results, license and attribution.
+- Clean-clone setup verifies locked dependencies, explicit seeding, missing-model behavior and the default offline visual experience. Model downloads are an explicit setup step with source/license/hash, not a hidden runtime network call.
+- CI runs deterministic backend/frontend/browser verification with failure artifacts. Real-GPU testing stays an explicit bounded task, not an automatic bill-generating CI job.
+- Run `make verify`, source/package secret/data checks and the clean-clone path. Commit each verified slice. GitHub publication or a public hosted demo is a separate user-authorized step; the private GPU test does not authorize either.
