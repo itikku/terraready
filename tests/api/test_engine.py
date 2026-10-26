@@ -7,6 +7,7 @@ from terraready.models import (
     EvaluationRequest,
     GroundAccess,
     SiteSnapshot,
+    ZoneDecision,
 )
 
 
@@ -192,3 +193,120 @@ def test_conflicting_evidence_cannot_remove_site_closure(snapshot):
         )
     )
     assert zone_evaluation(snapshot).status == DecisionStatus.NO_GO
+
+
+def calculation(decision, code, evidence_id=None):
+    return next(
+        item
+        for item in decision.calculations
+        if item.code == code and item.evidence_id == evidence_id
+    )
+
+
+def test_calculation_receipts_expose_authoritative_operands_without_mutation(snapshot):
+    before = snapshot.model_dump_json()
+    first = evaluate(snapshot, request(route_id="north-to-east"))
+    north = next(zone for zone in first.zone_decisions if zone.zone_id == "north-access")
+    bearing = calculation(north, "BEARING", "north-morning")
+    assert (bearing.observed, bearing.limit, bearing.headroom, bearing.unit) == (65, 85, -20, "kPa")
+    assert bearing.outcome == "blocked" and bearing.applicable
+    moisture = calculation(north, "MOISTURE", "north-morning")
+    assert moisture.headroom == pytest.approx(-0.07)
+    assert moisture.outcome == "blocked"
+    assert calculation(north, "SLOPE").headroom == 4
+    assert evaluate(snapshot, request(route_id="north-to-east")) == first
+    assert snapshot.model_dump_json() == before
+
+
+@pytest.mark.parametrize(
+    ("moisture", "outcome"), [(0.57, "pass"), (0.60, "inspect"), (0.65, "blocked")]
+)
+def test_moisture_receipts_preserve_exact_policy_boundaries(snapshot, moisture, outcome):
+    snapshot.observations[3].moisture_fraction = moisture
+    receipt = calculation(zone_evaluation(snapshot), "MOISTURE", "east-morning")
+    assert receipt.outcome == outcome
+    assert receipt.observed == moisture
+    assert receipt.headroom == 0.65 - moisture
+    assert receipt.caution_limit == 0.6
+
+
+def test_moisture_caution_receipt_explains_positive_headroom_inspection(snapshot):
+    snapshot.observations[3].moisture_fraction = 0.62
+    decision = zone_evaluation(snapshot)
+    receipt = calculation(decision, "MOISTURE", "east-morning")
+    assert receipt.headroom == pytest.approx(0.03)
+    assert receipt.caution_limit == 0.6
+    assert receipt.limit == 0.65
+    assert receipt.caution_limit <= receipt.observed < receipt.limit
+    assert receipt.outcome == "inspect" and decision.status == DecisionStatus.INSPECT
+    assert calculation(decision, "BEARING", "east-morning").caution_limit is None
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"confidence": 0.79},
+        {"observed_at": "2026-10-24T03:59:00-07:00"},
+        {"observed_at": "2026-10-23T15:00:00-07:00"},
+    ],
+)
+def test_ineligible_evidence_cannot_present_numeric_checks_as_passed(snapshot, updates):
+    observation = snapshot.observations[3]
+    snapshot.observations[3] = type(observation).model_validate(observation.model_dump() | updates)
+    decision = zone_evaluation(snapshot)
+    assert decision.status == DecisionStatus.INSPECT
+    for code in ["BEARING", "MOISTURE"]:
+        receipt = calculation(decision, code, "east-morning")
+        assert receipt.observed is not None
+        assert not receipt.applicable
+        assert receipt.outcome == "unavailable"
+    assert any(item.outcome == "inspect" for item in decision.calculations)
+
+
+@pytest.mark.parametrize(
+    "field,code", [("moisture_fraction", "MOISTURE"), ("bearing_capacity_kpa", "BEARING")]
+)
+def test_missing_measurement_receipt_does_not_invent_zero(snapshot, field, code):
+    setattr(snapshot.observations[3], field, None)
+    receipt = calculation(zone_evaluation(snapshot), code, "east-morning")
+    assert receipt.observed is None and receipt.headroom is None
+    assert receipt.outcome == "unavailable"
+
+
+def test_evidence_receipts_respect_age_boundary_and_future_exclusion(snapshot):
+    zone, machine = snapshot.zones[3], snapshot.machines[1]
+    clock = snapshot.observations[3].observed_at + timedelta(hours=4)
+    at_limit = evaluate_zone(zone, machine, snapshot.observations, snapshot.scenario, clock)
+    assert at_limit.status == DecisionStatus.GO
+    assert calculation(at_limit, "EVIDENCE_AGE", "east-morning").headroom == 0
+    expired = evaluate_zone(
+        zone, machine, snapshot.observations, snapshot.scenario, clock + timedelta(microseconds=1)
+    )
+    assert expired.status == DecisionStatus.INSPECT
+    assert calculation(expired, "BEARING", "east-morning").outcome == "unavailable"
+    snapshot.observations[3].observed_at = snapshot.scenario.as_of + timedelta(seconds=1)
+    future = zone_evaluation(snapshot)
+    assert future.status == DecisionStatus.INSPECT
+    assert future.evidence_ids == []
+    assert all(item.evidence_id is None for item in future.calculations)
+
+
+def test_receipts_do_not_override_conflicting_evidence_or_static_closure(snapshot):
+    snapshot.observations.append(
+        snapshot.observations[3].model_copy(
+            update={"id": "east-conflicting", "moisture_fraction": 0.9}
+        )
+    )
+    decision = zone_evaluation(snapshot)
+    assert calculation(decision, "MOISTURE", "east-morning").outcome == "pass"
+    assert calculation(decision, "MOISTURE", "east-conflicting").outcome == "blocked"
+    assert decision.status == DecisionStatus.INSPECT
+    snapshot.zones[3].closure_reason = "Supervisor restriction"
+    snapshot.zones[3].closed = True
+    assert zone_evaluation(snapshot).status == DecisionStatus.NO_GO
+
+
+def test_calculations_are_backward_compatible_with_existing_zone_records(snapshot):
+    body = zone_evaluation(snapshot).model_dump()
+    del body["calculations"]
+    assert ZoneDecision.model_validate(body).calculations == []

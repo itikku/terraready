@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { askAssistant } from "./api";
-import type { AssistRun } from "./types";
+import type { AssistRun, RecoveryPlan, Site } from "./types";
 import "./assist.css";
 
 const prompts = [
@@ -23,9 +23,21 @@ const modes = {
 export default function AssistPanel({
   asOf,
   onChooseWork,
+  site,
+  overview,
+  selectedTask,
+  selectedRoute,
+  selectedMachine,
+  onInspectTask,
 }: {
   asOf?: string;
   onChooseWork: () => void;
+  site: Site;
+  overview: RecoveryPlan | null;
+  selectedTask: string;
+  selectedRoute: string;
+  selectedMachine: string;
+  onInspectTask: (task: string, candidate?: string | null) => void;
 }) {
   const [question, setQuestion] = useState(
     "What changed in today's shift, and what can we recover?",
@@ -34,6 +46,8 @@ export default function AssistPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const taskName = (id: string) =>
+    site.tasks.find((task) => task.id === id)?.name ?? id;
   const request = useRef<AbortController | null>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => () => request.current?.abort(), []);
@@ -70,8 +84,8 @@ export default function AssistPanel({
     <section className="local-assessment" aria-labelledby="assist-heading">
       <h2 id="assist-heading">Check the shift with the local model</h2>
       <p className="assessment-intro">
-        It reads the site's ground observations, equipment limits and unfinished
-        work. Rules validate the options; you decide what to approve.
+        Reads site conditions and checks feasible work. You choose what to
+        approve.
       </p>
       {!run && (
         <form
@@ -141,6 +155,59 @@ export default function AssistPanel({
           </div>
         </form>
       )}
+      {!run && !busy && (
+        <div className="shift-work-list" aria-label="Shift work list">
+          <h3>Today's work</h3>
+          <p>Select a package to locate it on the map.</p>
+          <ul>
+            {site.tasks.map((task) => {
+              const item = overview?.items.find(
+                (item) => item.task_id === task.id,
+              );
+              const labels: Record<string, string> = {
+                retain: "Keep",
+                reroute: "Reroute",
+                pull_forward: "Ready backlog",
+                reassign: "Reassign",
+                held: "Held",
+                deferred: "Deferred",
+                completed: "Completed",
+              };
+              const candidate = overview?.candidates.find(
+                (c) => c.id === item?.selected_candidate_id,
+              );
+              const state =
+                item?.disposition === "ready"
+                  ? (item.action ?? "ready")
+                  : item?.disposition;
+              return (
+                <li key={task.id}>
+                  <button
+                    className="work-map-link"
+                    aria-pressed={
+                      selectedTask === task.id &&
+                      (!candidate ||
+                        (candidate.route_id === selectedRoute &&
+                          candidate.machine_id === selectedMachine))
+                    }
+                    onClick={() =>
+                      onInspectTask(task.id, item?.selected_candidate_id)
+                    }
+                  >
+                    <strong>{task.name}</strong>
+                    <span>
+                      {item
+                        ? (labels[state ?? ""] ?? "Review")
+                        : "Check required"}{" "}
+                      · {task.duration_hours}h planned
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       {busy && (
         <div className="assessment-loading" role="status">
           <p>Reading the shift and checking site evidence…</p>
@@ -169,10 +236,53 @@ export default function AssistPanel({
               manually.
             </p>
           )}
+          {!overview && (
+            <p role="status">
+              Map details for these options could not be loaded. Reload the
+              shift to inspect them; you can still review work manually.
+            </p>
+          )}
           <ul className="assist-facts">
             {run.facts.map((f) => (
               <li key={f.task_id}>
-                <p>{f.text}</p>
+                <button
+                  className="work-map-link"
+                  disabled={
+                    !!f.candidate_id &&
+                    !overview?.candidates.some((c) => c.id === f.candidate_id)
+                  }
+                  aria-pressed={
+                    selectedTask === f.task_id &&
+                    (!f.candidate_id ||
+                      (overview?.candidates.find((c) => c.id === f.candidate_id)
+                        ?.route_id === selectedRoute &&
+                        overview?.candidates.find(
+                          (c) => c.id === f.candidate_id,
+                        )?.machine_id === selectedMachine))
+                  }
+                  onClick={() => onInspectTask(f.task_id, f.candidate_id)}
+                >
+                  <strong>{taskName(f.task_id)}</strong>
+                  <span>
+                    {f.candidate_id
+                      ? (() => {
+                          const candidate = overview?.candidates.find(
+                            (c) => c.id === f.candidate_id,
+                          );
+                          const route = site.routes.find(
+                            (r) => r.id === candidate?.route_id,
+                          );
+                          return candidate && route
+                            ? `${route.name} · ${candidate.required_hours}h checked`
+                            : "Checked option";
+                        })()
+                      : "Held · checks required"}
+                  </span>
+                </button>
+                <details className="fact-detail">
+                  <summary>Why this option?</summary>
+                  <p>{f.text}</p>
+                </details>
               </li>
             ))}
           </ul>

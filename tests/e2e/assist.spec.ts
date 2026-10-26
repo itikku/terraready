@@ -33,7 +33,7 @@ test.beforeEach(async ({ page }) => {
   await expect(panel(page)).toBeVisible();
 });
 
-test("first screen makes local assessment primary and keeps decisions and evidence out of the way", async ({
+test("first screen pairs a concise work list with the map and preserves explicit decisions", async ({
   page,
 }, info) => {
   await expect(
@@ -49,15 +49,42 @@ test("first screen makes local assessment primary and keeps decisions and eviden
   ).toBeEnabled();
   await expect(choices(page)).toBeHidden();
   await expect(page.getByLabel("Site workspace", { exact: true })).toBeHidden();
+  const map = page.getByRole("region", { name: "Shift map", exact: true });
+  await expect(map).toBeVisible();
+  const list = panel(page).getByLabel("Shift work list");
+  await expect(list.getByRole("button")).toHaveCount(7);
+  const left = await page.locator(".shift-column").boundingBox();
+  const right = await map.boundingBox();
+  expect(right!.width / left!.width).toBeGreaterThan(1.8);
+  expect(right!.x).toBeGreaterThan(left!.x + left!.width);
+  await page.screenshot({
+    path: info.outputPath("guided-desktop.png"),
+    fullPage: true,
+  });
+  const current = list.getByRole("button", {
+    name: /Haul material from east cut/,
+  });
+  await current.click();
+  await current.click();
+  await expect(map.getByText("Checking…", { exact: true })).toHaveCount(0);
+  await expect(map.getByText("Show the math", { exact: true })).toBeVisible();
+  await list
+    .getByRole("button", { name: /Inspect west stockpile ground/ })
+    .click();
+  await expect(
+    map.getByRole("heading", { name: "West stockpile", exact: true }),
+  ).toBeVisible();
+  await map
+    .getByRole("button", { name: "Inspect North access road", exact: true })
+    .click();
+  await expect(
+    map.getByRole("heading", { name: "North access road", exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Compare routes for original work" }),
   ).toBeHidden();
   await expect(page.getByRole("combobox")).toHaveCount(0);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-  await page.screenshot({
-    path: info.outputPath("guided-desktop.png"),
-    fullPage: true,
-  });
   await page.setViewportSize({ width: 390, height: 844 });
   const button = await page
     .getByRole("button", { name: "Assess this shift", exact: true })
@@ -84,7 +111,20 @@ test("model analysis leads to editable work and one explicit approval with the u
   await expect(
     result(page).getByText("TEST STUB · not real inference", { exact: true }),
   ).toBeVisible();
-  await expect(result(page).getByText(/South access/)).toBeVisible();
+  const option = result(page).getByRole("button", {
+    name: /Haul material from east cut South access/,
+  });
+  await expect(option).toBeVisible();
+  await option.click();
+  await option.click();
+  await expect(
+    page
+      .getByRole("region", { name: "Shift map", exact: true })
+      .getByText("Checking…", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Selected work on map")).toContainText(
+    "South access → east cut",
+  );
   await result(page)
     .getByText("Evidence and model trace", { exact: true })
     .click();
@@ -137,6 +177,7 @@ test("focused questions explain backlog and held prerequisites without choosing 
   page,
 }) => {
   await analyze(page, "Redeploy");
+  await result(page).getByText("Why this option?", { exact: true }).click();
   await expect(
     result(page).getByText(/pull forward ready backlog/),
   ).toBeVisible();
@@ -144,6 +185,7 @@ test("focused questions explain backlog and held prerequisites without choosing 
     .getByRole("button", { name: "Ask another question" })
     .click();
   await analyze(page, "Blocked work");
+  await result(page).getByText("Why this option?", { exact: true }).click();
   await expect(
     result(page).getByText(/Unfinished prerequisites: west-inspection/),
   ).toBeVisible();
@@ -301,4 +343,26 @@ test("keyboard and browser back navigation preserve a clear task and the user's 
     }),
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("unavailable candidate details never silently map a checked reroute to the baseline", async ({
+  page,
+}) => {
+  await page.route("**/api/scenarios/post-rain/recovery", (route) =>
+    route.fulfill({ status: 503, body: "{}" }),
+  );
+  await page.reload();
+  await analyze(page);
+  await expect(result(page).getByRole("status")).toContainText(
+    "Map details for these options could not be loaded",
+  );
+  await expect(
+    result(page).getByRole("button", { name: /Haul material from east cut/ }),
+  ).toBeDisabled();
+  await expect(page.getByLabel("Selected work on map")).toContainText(
+    "North access → east cut",
+  );
+  await expect(
+    result(page).getByRole("button", { name: "Choose work to approve" }),
+  ).toBeEnabled();
 });

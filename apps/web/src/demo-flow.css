@@ -143,3 +143,298 @@
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+
+/* Keep the work and its location together; detail is a deliberate drill-down. */
+.focused-demo main.assessment-view {
+  max-width: 1700px;
+  padding-top: 24px;
+}
+.assessment-view .page-heading {
+  margin-bottom: 16px;
+}
+.assessment-view .page-heading h1 {
+  font-size: clamp(28px, 3.1vw, 40px);
+  margin-block: 8px;
+  max-width: none;
+}
+.assessment-view .page-heading p {
+  margin-block: 6px;
+}
+.assessment-view .condition-brief {
+  padding-block: 12px;
+  margin-bottom: 24px;
+}
+.assessment-view .condition-brief strong {
+  display: inline;
+}
+.shift-map-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+  gap: 32px;
+  align-items: start;
+}
+.shift-column {
+  min-width: 0;
+}
+.shift-column .local-assessment {
+  padding-top: 0;
+}
+.shift-column .local-assessment h2 {
+  font-size: 21px;
+}
+.shift-column .assessment-intro {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.shift-column .assessment-actions {
+  gap: 12px;
+  margin-block: 16px;
+}
+.shift-column .assessment-question {
+  margin-bottom: 14px;
+}
+.shift-map {
+  min-width: 0;
+  position: sticky;
+  top: 20px;
+}
+.shift-map-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.shift-map-heading h2 {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+.shift-map-heading span:not(.status-pill) {
+  font-size: 12px;
+  color: #526454;
+}
+.shift-map-canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1460 / 900;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #243d2d;
+}
+.shift-map-canvas .site-svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+}
+.shift-map-key {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding-block: 12px;
+  font-size: 12px;
+  border-bottom: 1px solid #d6ded1;
+}
+.shift-map-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.shift-map-key i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.shift-map-key .go {
+  background: #276e50;
+}
+.shift-map-key .inspect {
+  background: #9b6a1e;
+}
+.shift-map-key .no_go {
+  background: #b54a33;
+}
+.shift-map-key small {
+  color: #526454;
+}
+.shift-map-detail {
+  padding-top: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.shift-map-detail > strong,
+.shift-map-detail > span {
+  display: block;
+}
+.shift-map-detail > span {
+  color: #526454;
+  margin-top: 4px;
+}
+.shift-map-detail > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #365642;
+  margin-top: 14px;
+}
+.shift-map-credit {
+  color: #526454;
+  font-size: 10px;
+  margin-top: 16px;
+}
+.shift-work-list {
+  margin-top: 24px;
+}
+.shift-work-list h3 {
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+.shift-work-list > p {
+  font-size: 12px;
+  color: #526454;
+  margin: 0 0 8px;
+}
+.shift-work-list ul {
+  padding: 0;
+  list-style: none;
+  margin: 0;
+}
+.work-map-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 10px;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: #243d2d;
+  font: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid #d6ded1;
+}
+.work-map-link strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.work-map-link span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
+  color: #526454;
+}
+.work-map-link[aria-pressed="true"] {
+  background: #e9eee3;
+  border-left-color: #365642;
+}
+.work-map-link:hover {
+  background: #eef1e9;
+}
+.shift-column .assist-facts {
+  margin-block: 8px;
+}
+.shift-column .assist-facts li {
+  padding: 0 0 8px;
+}
+.fact-detail {
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 6px 12px;
+}
+.fact-detail summary {
+  cursor: pointer;
+  color: #365642;
+}
+.fact-detail p {
+  margin-top: 10px;
+}
+.math-checks {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 14px;
+  overflow-wrap: anywhere;
+}
+.math-checks summary {
+  color: #365642;
+  cursor: pointer;
+  font-weight: 600;
+}
+.math-checks > p {
+  color: #526454;
+}
+.math-checks dl {
+  margin-block: 14px;
+}
+.math-checks dl > div {
+  padding-block: 10px;
+  border-top: 1px solid #d6ded1;
+}
+.math-checks dt {
+  font-weight: 600;
+}
+.math-checks dd {
+  margin: 4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.math-checks code {
+  font-size: 12px;
+}
+.math-outcome {
+  font-size: 11px;
+  font-weight: 600;
+  color: #365642;
+}
+.math-outcome.blocked {
+  color: #9a3827;
+}
+.math-outcome.inspect {
+  color: #7d581c;
+}
+.math-outcome.unavailable {
+  color: #526454;
+}
+.math-evidence {
+  color: #526454;
+  font-size: 10px;
+}
+@media (max-width: 850px) {
+  .shift-map-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .shift-map {
+    position: static;
+  }
+  .shift-column .shift-work-list {
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .shift-map-heading h2 {
+    font-size: 19px;
+  }
+}
+
+.evidence-view .workspace-grid {
+  align-items: start;
+}
+@media (min-width: 901px) {
+  .evidence-view .map-workspace {
+    height: 800px;
+  }
+}
+
+.math-checks .math-outcome {
+  background: transparent;
+}
+.work-map-link:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

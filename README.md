@@ -16,7 +16,7 @@ Overnight rain makes north access unsuitable for a loaded hauler. The excavator 
 2. **Choose work to approve.** Keep an assignment, choose an eligible route or defer a package. The editor checks the combined resource hours and preserves holds.
 3. **Review and approve.** Confirm the exact selection, then copy the field-lead or haul-coordinator brief. Changes to evidence or selection require another check.
 
-**Choose work without the model** keeps manual planning available during an inference outage. **Site evidence** opens the map and measurements when you need to investigate. Approving a plan saves a planning record; it does not dispatch equipment or complete work.
+**Choose work without the model** keeps manual planning available during an inference outage. The work list stays beside the interactive map. Select a package to locate it, then open **Site evidence** for observations and camera context. Approving a plan saves a planning record; it does not dispatch equipment or complete work.
 
 ## Why this architecture fits
 
@@ -46,9 +46,21 @@ The model, API and site database run together on one host. The same boundary wor
 
 Prerequisites and paired-resource hour budgets are checked alongside ground conditions. Planned hours describe serial effort; the prototype does not calculate an optimal timed schedule or measured productivity savings.
 
+### Where the math runs
+
+Calculations run in Python, independently of Qwen. **Show the math** exposes the inputs, limits, evidence clock and checked result; the model cannot skip these checks or change their thresholds.
+
+| Example | Deterministic check |
+| --- | --- |
+| Loaded hauler on north access | Bearing headroom: `65 − 85 = −20 kPa` → blocked. The excavator's `65 − 42 = 23 kPa` passes this check. |
+| An old ground reading looks favourable | Observation age, post-rain timing and confidence must pass before its numbers can support release. |
+| Two packages share an excavator | Combined planned effort must fit its remaining hours; approval rechecks the exact selection. |
+
+These are explicit synthetic operating rules, not a validated soil-physics model. The [Vinci research comparison](docs/reviews/VINCI_RESEARCH.md) explains the distinction between this tool-assisted workflow and a physics-native neural/numerical solver.
+
 ## Budget controls
 
-The hosted demo shares **one GPU**, **$2 per Los Angeles calendar day** and a **$5 lifetime usage ceiling** across every visitor and restart. More visitors mainly add queueing to fixed capacity. GPU time continues to cost money during startup and idle periods.
+The hosted demo shares **one GPU**, **$2 per Los Angeles calendar day** and a **$10 lifetime usage ceiling** across every visitor and restart. More visitors mainly add queueing to fixed capacity. GPU time continues to cost money during startup and idle periods.
 
 The [Cloudflare controller](apps/controller/README.md) reserves whole-host costs before creation and persists the resource identity and deadlines. A session lasts at most two hours from first use, with a thirty-minute idle cutoff. Setup has a twenty-minute cutoff; cost can end a session sooner. Joining does not renew an allowance. The separately approved $10 prepaid funding limit is distinct from usage.
 

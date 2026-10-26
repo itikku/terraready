@@ -72,7 +72,26 @@ export interface Reason {
   message: string;
   evidence_ids: string[];
 }
+export interface Calculation {
+  code:
+    | "SLOPE"
+    | "EVIDENCE_AGE"
+    | "POST_RAIN"
+    | "CONFIDENCE"
+    | "BEARING"
+    | "MOISTURE";
+  label: string;
+  observed: number | null;
+  limit: number;
+  headroom: number | null;
+  caution_limit: number | null;
+  unit: "degrees" | "hours" | "fraction" | "kPa";
+  outcome: "pass" | "inspect" | "blocked" | "unavailable";
+  evidence_id: string | null;
+  applicable: boolean;
+}
 export interface ZoneDecision {
+  calculations: Calculation[];
   zone_id: string;
   status: Status;
   reasons: Reason[];

@@ -28,7 +28,11 @@ test("local aerial, evidence and route are available without external connectivi
     }),
   ).toBeVisible();
   await expect(page.getByText("72%", { exact: true })).toBeVisible();
-  await expect(page.getByText("USGS / USDA NAIP · May 2022")).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Site workspace", { exact: true })
+      .getByText("USGS / USDA NAIP · May 2022"),
+  ).toBeVisible();
   expect(
     await page
       .getByRole("img", { name: /rutted/ })
@@ -54,7 +58,9 @@ test("zone selection exposes stale evidence instead of a green release", async (
   await expect(
     panel.getByRole("heading", { name: "West stockpile" }),
   ).toBeVisible();
-  await expect(panel.getByText("Inspect", { exact: true })).toBeVisible();
+  await expect(
+    panel.locator(".evidence-status").getByText("Inspect", { exact: true }),
+  ).toBeVisible();
   await expect(panel.getByText("Refresh required")).toBeVisible();
   await expect(panel.getByText(/predates the overnight rain/)).toBeVisible();
 });
@@ -98,7 +104,10 @@ test("clock expiry updates both map readiness and route result", async ({
   await page.getByText("Demo controls", { exact: true }).click();
   await page.getByLabel("Evidence clock").selectOption("expired");
   await expect(
-    page.getByLabel("Zone evidence").getByText("Inspect", { exact: true }),
+    page
+      .getByLabel("Zone evidence")
+      .locator(".evidence-status")
+      .getByText("Inspect", { exact: true }),
   ).toBeVisible();
   await expect(
     page
@@ -290,3 +299,60 @@ test("mobile workspace remains usable without horizontal document overflow", asy
     ),
   ).toBe(true);
 });
+
+test("deterministic math shows exact machine margins and never releases stale evidence", async ({
+  page,
+}) => {
+  const panel = page.getByLabel("Zone evidence");
+  await panel.getByText("Show the math", { exact: true }).click();
+  await expect(
+    panel.getByText("65 − 85 = -20 kPa", { exact: true }),
+  ).toBeVisible();
+  await expect(panel.getByText("No-go", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /EX-01 Tracked excavator/ }).click();
+  await expect(
+    panel.getByText("65 − 42 = 23 kPa", { exact: true }),
+  ).toBeVisible();
+  await expect(panel.getByText("Go", { exact: true })).toBeVisible();
+  await page
+    .getByLabel("Work zones", { exact: true })
+    .getByRole("button", { name: /West stockpile/ })
+    .click();
+  await expect(
+    panel.locator(".evidence-status").getByText("Inspect", { exact: true }),
+  ).toBeVisible();
+  await expect(panel.getByText(/cannot support release/).first()).toBeVisible();
+  await expect(
+    panel.locator(".math-outcome.unavailable").first(),
+  ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+for (const kind of ["future", "low confidence"] as const) {
+  test(`${kind} observations cannot receive a current-evidence badge`, async ({
+    page,
+  }) => {
+    await page.route("**/api/scenarios/post-rain", async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      const observation = body.observations.find(
+        (o: { id: string }) => o.id === "north-morning",
+      );
+      if (kind === "future")
+        observation.observed_at = "2026-10-24T08:00:00-07:00";
+      else observation.confidence = 0.1;
+      await route.fulfill({ json: body });
+    });
+    await page.reload();
+    await expect(
+      page
+        .getByLabel("Zone evidence")
+        .getByText("Refresh required", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByLabel("Zone evidence")
+        .getByText("Current demo evidence", { exact: true }),
+    ).toHaveCount(0);
+  });
+}

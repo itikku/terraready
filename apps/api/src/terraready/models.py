@@ -244,6 +244,21 @@ class Reason(Model):
     evidence_ids: list[Identifier] = Field(default_factory=list)
 
 
+class Calculation(Model):
+    """Inspectable operands for demo rules; a passing check is not a work release."""
+
+    code: Literal["SLOPE", "EVIDENCE_AGE", "POST_RAIN", "CONFIDENCE", "BEARING", "MOISTURE"]
+    label: str = Field(min_length=1, max_length=80)
+    observed: float | None
+    limit: float
+    headroom: float | None
+    unit: Literal["degrees", "hours", "fraction", "kPa"]
+    outcome: Literal["pass", "inspect", "blocked", "unavailable"]
+    evidence_id: Identifier | None = None
+    applicable: bool = True
+    caution_limit: float | None = None
+
+
 class ZoneDecision(Model):
     zone_id: Identifier
     status: DecisionStatus
@@ -251,6 +266,7 @@ class ZoneDecision(Model):
     confidence: Fraction | None
     evidence_ids: list[Identifier]
     mitigations: list[str]
+    calculations: list[Calculation] = Field(default_factory=list)
 
 
 class Evaluation(Model):

@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 
 from terraready.models import (
+    Calculation,
     DecisionStatus,
     Evaluation,
     EvaluationRequest,
@@ -76,6 +77,107 @@ def _observation_status(observation: Observation, machine: Machine) -> DecisionS
     ):
         return DecisionStatus.INSPECT
     return DecisionStatus.GO
+
+
+def _zone_calculations(
+    zone: Zone,
+    machine: Machine,
+    available: list[Observation],
+    eligible: list[Observation],
+    scenario: Scenario,
+    as_of: datetime,
+) -> list[Calculation]:
+    """Expose the same rule operands without rounding or promoting untrusted evidence."""
+    calculations = [
+        Calculation(
+            code="SLOPE",
+            label="Slope below machine limit",
+            observed=zone.slope_deg,
+            limit=machine.max_slope_deg,
+            headroom=machine.max_slope_deg - zone.slope_deg,
+            unit="degrees",
+            outcome="blocked" if zone.slope_deg >= machine.max_slope_deg else "pass",
+        )
+    ]
+    eligible_ids = {observation.id for observation in eligible}
+    for observation in available:
+        age = (as_of - observation.observed_at).total_seconds() / 3600
+        after_rain = (observation.observed_at - scenario.rain_ended_at).total_seconds() / 3600
+        applicable = observation.id in eligible_ids
+        bearing = observation.bearing_capacity_kpa
+        moisture = observation.moisture_fraction
+        calculations.extend(
+            [
+                Calculation(
+                    code="EVIDENCE_AGE",
+                    label="Evidence within age limit",
+                    observed=age,
+                    limit=scenario.max_evidence_age_hours,
+                    headroom=scenario.max_evidence_age_hours - age,
+                    unit="hours",
+                    outcome="pass" if age <= scenario.max_evidence_age_hours else "inspect",
+                    evidence_id=observation.id,
+                ),
+                Calculation(
+                    code="POST_RAIN",
+                    label="Observation after rain ended",
+                    observed=after_rain,
+                    limit=0,
+                    headroom=after_rain,
+                    unit="hours",
+                    outcome="pass"
+                    if observation.observed_at >= scenario.rain_ended_at
+                    else "inspect",
+                    evidence_id=observation.id,
+                ),
+                Calculation(
+                    code="CONFIDENCE",
+                    label="Evidence confidence meets policy",
+                    observed=observation.confidence,
+                    limit=scenario.min_evidence_confidence,
+                    headroom=observation.confidence - scenario.min_evidence_confidence,
+                    unit="fraction",
+                    outcome="pass"
+                    if observation.confidence >= scenario.min_evidence_confidence
+                    else "inspect",
+                    evidence_id=observation.id,
+                ),
+                Calculation(
+                    code="BEARING",
+                    label="Bearing capacity above ground pressure",
+                    observed=bearing,
+                    limit=machine.ground_pressure_kpa,
+                    headroom=None if bearing is None else bearing - machine.ground_pressure_kpa,
+                    unit="kPa",
+                    outcome="unavailable"
+                    if not applicable or bearing is None
+                    else "blocked"
+                    if bearing <= machine.ground_pressure_kpa
+                    else "pass",
+                    evidence_id=observation.id,
+                    applicable=applicable,
+                ),
+                Calculation(
+                    code="MOISTURE",
+                    label="Moisture below machine limit",
+                    observed=moisture,
+                    limit=machine.max_moisture_fraction,
+                    headroom=None if moisture is None else machine.max_moisture_fraction - moisture,
+                    unit="fraction",
+                    outcome="unavailable"
+                    if not applicable or moisture is None
+                    else "blocked"
+                    if moisture >= machine.max_moisture_fraction
+                    else "inspect"
+                    if moisture >= machine.max_moisture_fraction - MOISTURE_CAUTION_MARGIN
+                    else "pass",
+                    evidence_id=observation.id,
+                    applicable=applicable,
+                    caution_limit=machine.max_moisture_fraction - MOISTURE_CAUTION_MARGIN,
+                ),
+            ]
+        )
+    return calculations
 
 
 def evaluate_zone(
@@ -173,6 +275,7 @@ def evaluate_zone(
         confidence=confidence,
         evidence_ids=evidence_ids,
         mitigations=mitigations,
+        calculations=_zone_calculations(zone, machine, available, eligible, scenario, as_of),
     )
 
 

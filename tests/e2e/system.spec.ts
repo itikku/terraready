@@ -14,6 +14,14 @@ async function systemResponse(
   });
 }
 
+async function openAppendix(page: Page) {
+  const appendix = page.locator(".system-appendix");
+  await appendix
+    .getByText("Appendix: diagnostics and detailed evidence", { exact: true })
+    .click();
+  await expect(appendix).toHaveJSProperty("open", true);
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) =>
     route.abort(),
@@ -27,8 +35,11 @@ test("workspace links to the system and native back navigation returns to the si
   await page.getByRole("link", { name: "How it works", exact: true }).click();
   await expect(page).toHaveURL(/\/system$/);
   await expect(
-    page.getByRole("heading", { name: /Local intelligence/ }),
+    page.getByRole("heading", {
+      name: "Local judgment. Reliable calculations.",
+    }),
   ).toBeVisible();
+  await openAppendix(page);
   await expect(
     page.getByText("Protocol stub reachable", { exact: true }),
   ).toBeVisible();
@@ -38,12 +49,58 @@ test("workspace links to the system and native back navigation returns to the si
   ).toBeVisible();
 });
 
+test("system starts with design, model rationale and evaluations; diagnostics stay collapsed", async ({
+  page,
+}) => {
+  await page.goto("/system");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Local judgment. Reliable calculations.",
+  );
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText([
+    "One site, one local decision loop",
+    "Qwen3-4B, kept deliberately small",
+    "What we tested, and what it establishes",
+  ]);
+  await expect(
+    page.getByRole("heading", { name: "Designed for an intranet" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/public demo adds internet-based Cloudflare and Runpod/),
+  ).toBeVisible();
+  await expect(page.getByText(/smaller Qwen3-1.7B candidate/)).toBeVisible();
+  await expect(
+    page.getByText("3/3 native smoke cases passed", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("3/3 GPU smoke cases; 10/10 warm requests passed", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(page.locator(".system-appendix")).toHaveJSProperty(
+    "open",
+    false,
+  );
+  await expect(
+    page.getByRole("heading", { name: "What is available right now?" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByLabel("Recorded private GPU verification"),
+  ).not.toBeVisible();
+  await page.screenshot({
+    path: "docs/images/system-overview.png",
+    fullPage: true,
+  });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test("deep link shows actual recorded cases, provenance and explicit limits", async ({
   page,
   request,
 }) => {
   const body = await (await request.get("/api/system")).json();
   await page.goto("/system");
+  await openAppendix(page);
   await expect(
     page.getByRole("heading", { name: "3 of 3 task checks passed" }),
   ).toBeVisible();
@@ -86,6 +143,11 @@ test("deep link shows actual recorded cases, provenance and explicit limits", as
     fullPage: true,
   });
   await page.reload();
+  await expect(page.locator(".system-appendix")).toHaveJSProperty(
+    "open",
+    false,
+  );
+  await openAppendix(page);
   await expect(
     page.getByRole("heading", { name: "3 of 3 task checks passed" }),
   ).toBeVisible();
@@ -100,6 +162,7 @@ test("unavailable current runtime never erases or upgrades historical evidence",
     body.data_ready = false;
   });
   await page.goto("/system");
+  await openAppendix(page);
   await expect(
     page.getByRole("heading", { name: "Local runtime unavailable" }),
   ).toBeVisible();
@@ -121,6 +184,7 @@ for (const status of ["missing", "invalid"] as const) {
       body.gpu_verification = { status, evidence: null };
     });
     await page.goto("/system");
+    await openAppendix(page);
     await expect(
       page.getByRole("heading", {
         name: `Verification artifact ${status} · not measured here`,
@@ -145,6 +209,7 @@ test("system API failure is retryable while the architecture remains readable", 
     route.fulfill({ status: 503, body: "{}" }),
   );
   await page.goto("/system");
+  await openAppendix(page);
   await expect(page.getByRole("alert")).toContainText(
     "System status could not be checked",
   );
@@ -173,6 +238,7 @@ test("loading never implies runtime or hardware validation", async ({
     await route.continue();
   });
   await page.goto("/system");
+  await openAppendix(page);
   await expect(page.getByRole("status")).toContainText("Checking local data");
   await expect(
     page.getByRole("heading", { name: "3 of 3 task checks passed" }),
@@ -191,6 +257,7 @@ test("runtime reachability is not presented as successful inference", async ({
     body.runtime.mode = "local_model";
   });
   await page.goto("/system");
+  await openAppendix(page);
   await expect(
     page.getByRole("heading", { name: "Local runtime reachable" }),
   ).toBeVisible();
@@ -213,6 +280,7 @@ test("mobile provenance, keyboard skip and navigation stay accessible", async ({
   ).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator("#system-main")).toBeFocused();
+  await openAppendix(page);
   await page
     .getByText("Exact model, source and measurement provenance", {
       exact: true,
@@ -247,6 +315,7 @@ test("recorded GPU measurements stay separate from live reachability and pending
     response.gpu_verification!.evidence!.gpu_test!.provider_charge_usd = null;
   });
   await page.goto("/system");
+  await openAppendix(page);
   const recorded = page.getByLabel("Recorded private GPU verification");
   await expect(
     page.getByRole("heading", { name: "Local runtime unavailable" }),
@@ -305,6 +374,7 @@ test("provider-recorded cost is displayed only when billing is reconciled", asyn
     gpu.provider_charge_usd = 0.125;
   });
   await page.goto("/system");
+  await openAppendix(page);
   await expect(
     page.getByText("Provider-recorded charge: $0.1250. Usage ceiling: $5.", {
       exact: true,
@@ -325,6 +395,7 @@ test("invalid GPU artifact cannot borrow the native smoke's measurements", async
     body.gpu_verification = { status: "invalid", evidence: null };
   });
   await page.goto("/system");
+  await openAppendix(page);
   await expect(
     page.getByRole("heading", {
       name: "GPU artifact invalid · not measured here",

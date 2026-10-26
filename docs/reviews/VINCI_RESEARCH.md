@@ -1,0 +1,11 @@
+# Vinci research and TerraReady's mathematical boundary
+
+Reviewed primary sources on 2026-10-26 before selecting the follow-up architecture.
+
+Vinci's [platform description](https://www.getvinci.ai/platform/) identifies physics-informed neural inference followed by GPU numerical kernels and solver verification. This is tighter coupling between learned and numerical computation than a language agent calling a calculator. It does not disclose enough detail to establish that the complete production solver is a neural layer, that it is trained end to end through a differentiable solver, or that a specific open paper fully describes the deployed product.
+
+The [2025 CTNN paper](https://arxiv.org/html/2505.21251v1) introduces learned directional maps within structured neural architectures. Its physics experiments evaluate learned predictions with nonzero mean-squared error. It supports a claim about geometry-aware neural representations; it does not establish exact arithmetic or disclose Vinci's entire production numerical engine. The paper also identifies modest-scale evaluation as a limitation.
+
+The [April 2026 Continuous Physics Reasoning framework](https://www.getvinci.ai/research/continuous-physics-reasoning-definition-minimum-criteria-and-the-role-of-foundation-models-for-physics/) proposes qualification criteria rather than an implementation recipe. Vinci's [repeatability demonstration](https://www.getvinci.ai/proof-library/deterministic-execution-in-practice/) reports small numerical variations and residuals. Repeated execution, equation residuals, and agreement with physical measurements are different tests; none alone proves the others.
+
+For TerraReady, the actual use case is bounded shift planning from synthetic structured observations. Keep Qwen's role as evidence/candidate selection and existing Python constraints authoritative. Surface numerical operands and verdicts from the same backend path used by model tools, manual choices and approval revalidation. No additional physics model, training dataset or optional prompt-only math skill is introduced. Ground headroom, evidence validity and resource budgets are demonstrable operating rules; they are not a certified geotechnical solver. Same inputs, evidence clock and policy yield repeatable calculations, while model-selected focus may vary.

@@ -46,7 +46,7 @@ test("prior billed usage is conservatively rounded and seeded once", () => {
   assert.equal(state.totalSpent, 146_056);
   assert.deepEqual(state.spent, { "2026-10-25": 146_056 });
   assert.equal(POLICY.daily, 2_000_000);
-  assert.equal(POLICY.lifetime, 5_000_000);
+  assert.equal(POLICY.lifetime, 10_000_000);
 });
 
 test("a single whole-host reservation includes setup, ready waiting, active use and cleanup", () => {
@@ -313,7 +313,10 @@ test("lifetime allowance never resets on a new day", () => {
   state.spent["2026-10-22"] = 1_500_000;
   state.spent["2026-10-23"] = 1_500_000;
   state.spent["2026-10-24"] = 1_400_000;
-  state.totalSpent += 4_400_000;
+  state.spent["2026-10-20"] = 2_000_000;
+  state.spent["2026-10-19"] = 2_000_000;
+  state.spent["2026-10-18"] = 1_000_000;
+  state.totalSpent += 9_400_000;
   const h = harness(now, 600_000, state);
   assert.ok(amount(h.read().reserved) <= 453_944);
   assert.ok(h.read().reserveUntil < now + 46 * minute);

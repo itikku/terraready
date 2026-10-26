@@ -21,15 +21,23 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
-import { getEvaluation, getReadiness, getSite } from "./api";
+import { getEvaluation, getReadiness, getRecovery, getSite } from "./api";
 import OfflineSiteMap from "./map/OfflineSiteMap";
 import PlanReview from "./PlanReview";
 import AssistPanel from "./AssistPanel";
 import CameraEvidence from "./CameraEvidence";
 import RecoveryWorkspace from "./RecoveryWorkspace";
 import SessionNotice from "./SessionNotice";
+import MathChecks from "./MathChecks";
 import "./demo-flow.css";
-import type { Evaluation, Machine, Readiness, Site, Status } from "./types";
+import type {
+  Evaluation,
+  Machine,
+  Readiness,
+  RecoveryPlan,
+  Site,
+  Status,
+} from "./types";
 
 const ConnectedMap = lazy(() => import("./map/MapboxSiteMap"));
 const STATUS_TEXT: Record<Status, string> = {
@@ -106,6 +114,7 @@ export default function App() {
   const [taskId, setTaskId] = useState("east-haul");
   const [routeId, setRouteId] = useState("north-to-east");
   const [selected, setSelected] = useState("north-access");
+  const [overview, setOverview] = useState<RecoveryPlan | null>(null);
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pending, setPending] = useState(true);
@@ -132,6 +141,17 @@ export default function App() {
     return () => c.abort();
   }, [retry]);
   const asOf = expired ? "2026-10-24T12:00:00-07:00" : undefined;
+  useEffect(() => {
+    if (!site) return;
+    const c = new AbortController();
+    setOverview(null);
+    getRecovery(c.signal, asOf)
+      .then(setOverview)
+      .catch(() => {
+        /* Manual assessment remains available. */
+      });
+    return () => c.abort();
+  }, [site, asOf]);
   useEffect(() => {
     if (!site) return;
     const c = new AbortController();
@@ -176,6 +196,29 @@ export default function App() {
       setRouteId(task.route_id);
     }
   }
+  function inspectTask(id: string, candidateId?: string | null) {
+    const item = site?.tasks.find((t) => t.id === id);
+    if (!item) return;
+    const candidate = overview?.candidates.find((c) => c.id === candidateId);
+    if (candidateId && !candidate) {
+      setDecisionError(
+        "This checked option could not be matched to the current shift. Reload before inspecting it.",
+      );
+      return;
+    }
+    const nextMachine = candidate?.machine_id ?? item.assigned_machine_id;
+    const nextRoute = candidate?.route_id ?? item.route_id;
+    if (
+      taskId !== item.id ||
+      machineId !== nextMachine ||
+      routeId !== nextRoute
+    )
+      setPending(true);
+    setTaskId(item.id);
+    setMachineId(nextMachine);
+    setRouteId(nextRoute);
+    setSelected(item.zone_id);
+  }
   function chooseZone(id: string) {
     setSelected(id);
   }
@@ -199,7 +242,10 @@ export default function App() {
     observation &&
     new Date(clock).valueOf() - new Date(observation.observed_at).valueOf() <=
       site.scenario.max_evidence_age_hours * 3600000 &&
-    new Date(observation.observed_at) >= new Date(site.scenario.rain_ended_at),
+    new Date(observation.observed_at) >=
+      new Date(site.scenario.rain_ended_at) &&
+    new Date(observation.observed_at) <= new Date(clock) &&
+    observation.confidence >= site.scenario.min_evidence_confidence,
   );
   const statuses = Object.fromEntries(
     (readiness?.zones || []).map((z) => [z.zone_id, z.status]),
@@ -246,7 +292,13 @@ export default function App() {
         <main
           id="main"
           tabIndex={-1}
-          className={view === "evidence" ? "evidence-view" : undefined}
+          className={
+            view === "evidence"
+              ? "evidence-view"
+              : view === "assessment"
+                ? "assessment-view"
+                : undefined
+          }
         >
           <section className="page-heading">
             <div>
@@ -297,11 +349,91 @@ export default function App() {
                     soft; the loaded hauler's usual route is blocked.
                   </p>
                 </div>
-                <AssistPanel
-                  key={`assist-${asOf ?? site.scenario.as_of}`}
-                  asOf={asOf}
-                  onChooseWork={chooseWork}
-                />
+                <div className="shift-map-layout">
+                  <div className="shift-column">
+                    <AssistPanel
+                      key={`assist-${asOf ?? site.scenario.as_of}`}
+                      asOf={asOf}
+                      onChooseWork={chooseWork}
+                      site={site}
+                      overview={overview}
+                      selectedTask={taskId}
+                      selectedRoute={routeId}
+                      selectedMachine={machineId}
+                      onInspectTask={inspectTask}
+                    />
+                  </div>
+                  <section className="shift-map" aria-label="Shift map">
+                    <header className="shift-map-heading">
+                      <div>
+                        <h2>{zone.name}</h2>
+                        <span>Ground for {SHORT[machineId]}</span>
+                      </div>
+                      {pending ? (
+                        <span role="status">Checking…</span>
+                      ) : (
+                        zoneDecision && (
+                          <StatusPill status={zoneDecision.status} />
+                        )
+                      )}
+                    </header>
+                    <div className="shift-map-canvas" aria-busy={pending}>
+                      <OfflineSiteMap
+                        site={site}
+                        statuses={pending ? {} : statuses}
+                        selected={selected}
+                        route={route}
+                        onSelect={chooseZone}
+                        overlays
+                        zoom={1}
+                      />
+                    </div>
+                    <div className="shift-map-key">
+                      <span>
+                        <i className="go" />
+                        Go
+                      </span>
+                      <span>
+                        <i className="inspect" />
+                        Inspect
+                      </span>
+                      <span>
+                        <i className="no_go" />
+                        No-go
+                      </span>
+                      <small>Machine-specific demo rules</small>
+                    </div>
+                    <div
+                      className="shift-map-detail"
+                      aria-label="Selected work on map"
+                    >
+                      <strong>{task.name}</strong>
+                      <span>
+                        {SHORT[machineId]} · {route.name}
+                      </span>
+                      {decisionError ? (
+                        <p role="alert">{decisionError}</p>
+                      ) : (
+                        !pending &&
+                        zoneDecision && (
+                          <p>{zoneDecision.reasons[0]?.message}</p>
+                        )
+                      )}
+                      <MathChecks
+                        decision={pending ? null : (zoneDecision ?? null)}
+                        clock={clock}
+                        pending={pending}
+                      />
+                      <a href="#ground-evidence">
+                        Inspect observations and camera context{" "}
+                        <ArrowRight size={14} />
+                      </a>
+                    </div>
+                    <p className="shift-map-credit">
+                      USGS / USDA NAIP · May 2022 · Synthetic operating overlays
+                    </p>
+                  </section>
+                </div>
               </div>
               <div hidden={view !== "decisions"}>
                 <RecoveryWorkspace
@@ -639,6 +771,11 @@ export default function App() {
                         ))
                       )}
                     </div>
+                    <MathChecks
+                      decision={pending ? null : (zoneDecision ?? null)}
+                      clock={clock}
+                      pending={pending}
+                    />
                     <div className="source-line">
                       <ShieldCheck size={16} />
                       <div>

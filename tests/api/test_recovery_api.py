@@ -26,6 +26,19 @@ def test_recovery_read_and_evaluation_are_typed_and_do_not_mutate(client):
     assert client.get("/api/scenarios/post-rain").json() == before
     assert body["approval"] is None
     assert body["disruption"]["affected_planned_hours"] == 4.5
+    north_haul = next(
+        candidate
+        for candidate in body["candidates"]
+        if candidate["task_id"] == "east-haul"
+        and candidate["machine_id"] == "loaded-hauler"
+        and candidate["route_id"] == "north-to-east"
+    )
+    north = next(
+        zone for zone in north_haul["ground"]["zone_decisions"] if zone["zone_id"] == "north-access"
+    )
+    bearing = next(item for item in north["calculations"] if item["code"] == "BEARING")
+    assert bearing["headroom"] == -20 and bearing["outcome"] == "blocked"
+    assert bearing["evidence_id"] == "north-morning"
 
 
 def test_recovery_approval_is_durable_idempotent_and_never_completes_work(client):
