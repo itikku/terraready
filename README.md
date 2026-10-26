@@ -10,7 +10,9 @@ TerraReady is a construction-earthworks planning prototype for answering those q
 
 ## Try the decision
 
-The default demo needs no model, Mapbox token or cloud account.
+**[Open the live demo](https://terraready-controller.terraready-itikku.workers.dev/demo)** — no account or email code. Choose **Start live demo**, wait a few minutes for the GPU, then open the workspace. Visitors share one model and budget; each browser has its own planning decisions. Return to the same link to join or restart within the available allowance. [Session policy and limits](docs/HOSTED_DEMO.md).
+
+The local demo below needs no model, Mapbox token or cloud account.
 
 1. Start in **Choose this shift's work**. The checked recommendation preserves excavation, reroutes hauling and pulls forward ready yard work; west work stays held.
 2. Make a decision for each package. Try **Defer this package** for yard drainage, or choose an eligible alternate route for excavation. Held packages cannot be released by changing a dropdown.
@@ -36,7 +38,7 @@ flowchart LR
     API --> Brief[Saved approval and local briefs]
 ```
 
-The browser reaches the API; it never calls the model or database directly. The native and private-GPU demonstrations run the API, database and model together on one host. React provides the evidence workspace; Python/FastAPI/Pydantic validate boundaries, and Arrow preserves explicit LanceDB schemas.
+The browser reaches the API; it never calls the model or database directly. The local and hosted demonstrations run the API, database and model together on one host. React provides the evidence workspace; Python/FastAPI/Pydantic validate boundaries, and Arrow preserves explicit LanceDB schemas. In the hosted demo, a Cloudflare Worker signs requests and a Durable Object coordinates the shared GPU lease and budget.
 
 | Use-case need | Decision and benefit | Tradeoff |
 | --- | --- | --- |
@@ -52,11 +54,11 @@ Ground eligibility is only one gate. The recovery engine also rejects unfinished
 
 The shared-demo policy treats cost as an admission and resource-lifecycle constraint: **$1.50 per Los Angeles day across all visitors/runs**, **$5 lifetime usage**, and **two active hours maximum from first use**. Startup, idle, disk and cleanup count. Joining never renews an allowance; the separate $10 prepaid funding limit is not a usage budget.
 
-The [Cloudflare ledger](apps/controller/README.md) reserves conservative whole-host costs atomically and persists deadlines. Setup and idle cutoffs are twenty and ten minutes; cost can end a run sooner. One model loop and a bounded visitor queue share fixed GPU capacity. Per-visitor workspaces separate approvals and audits.
+The [Cloudflare ledger](apps/controller/README.md) reserves conservative whole-host costs atomically before creating one GPU. Setup has a twenty-minute cutoff; thirty minutes without meaningful use ends a ready/active run. Joining refreshes idle time without resetting the two-hour deadline. Status polling does neither. A cost limit can end a run sooner. One model loop and a bounded queue share fixed capacity; browser workspaces separate approvals and audits.
 
-**Private preview verified; currently stopped.** Owner email-code sign-in, the signed gateway, production workspace and genuine Qwen inference ran on a temporary L4. An external agent guard deleted the unused Pod after its idle cutoff and verified absence. Starts and provider deletion were operator-controlled; self-service restarts, automatic Cloudflare provider cleanup and invoice reconciliation remain unfinished. This is not a provider-enforced dollar cap.
+**Public start, real inference, automatic cleanup and restart are verified.** Reviewers need no sign-in; only owner setup/global-stop controls use Cloudflare Access. Durable alarms check readiness and delete the recorded Pod on stop or expiry, retrying failed cleanup. An uncertain creation blocks a duplicate start. Exact-ID provider checks confirmed deletion in both live lifecycle proofs; no test GPU was left running.
 
-Reservations and conservative budget debits are not final provider bills. Delayed invoices keep allowance held; reconciliation must replace provisional debits without double-counting. [Preview status, accounting and remaining work](docs/HOSTED_DEMO.md) explain the boundary.
+After confirmed deletion, the ledger replaces the reservation with a conservative usage debit, including cleanup margin. This releases unused allowance without pretending delayed provider bills are final. Invoice reconciliation remains manual. Provider/API failures can delay cleanup: these are application controls, not a provider-enforced dollar cap. [Lifecycle, accounting and limitations](docs/HOSTED_DEMO.md) give the details.
 
 ## Run locally
 
@@ -92,7 +94,7 @@ For actual inference, follow the pinned downloads/hash checks in [model setup](d
 | [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | Backend, browser and controller/gateway tests, formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
 | [Private L4 integration](docs/verification/gpu-agent.json) | Real Qwen inference: 3/3 smoke cases and 10/10 warm API requests. Warm end-to-end p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests. |
 | Same GPU test | Sampled peaks **3,274 MiB GPU**, **5.94 GiB container**; real approval/briefs, stopped-model fallback and expiry checked. Temporary Pod terminated; later provider billing revised the charge to **$0.1555** including disk; the artifact retains the earlier billing snapshot. |
-| [Private hosted preview](docs/HOSTED_DEMO.md#verified-preview) | Production workspace, protected owner access and one genuine two-response model loop (**1,111 ms**). A smoke check, not a new latency benchmark or multiuser load test. |
+| [Hosted lifecycle proof](docs/HOSTED_DEMO.md#verified-preview) | Anonymous start → real workspace/Qwen analysis → controller deletion → fresh start/readiness → controller deletion. One analysis displayed **1.6 s** and three tool steps; an integration smoke, not a benchmark or real multiuser load test. |
 | [Camera interface tests](docs/CAMERAS.md#what-has-been-verified) | Synthetic folder exporter → API → browser, plus missing/invalid capture handling. No physical-camera test. |
 
 The GPU run used source `45ff57e`, before the camera extension. These small samples establish integration, not reliability, cold-cache behavior, absolute memory peaks or production safety. Container memory includes caches. Jetson, power efficiency and enforced backend outbound-network denial are unverified. The [native artifact](docs/verification/local-agent.json) is separate; the System page distinguishes recorded tests from current model reachability.
@@ -109,7 +111,7 @@ Verification uses disposable test databases and explicit protocol fixtures. Stop
 
 The working vertical is construction. The same **asset × operation × location × evidence time** question motivates a planter on wet soil, a haul truck on a rain-soft mining road or a forestry harvester on a protected route. Those are transfer opportunities, not three additional implementations.
 
-This is a planning POC, not a safety-certified system, validated soil model or machinery controller. It has no live weather/telemetry ingestion, visual model, external messaging or optimal schedule. Camera pictures remain separate context. Private owner access was verified; guest use and a complete [on-demand shared service](docs/reviews/HOSTING_DESIGN.md) still need live validation and provider lifecycle integration.
+This is a planning POC, not a safety-certified system, validated soil model or machinery controller. It has no live weather/telemetry ingestion, visual model, external messaging or optimal schedule. Camera pictures remain separate context. Anonymous access and the GPU lifecycle are verified; real multiuser inference load, Free-tier capacity and automated invoice reconciliation remain unverified or unfinished.
 
 References: [data/rules contract](docs/DATA_CONTRACT.md), [model/tools](docs/LOCAL_AGENT.md), [camera adapters](docs/CAMERAS.md), [architecture decisions](docs/DECISIONS.md), [research rationale](docs/RESEARCH.md).
 

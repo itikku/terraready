@@ -1,6 +1,6 @@
-# Shared-demo controller readiness
+# Shared-demo controller
 
-This contains the budget/deadline ledger, protected session page and authenticated gateway for the approved Cloudflare Free design. An initial controller is deployed behind private email-code access. GPU startup is disabled: runtime credentials, actual owner sign-in, provider lifecycle and independently recoverable cleanup remain launch gates. Missing configuration fails closed.
+The deployed Cloudflare Worker and SQLite Durable Object coordinate [TerraReady's public demo](https://terraready-controller.terraready-itikku.workers.dev/demo): anonymous Start/Join, one GPU lease, persistent budget accounting, signed origin requests and automatic cleanup. Only `/owner` and `/owner/*` require owner-only Cloudflare Access. See [live evidence and limitations](../../docs/HOSTED_DEMO.md).
 
 From the repository root, after `npm ci`:
 
@@ -8,34 +8,28 @@ From the repository root, after `npm ci`:
 make controller-check
 ```
 
-The Node tests run the policy and Cloudflare's workerd/SQLite emulator. They use temporary synthetic accounting, internal Durable Object bindings and no external Worker requests; emulator telemetry is disabled. They do not touch the operating LanceDB database. The normal `make verify` and GitHub workspace checks include this suite.
+The 55 controller tests use synthetic accounting and Cloudflare's native workerd/SQLite emulator, including HTTP admission, concurrent starts, ambiguous creation, failed-delete retries and restart after cleanup. They do not read the operating LanceDB database. `make verify` and CI include this suite. The emulator is pinned to the beta used by Wrangler 4.152.0; the lockfile overrides its HTTP dependency to Undici 7.30.1.
 
-## What the ledger proves
+## Budget and lifecycle
 
-- One unsettled lease at a time, shared by all visitors. A repeated start key preserves its reservation; ambiguous creation blocks another start.
-- Integer microdollar accounting, upward rounding, $1.50 per Los Angeles day and $5 lifetime. The prior $0.14605502702761441 charge is seeded once as 146,056 microdollars. Prepaid balance is separate.
-- A whole-host reservation covers up to 20 minutes setup, ten minutes waiting for first use, 120 minutes active use and five minutes shutdown. A budget can shorten that envelope. Fixed costs/margin are reserved once; elapsed rental is split at local midnight. These are policy assumptions to verify against a fresh all-in quote.
-- A deliberate `open` event starts the active clock after readiness. Joins and accepted activity refresh only the ten-minute idle deadline. Polling does neither. Earlier cost/setup/idle deadlines prevail.
-- Exact resource identity, confirmed termination and reconciled billing are required before releasing a reservation. Unexpected charges are recorded and put accounting on hold.
+- One unsettled lease across all visitors. A fresh server-side L4 quote and atomic reservation precede creation. Persisted attempt markers reconcile ambiguous responses; uncertainty blocks duplicate creation.
+- Integer microdollars, upward rounding, $1.50 per Los Angeles day and $5 lifetime across all runs. Setup, disk, idle and cleanup count; prepaid balance is separate. The original 146,056-microdollar seed is retained with a later billing correction, not reset.
+- Up to twenty minutes setup, thirty minutes idle, 120 minutes active from first deliberate open and five minutes shutdown margin. Available money can shorten the envelope. Joins/activity refresh only idle; polling does neither. Rental is split at local midnight.
+- Durable alarms check readiness and delete only the recorded resource after ownership verification. Failed cleanup retries with the reservation held. The page distinguishes stop requested from confirmed termination.
+- Confirmed absence permits a conservative usage debit and release of unused reservation. `costBasis` and `providerInvoicePending` distinguish it from provider invoices. Reconciliation remains manual; unexplained accounting puts starts on hold.
 
-The internal `apply` binding accepts trusted server events only; timestamps come from the controller. The gateway derives open/activity/stop events from authenticated actions; it never passes arbitrary browser events or quote/billing inputs through. Domain data remains in LanceDB.
+The internal `apply` binding accepts trusted server events, never arbitrary browser prices, IDs, timestamps or billing inputs. A 30-second global start cooldown and 256-run maintenance bound fail closed. These controls are not a provider-enforced spending cap; independent MCP/Pods-console recovery is still required if the controller or provider fails.
 
-## Access boundary
+## Access and data
 
-The gateway requires Cloudflare's platform-authenticated `ctx.access` for the configured application audience and a user identity. Browser-supplied identity headers grant no access. Invited users may open/join a ready run; only the owner can request stop. Startup is disabled until provider readiness passes. A stop response says shutdown is **unconfirmed**, because this slice only persists intent.
+Reviewers get a signed opaque HttpOnly/Secure/SameSite cookie; a separately derived identity selects their synthetic workspace. Cookies are not human verification. Only the exact owner, authenticated through native `ctx.access` with the configured audience, may use setup/global-stop controls. Public owner endpoints and spoofed identity headers are rejected.
 
-API forwarding uses an HMAC envelope tied to the verified visitor, method, encoded target, body digest, timestamp and fresh nonce. Browser cookies/tokens never forward to the GPU. The [shared origin](../../docs/HOSTED_DEMO.md) verifies the envelope and separates visitor LanceDB state. Thirty-one origin/queue tests and ten gateway tests supplement the original 26 policy/storage tests, including ten signed HTTP clients. Gateway identity fixtures exercise authorization logic; only a real Access deployment can prove sign-in/invitation configuration.
+Forwarding uses a time/nonce/body/method/path/visitor HMAC envelope. Browser cookies and tokens never reach the GPU. The [origin](../../docs/HOSTED_DEMO.md#request-and-workspace-boundary) isolates approvals/audits, rejects replay, strips credentials and shares one bounded inference queue. Data is ephemeral per run, with at most 32 browser workspaces. There is no import of the existing local database.
 
-This design uses a Worker without a Static Assets binding: the current platform does not pass `ctx.access` through the internal assets router. The frontend comes through the protected origin; a change to static edge hosting would require separately verified JWT validation. [Cloudflare Access context and limitations](https://developers.cloudflare.com/workers/configuration/cloudflare-access/#ctxaccess-limitations)
+Do not add a Static Assets binding without re-verifying owner authentication: the current internal assets router omits `ctx.access`. The frontend is served through the signed origin. [Cloudflare limitation](https://developers.cloudflare.com/workers/configuration/cloudflare-access/#ctxaccess-limitations).
 
-## Gates still open
+## Runtime setup and evidence
 
-Alarms persist a **shutdown intent**; no provider deletion occurs. Real termination/retries, an independent cleanup fallback, account/free-plan eligibility, deployed invitation/access and direct-origin checks, frontend/runtime packaging, quote/billing integration and Free-tier CPU/quota measurements remain unverified. Local signature/workspace tests do not establish a provider spending guarantee or deployed multiuser service.
+The encrypted controller-only `RUNPOD_API_KEY` is configured. Its minimum current console option is Restricted → GraphQL Read/Write, AI API None; this is broad management access, not a Pod-scoped key. Never expose it to chat, source bundles, the browser or GPU. `/owner/api/setup?diagnostics=1` reports read-only Pods/catalog/billing capability states without secret values or provider bodies.
 
-Tooling is pinned to the Miniflare beta used by Wrangler 4.152.0, with its official v4 configuration converter. The root lockfile overrides only the emulator's HTTP dependency to patched Undici 7.30.1. No frontend dependency version changed. See [hosting design](../../docs/reviews/HOSTING_DESIGN.md) for deployment gates.
-
-## Secure runtime setup
-
-The controller needs its own encrypted `RUNPOD_API_KEY`; the chat's MCP login cannot authenticate a deployed Worker. The owner creates the dedicated key in Runpod and enters it directly in Cloudflare's Production secret settings. The current Runpod console offers Restricted → GraphQL Read/Write with AI API None; this is broad management access, not a Pod-scoped key. Keep it out of the GPU, repository, browser client and chat. `/api/setup` is owner-only and returns just read-only capability states for Pods, catalog and billing. It never starts resources or exposes the key/provider bodies.
-
-The [hosted package guide](../../docs/HOSTED_DEMO.md) describes the clean source/bootstrap, signed frontend and explicit join flow. Local tests distinguish requested shutdown from verified provider termination; a session page is not proof of working paid-resource cleanup.
+The deployed runtime pins the reviewed source release and SHA-256, container digest and approved single-L4 shape. Two live public starts reached readiness; genuine Qwen inference worked, protected owner stop triggered actual Cloudflare deletion, and fresh provider GET 404 confirmed both removals. No external deletion was needed. This proves the lifecycle, not live ten-user performance or outage resilience. See the [hosted guide](../../docs/HOSTED_DEMO.md#verified-preview) for timestamps and accounting.
