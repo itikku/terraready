@@ -16,6 +16,45 @@ const running = () => ({
   env: { TR_RUN_NONCE: owned.nonce, NEVER_EXPOSE: "synthetic-provider-value" },
 });
 
+test("packaged startup permits only a pinned project image and performs no source download", async () => {
+  let created;
+  const provider = new Runpod(
+    "synthetic-runtime-key",
+    async (_url, options) => {
+      created = JSON.parse(options.body);
+      return Response.json({ id: "syntheticpod01" });
+    },
+  );
+  const source = {
+    commit: "a".repeat(40),
+    sha256: "b".repeat(64),
+    image: "ghcr.io/itikku/terraready-runtime@sha256:" + "c".repeat(64),
+  };
+  await provider.create(owned, source, "d".repeat(64), {
+    hourly: 600000,
+    dataCenterIds: ["EU-RO-1"],
+  });
+  assert.equal(created.image, source.image);
+  assert.match(created.cmd[0], /unset RUNPOD_API_KEY/);
+  assert.match(created.cmd[0], /hosted_image.py run/);
+  assert.doesNotMatch(created.cmd[0], /curl|npm|pip install/);
+  assert.deepEqual(created.ports, ["8000/http"]);
+  assert.equal(created.env.TR_SOURCE_COMMIT, source.commit);
+  assert.ok(!("RUNPOD_API_KEY" in created.env));
+  for (const image of [
+    "ghcr.io/other/image:latest",
+    "ghcr.io/itikku/terraready-runtime:latest",
+    source.image + ";echo unsafe",
+  ]) {
+    await assert.rejects(
+      provider.create(owned, { ...source, image }, "d".repeat(64), {
+        hourly: 600000,
+        dataCenterIds: ["EU-RO-1"],
+      }),
+    );
+  }
+});
+
 test("runtime capability checks use only fixed-host read-only authenticated requests", async () => {
   const calls = [];
   const transport = async (url, options) => {

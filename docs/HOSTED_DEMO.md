@@ -73,6 +73,18 @@ Do not add a Static Assets binding without re-verifying owner authentication: Cl
 
 ## Runtime provenance and credentials
 
+The [prebuilt runtime recipe](../deploy/README.md) moves dependency installation,
+frontend building and pinned model/runtime downloads into a manual GitHub image
+build. It is a separately gated artifact: source tests do not establish image-build
+success, GPU execution or faster startup. After build verification and anonymous
+pull access, a matching source commit and digest can select it for future sessions;
+the current visitor's run is preserved.
+
+The startup page now names total startup time explicitly. Until the host reports a
+signed startup stage, it describes environment download/boot without claiming the
+model is loading. A prebuilt host can subsequently report model loading and actual
+workspace checks; no fabricated percentage is shown.
+
 The controller uses its own encrypted `RUNPOD_API_KEY`; it is never sent to the browser or GPU. Runpod's current restricted GraphQL Read/Write option grants broad management access rather than Pod-specific permission, so the controller checks recorded ownership before deletion. The owner-only `/owner/api/setup?diagnostics=1` performs read-only Pods/catalog/billing capability checks without returning credential values or provider bodies.
 
 The GPU shape is one secure L4, 50 GB ephemeral disk, no mounts/SSH/Jupyter and only signed port 8000. The controller pins the container digest, full source commit and archive SHA-256. The current [source-only release](https://github.com/itikku/terraready/releases/tag/preview-source-2a15cc0) contains 107 manifest-checked files; no local environment, credentials or database.

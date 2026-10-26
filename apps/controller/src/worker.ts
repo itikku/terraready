@@ -19,6 +19,7 @@ interface Attempt {
   since: number;
   nextCheckAt: number | null;
   problem?: string;
+  startup?: { stage: string; changedAt: number; checkedAt: number };
 }
 
 export class BudgetLedger extends DurableObject<GatewayBindings> {
@@ -56,7 +57,11 @@ export class BudgetLedger extends DurableObject<GatewayBindings> {
       !this.env.RUNPOD_API_KEY ||
       !/^[a-f0-9]{40}$/.test(this.env.SOURCE_COMMIT ?? "") ||
       !/^[a-f0-9]{64}$/.test(this.env.SOURCE_SHA256 ?? "") ||
-      !/^[a-f0-9]{64}$/.test(this.env.ORIGIN_SECRET ?? "")
+      !/^[a-f0-9]{64}$/.test(this.env.ORIGIN_SECRET ?? "") ||
+      (this.env.IMAGE_REF !== undefined &&
+        !/^ghcr\.io\/itikku\/terraready-runtime@sha256:[a-f0-9]{64}$/.test(
+          this.env.IMAGE_REF,
+        ))
     )
       throw new Error("Runtime setup incomplete.");
     let result = await this.apply({ type: "tick" });
@@ -109,7 +114,11 @@ export class BudgetLedger extends DurableObject<GatewayBindings> {
     try {
       const id = await provider.create(
         attempt,
-        { commit: this.env.SOURCE_COMMIT!, sha256: this.env.SOURCE_SHA256! },
+        {
+          commit: this.env.SOURCE_COMMIT!,
+          sha256: this.env.SOURCE_SHA256!,
+          ...(this.env.IMAGE_REF ? { image: this.env.IMAGE_REF } : {}),
+        },
         this.env.ORIGIN_SECRET!,
         quote,
       );
@@ -131,6 +140,10 @@ export class BudgetLedger extends DurableObject<GatewayBindings> {
       this.#save(attempt);
     }
     return result;
+  }
+
+  async startup(key: string) {
+    return this.#attempt(key)?.startup ?? null;
   }
 
   // Internal binding only. No public route reaches this method. The future
@@ -217,12 +230,70 @@ export class BudgetLedger extends DurableObject<GatewayBindings> {
           "0".repeat(64),
           this.env.ORIGIN_SECRET,
         );
-        const ready = await fetch(req);
+        const ready = await fetch(
+          new Request(req, { signal: AbortSignal.timeout(5_000) }),
+        );
         await ready.body?.cancel();
         if (ready.status === 200) {
           attempt.nextCheckAt = null;
           this.#save(attempt);
           await this.apply({ type: "ready", key: run.key });
+        } else if (this.env.IMAGE_REF) {
+          const progressRequest = await signedOriginRequest(
+            new Request("https://demo.invalid/startup"),
+            run.resourceId!,
+            "0".repeat(64),
+            this.env.ORIGIN_SECRET,
+          );
+          const progress = await fetch(
+            new Request(progressRequest, {
+              signal: AbortSignal.timeout(5_000),
+            }),
+          );
+          if (!progress.ok || !progress.body) {
+            await progress.body?.cancel();
+            return;
+          }
+          const reader = progress.body.getReader();
+          let bytes = new Uint8Array();
+          try {
+            while (true) {
+              const part = await reader.read();
+              if (part.done) break;
+              if (bytes.byteLength + part.value.byteLength > 512) return;
+              const next = new Uint8Array(
+                bytes.byteLength + part.value.byteLength,
+              );
+              next.set(bytes);
+              next.set(part.value, bytes.byteLength);
+              bytes = next;
+            }
+          } finally {
+            await reader.cancel();
+          }
+          const value: unknown = JSON.parse(new TextDecoder().decode(bytes));
+          if (
+            typeof value === "object" &&
+            value !== null &&
+            "stage" in value &&
+            "changedAt" in value &&
+            Object.keys(value).length === 2 &&
+            typeof value.stage === "string" &&
+            ["loading_model", "checking_workspace", "ready", "failed"].includes(
+              String(value.stage),
+            ) &&
+            typeof value.changedAt === "number" &&
+            Number.isSafeInteger(value.changedAt) &&
+            value.changedAt >= run.createdAt - 30_000 &&
+            value.changedAt <= Date.now() + 30_000
+          ) {
+            attempt.startup = {
+              stage: String(value.stage),
+              changedAt: value.changedAt,
+              checkedAt: Date.now(),
+            };
+            this.#save(attempt);
+          }
         }
       } else {
         attempt.nextCheckAt = null;

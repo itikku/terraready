@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import hmac
+import json
 import re
 import sqlite3
 from collections.abc import Callable
@@ -43,6 +44,7 @@ class HostedOrigin:
         *,
         clock: Callable[[], float] = time,
         web_root: Path | None = None,
+        startup_file: Path | None = None,
     ) -> None:
         if not HEX64.fullmatch(secret):
             raise ValueError("A new 32-byte hex gateway secret is required.")
@@ -70,6 +72,7 @@ class HostedOrigin:
         self._model = model
         self._clock = clock
         self._web_root = web_root
+        self._startup_file = startup_file
         if web_root is not None and (
             web_root.is_symlink()
             or not (web_root / "index.html").is_file()
@@ -237,6 +240,39 @@ class HostedOrigin:
         if rejected:
             await self._error(scope, receive, send, rejected)
             return
+        if self._startup_file is not None:
+            # Startup status uses the same HMAC, nonce and body limits as every
+            # origin request, but never allocates a visitor workspace.
+            try:
+                path = self._startup_file
+                if path.is_symlink() or path.stat().st_size > 512:
+                    raise ValueError("Invalid startup status.")
+                startup = json.loads(path.read_text())
+                if (
+                    not isinstance(startup, dict)
+                    or set(startup) != {"stage", "changedAt"}
+                    or startup["stage"]
+                    not in {"loading_model", "checking_workspace", "ready", "failed"}
+                    or type(startup["changedAt"]) is not int
+                    or not 0 < startup["changedAt"] <= int(self._clock() * 1000) + 30_000
+                ):
+                    raise ValueError("Invalid startup status.")
+            except (OSError, ValueError, TypeError):
+                await self._error(scope, receive, send, 503)
+                return
+            if scope["path"] == "/startup" and scope["method"] == "GET":
+                await JSONResponse(startup, headers={"Cache-Control": "no-store"})(
+                    scope, receive, send
+                )
+                return
+            if startup["stage"] != "ready" and not (
+                scope["path"] == "/ready"
+                and scope["method"] == "GET"
+                and startup["stage"] == "checking_workspace"
+                and self._model.available()
+            ):
+                await self._error(scope, receive, send, 503)
+                return
         try:
             api = await run_in_threadpool(self._workspace, visitor)
         except (OSError, ValueError, RuntimeError):

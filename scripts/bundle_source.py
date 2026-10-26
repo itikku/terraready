@@ -18,6 +18,7 @@ FILES = frozenset(
     {
         "ATTRIBUTIONS.md",
         "LICENSE",
+        "deploy/Dockerfile",
         "Makefile",
         "pyproject.toml",
         "uv.lock",

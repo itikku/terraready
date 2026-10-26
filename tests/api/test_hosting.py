@@ -84,6 +84,83 @@ def test_direct_origin_is_closed_without_creating_a_workspace(origin, target):
     assert not (origin.root / ALICE).exists()
 
 
+def test_packaged_startup_uses_gateway_auth_and_replay_checks_without_allocating_workspace(
+    tmp_path, docket
+):
+    path = tmp_path / "startup.json"
+    body = {"stage": "loading_model", "changedAt": NOW * 1000}
+    path.write_text(json.dumps(body))
+    origin = HostedOrigin(
+        tmp_path / "hosted",
+        SECRET,
+        docket,
+        UnavailableModel(),
+        clock=lambda: NOW,
+        startup_file=path,
+    )
+    with TestClient(origin) as client:
+        assert client.get("/startup").status_code == 401
+        headers = signed("GET", "/startup")
+        result = client.get("/startup", headers=headers)
+        assert result.status_code == 200
+        assert result.json() == body
+        assert result.headers["cache-control"] == "no-store"
+        assert client.get("/startup", headers=headers).status_code == 401
+        assert request(client, "GET", "/ready").status_code == 503
+        assert request(client, "GET", BASE).status_code == 503
+    assert not (origin.root / ALICE).exists()
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"stage": "loading_model", "changedAt": NOW * 1000, "extra": "never-expose"},
+        {"stage": "unknown", "changedAt": NOW * 1000},
+        {"stage": "loading_model", "changedAt": True},
+        {"stage": "loading_model", "changedAt": (NOW + 60) * 1000},
+    ],
+)
+def test_packaged_startup_refuses_untrusted_or_future_status(tmp_path, docket, body):
+    path = tmp_path / "startup.json"
+    path.write_text(json.dumps(body))
+    origin = HostedOrigin(
+        tmp_path / "hosted",
+        SECRET,
+        docket,
+        UnavailableModel(),
+        clock=lambda: NOW,
+        startup_file=path,
+    )
+    with TestClient(origin) as client:
+        result = request(client, "GET", "/startup")
+        assert result.status_code == 503
+        assert "never-expose" not in result.text
+    assert not (origin.root / ALICE).exists()
+
+
+def test_packaged_workspace_checks_wait_for_real_model_reachability(tmp_path, docket):
+    class Model(UnavailableModel):
+        reachable = False
+
+        def available(self):
+            return self.reachable
+
+    model = Model()
+    path = tmp_path / "startup.json"
+    path.write_text(json.dumps({"stage": "checking_workspace", "changedAt": NOW * 1000}))
+    origin = HostedOrigin(
+        tmp_path / "hosted", SECRET, docket, model, clock=lambda: NOW, startup_file=path
+    )
+    with TestClient(origin) as client:
+        assert request(client, "GET", "/ready").status_code == 503
+        assert not (origin.root / ALICE).exists()
+        model.reachable = True
+        assert request(client, "GET", "/ready").status_code == 200
+        assert request(client, "GET", BASE).status_code == 503
+        path.write_text(json.dumps({"stage": "ready", "changedAt": NOW * 1000}))
+        assert request(client, "GET", BASE).status_code == 200
+
+
 def frontend(tmp_path):
     web = tmp_path / "web"
     web.mkdir()

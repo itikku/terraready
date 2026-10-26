@@ -10,7 +10,7 @@ const status = (phase = "off", owner = true) => ({
   accountingHold: false,
   startupEnabled: false,
   dailyAvailable: 1.35,
-  lifetimeAvailable: 4.85,
+  lifetimeAvailable: 9.85,
 });
 
 test("owner sees honest setup and shared budget; polling never opens a run", async ({
@@ -297,6 +297,8 @@ test("startup shows real stages, elapsed time and a skeleton, then reveals expli
   let phase = "reserved",
     stage = "allocating",
     polls = 0;
+  let detail: { stage: string; changedAt: number; checkedAt: number } | null =
+    null;
   const html = controlPage();
   await page.route("**/demo", async (route) =>
     route.fulfill({
@@ -307,7 +309,10 @@ test("startup shows real stages, elapsed time and a skeleton, then reveals expli
   await page.route("**/api/status", (route) => {
     polls++;
     return route.fulfill({
-      json: { ...status(phase, false), startup: { stage, elapsedMs: 65000 } },
+      json: {
+        ...status(phase, false),
+        startup: { stage, elapsedMs: 65000, detail },
+      },
     });
   });
   await page.goto("/demo");
@@ -318,7 +323,9 @@ test("startup shows real stages, elapsed time and a skeleton, then reveals expli
   await expect(
     page.getByText("Waiting for allocation", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Elapsed 1m 05s", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Total startup 1m 05s", { exact: true }),
+  ).toBeVisible();
   await expect(page.locator(".workspace-skeleton")).toBeVisible();
   expect(
     await page
@@ -330,6 +337,29 @@ test("startup shows real stages, elapsed time and a skeleton, then reveals expli
   await page.clock.runFor(5000);
   await expect(page.getByText("Allocated", { exact: true })).toBeVisible();
   await expect(page.getByText("In progress", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Downloading or starting the GPU environment.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  detail = {
+    stage: "loading_model",
+    changedAt: Date.now(),
+    checkedAt: Date.now(),
+  };
+  await page.clock.runFor(5000);
+  await expect(
+    page.getByText("Load the packaged model.", { exact: false }),
+  ).toBeVisible();
+  detail = {
+    stage: "checking_workspace",
+    changedAt: Date.now(),
+    checkedAt: Date.now(),
+  };
+  await page.clock.runFor(5000);
+  await expect(
+    page.getByText("The model is loaded.", { exact: false }),
+  ).toBeVisible();
   expect(polls).toBeGreaterThan(1);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({

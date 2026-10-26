@@ -327,13 +327,15 @@ test("native Worker runtime can probe the provider transport without secret disc
 
 async function lifecycleFixture(
   t,
-  { ambiguous = false, deletionFails = false } = {},
+  { ambiguous = false, deletionFails = false, packaged = false } = {},
 ) {
   const persist = await mkdtemp(path.join(tmpdir(), "terraready-lifecycle-"));
   let pod = null,
     creates = 0,
     deletes = 0;
   let failDelete = deletionFails;
+  let originReady = !packaged;
+  let progress = { stage: "loading_model", changedAt: Date.now() };
   const config = {
     ...options(persist),
     bindings: {
@@ -343,6 +345,12 @@ async function lifecycleFixture(
       ORIGIN_SECRET: "ab".repeat(32),
       SOURCE_COMMIT: "c".repeat(40),
       SOURCE_SHA256: "d".repeat(64),
+      ...(packaged
+        ? {
+            IMAGE_REF:
+              "ghcr.io/itikku/terraready-runtime@sha256:" + "e".repeat(64),
+          }
+        : {}),
     },
     modules: [
       {
@@ -362,8 +370,12 @@ async function lifecycleFixture(
     durableObjects: { BUDGET: { className: "LifecycleTest", useSQLite: true } },
     outboundService: async (request) => {
       const u = new URL(request.url);
-      if (u.hostname.endsWith(".proxy.runpod.net"))
-        return new Response("ready");
+      if (u.hostname.endsWith(".proxy.runpod.net")) {
+        if (u.pathname === "/startup") return Response.json(progress);
+        return new Response(originReady ? "ready" : "starting", {
+          status: originReady ? 200 : 503,
+        });
+      }
       assert.equal(u.origin, "https://api.runpod.io");
       assert.equal(
         request.headers.get("authorization"),
@@ -388,7 +400,8 @@ async function lifecycleFixture(
         assert.equal(body.startSsh, false);
         assert.equal(body.startJupyter, false);
         assert.ok(!("RUNPOD_API_KEY" in body.env));
-        assert.match(body.cmd[0], /sha256sum --check/);
+        if (packaged) assert.match(body.cmd[0], /hosted_image.py run/);
+        else assert.match(body.cmd[0], /sha256sum --check/);
         assert.match(body.cmd[0], /unset RUNPOD_API_KEY/);
         pod = {
           id: "syntheticpod01",
@@ -421,6 +434,12 @@ async function lifecycleFixture(
     http: (url, init) => mf.dispatchFetch(url, init),
     creates: () => creates,
     deletes: () => deletes,
+    setProgress: (value) => {
+      progress = value;
+    },
+    makeReady: () => {
+      originReady = true;
+    },
     allowDelete: () => {
       failDelete = false;
     },
@@ -512,5 +531,49 @@ test("native HTTP reviewer entry and paid admission need no sign-in; owner route
     headers: { Origin: "http://localhost" },
   });
   assert.equal(started.status, 202);
+  assert.equal(f.creates(), 1);
+});
+
+test("native packaged startup persists strict observed stages without starting active use", async (t) => {
+  const f = await lifecycleFixture(t, { packaged: true });
+  const stub = await f.stub();
+  await stub.start();
+  await stub.serviceNow();
+  let state = await stub.readStored();
+  const key = state.runs[0].key;
+  assert.equal(state.runs[0].phase, "reserved");
+  assert.equal(state.runs[0].firstUseAt, null);
+  assert.equal((await stub.startup(key)).stage, "loading_model");
+  const status = await (await f.http("http://localhost/api/status")).json();
+  assert.equal(status.startup.detail.stage, "loading_model");
+  assert.ok(!JSON.stringify(status).includes("syntheticpod01"));
+  const original = await stub.startup(key);
+  for (const value of [
+    {
+      stage: "checking_workspace",
+      changedAt: Date.now(),
+      private: "must-not-leak",
+    },
+    { stage: "invented", changedAt: Date.now() },
+    { stage: "checking_workspace", changedAt: Date.now() + 60000 },
+    {
+      stage: "checking_workspace",
+      changedAt: Date.now(),
+      extra: "x".repeat(600),
+    },
+  ]) {
+    f.setProgress(value);
+    await stub.serviceNow();
+    assert.deepEqual(await stub.startup(key), original);
+  }
+  f.setProgress({ stage: "checking_workspace", changedAt: Date.now() });
+  await stub.serviceNow();
+  assert.equal((await stub.startup(key)).stage, "checking_workspace");
+  assert.equal((await stub.readStored()).runs[0].phase, "reserved");
+  f.makeReady();
+  await stub.serviceNow();
+  state = await stub.readStored();
+  assert.equal(state.runs[0].phase, "ready");
+  assert.equal(state.runs[0].firstUseAt, null);
   assert.equal(f.creates(), 1);
 });

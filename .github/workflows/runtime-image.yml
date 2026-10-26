@@ -1,0 +1,47 @@
+name: Build reviewed demo runtime
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prepare source-only context
+        run: |
+          python scripts/bundle_source.py "$RUNNER_TEMP/terraready-source.tar.gz"
+          mkdir "$RUNNER_TEMP/terraready-context"
+          tar -xzf "$RUNNER_TEMP/terraready-source.tar.gz" -C "$RUNNER_TEMP/terraready-context"
+      - name: Build and inspect Linux runtime
+        env:
+          IMAGE: ghcr.io/itikku/terraready-runtime
+        run: |
+          docker build --platform linux/amd64 --build-arg SOURCE_COMMIT="$GITHUB_SHA" -f deploy/Dockerfile -t "$IMAGE:$GITHUB_SHA" "$RUNNER_TEMP/terraready-context"
+          docker run --rm --entrypoint python3 "$IMAGE:$GITHUB_SHA" -c 'import sys; sys.path.insert(0,"scripts"); from hosted_image import verify_packaged; verify_packaged(sys.argv[1]); print("Packaged source/frontend verified; GPU inference remains untested.")' "$GITHUB_SHA"
+          docker image inspect "$IMAGE:$GITHUB_SHA" --format '{{json .Size}}' > "$RUNNER_TEMP/runtime-image-bytes.json"
+      - name: Publish immutable runtime
+        env:
+          IMAGE: ghcr.io/itikku/terraready-runtime
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:$GITHUB_SHA"
+          docker image inspect "$IMAGE:$GITHUB_SHA" --format '{{json .RepoDigests}}' > "$RUNNER_TEMP/runtime-image-digests.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-image-identity
+          path: |
+            ${{ runner.temp }}/runtime-image-bytes.json
+            ${{ runner.temp }}/runtime-image-digests.json
+          retention-days: 7

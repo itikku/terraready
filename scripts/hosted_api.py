@@ -24,4 +24,7 @@ def create() -> HostedOrigin:
         fixture,
         LocalModel(ROOT / ".data/runtime/inference.key", seed=None),
         web_root=ROOT / "apps/web/dist",
+        startup_file=(
+            ROOT / ".data/startup.json" if (ROOT / "IMAGE_MANIFEST.json").is_file() else None
+        ),
     )

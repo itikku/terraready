@@ -18,6 +18,7 @@ export interface OwnedPod {
 export interface HostedSource {
   commit: string;
   sha256: string;
+  image?: string;
 }
 export interface PodQuote {
   hourly: number;
@@ -145,16 +146,23 @@ export class Runpod {
     if (
       !/^[a-f0-9]{40}$/.test(source.commit) ||
       !/^[a-f0-9]{64}$/.test(source.sha256) ||
-      !/^[a-f0-9]{64}$/.test(secret)
+      !/^[a-f0-9]{64}$/.test(secret) ||
+      (source.image !== undefined &&
+        !/^ghcr\.io\/itikku\/terraready-runtime@sha256:[a-f0-9]{64}$/.test(
+          source.image,
+        ))
     )
       throw new ProviderError(0, "configuration");
     const revision = source.commit.slice(0, 7);
     const url = `https://github.com/itikku/terraready/releases/download/preview-source-${revision}/terraready-source-${revision}.tar.gz`;
-    const command = `set -euo pipefail; unset RUNPOD_API_KEY; umask 077; cd /; mkdir terraready; cd terraready; curl --fail --location --silent --show-error --proto '=https' --proto-redir '=https' --max-time 600 --max-filesize 10000000 '${url}' -o /tmp/terraready-source.tar.gz; echo '${source.sha256}  /tmp/terraready-source.tar.gz' | sha256sum --check --status; tar -xzf /tmp/terraready-source.tar.gz; exec python3 -u scripts/hosted_boot.py`;
+    const command = source.image
+      ? "set -euo pipefail; unset RUNPOD_API_KEY; umask 077; cd /terraready; exec python3 -u scripts/hosted_image.py run"
+      : `set -euo pipefail; unset RUNPOD_API_KEY; umask 077; cd /; mkdir terraready; cd terraready; curl --fail --location --silent --show-error --proto '=https' --proto-redir '=https' --max-time 600 --max-filesize 10000000 '${url}' -o /tmp/terraready-source.tar.gz; echo '${source.sha256}  /tmp/terraready-source.tar.gz' | sha256sum --check --status; tar -xzf /tmp/terraready-source.tar.gz; exec python3 -u scripts/hosted_boot.py`;
     const pod = await this.#read("pods", {
       name: owned.name,
       cloud: "SECURE",
       image:
+        source.image ??
         "runpod/pytorch@sha256:602afab6d10c5932bd9824c4f23119ca20b68d9a03423e4b3e9c612ff1431ddf",
       gpu: { id: "NVIDIA L4", count: 1, minCudaVersion: "12.8" },
       dataCenterIds: quote.dataCenterIds,

@@ -8,12 +8,13 @@ From the repository root, after `npm ci`:
 make controller-check
 ```
 
-The 56 controller tests use synthetic accounting and Cloudflare's native workerd/SQLite emulator, including HTTP admission, concurrent starts, ambiguous creation, failed-delete retries and restart after cleanup. They do not read the operating LanceDB database. `make verify` and CI include this suite. The emulator is pinned to the beta used by Wrangler 4.152.0; the lockfile overrides its HTTP dependency to Undici 7.30.1.
+The controller tests use synthetic accounting and Cloudflare's native workerd/SQLite emulator, including HTTP admission, concurrent starts, ambiguous creation, failed-delete retries and restart after cleanup. They do not read the operating LanceDB database. `make verify` and CI include this suite. The emulator is pinned to the beta used by Wrangler 4.152.0; the lockfile overrides its HTTP dependency to Undici 7.30.1.
 
 ## Budget and lifecycle
 
 - One unsettled lease across all visitors. A fresh server-side L4 quote and atomic reservation precede creation. Persisted attempt markers reconcile ambiguous responses; uncertainty blocks duplicate creation.
 - Integer microdollars, upward rounding, $2 per Los Angeles day and $10 lifetime across all runs. Setup, disk, idle and cleanup count; prepaid balance is separate. The original 146,056-microdollar seed is retained with a later billing correction, not reset.
+
 - Up to twenty minutes setup, thirty minutes idle, 120 minutes active from first deliberate open and five minutes shutdown margin. Available money can shorten the envelope. Joins/activity refresh only idle; polling does neither. Rental is split at local midnight.
 - Durable alarms check readiness and delete only the recorded resource after ownership verification. Failed cleanup retries with the reservation held. The page distinguishes stop requested from confirmed termination.
 - Confirmed absence permits a conservative usage debit and release of unused reservation. `costBasis` and `providerInvoicePending` distinguish it from provider invoices. Reconciliation remains manual; unexplained accounting puts starts on hold.
@@ -29,6 +30,16 @@ Forwarding uses a time/nonce/body/method/path/visitor HMAC envelope. Browser coo
 Do not add a Static Assets binding without re-verifying owner authentication: the current internal assets router omits `ctx.access`. The frontend is served through the signed origin. [Cloudflare limitation](https://developers.cloudflare.com/workers/configuration/cloudflare-access/#ctxaccess-limitations).
 
 ## Runtime setup and evidence
+
+The optional, digest-pinned `IMAGE_REF` selects the [prebuilt runtime](../../deploy/README.md)
+for future starts only. Its source commit must match `SOURCE_COMMIT`; the source
+archive pin is retained for provenance and explicit operator rollback. A malformed
+image pin fails before reservation. Existing live runs, spend and deadlines are not reset.
+
+Packaged hosts expose signed `/startup` on the existing port with only an observed
+stage and timestamp. The durable actor bounds the response to 512 bytes, validates
+its schema and persists only those fields/check time. Public status never exposes
+origin IDs, logs, secret values or paths. Polling never counts as accepted use.
 
 The encrypted controller-only `RUNPOD_API_KEY` is configured. Its minimum current console option is Restricted → GraphQL Read/Write, AI API None; this is broad management access, not a Pod-scoped key. Never expose it to chat, source bundles, the browser or GPU. `/owner/api/setup?diagnostics=1` reports read-only Pods/catalog/billing capability states without secret values or provider bodies.
 

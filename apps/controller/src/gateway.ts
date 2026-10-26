@@ -6,6 +6,9 @@ type Result = ReturnType<typeof transition>;
 interface LedgerStub {
   apply(event: Event): Promise<Result>;
   start?(): Promise<Result>;
+  startup?(
+    key: string,
+  ): Promise<{ stage: string; changedAt: number; checkedAt: number } | null>;
 }
 
 // Local boundary types until deployment configuration generates binding types.
@@ -17,6 +20,7 @@ export interface GatewayBindings {
   RUNPOD_API_KEY?: string;
   SOURCE_COMMIT?: string;
   SOURCE_SHA256?: string;
+  IMAGE_REF?: string;
 }
 
 const hex = (bytes: ArrayBuffer) =>
@@ -167,7 +171,11 @@ async function routeGateway(
     const startupEnabled = Boolean(
       env.RUNPOD_API_KEY &&
       /^[a-f0-9]{40}$/.test(env.SOURCE_COMMIT ?? "") &&
-      /^[a-f0-9]{64}$/.test(env.SOURCE_SHA256 ?? ""),
+      /^[a-f0-9]{64}$/.test(env.SOURCE_SHA256 ?? "") &&
+      (env.IMAGE_REF === undefined ||
+        /^ghcr\.io\/itikku\/terraready-runtime@sha256:[a-f0-9]{64}$/.test(
+          env.IMAGE_REF,
+        )),
     );
     if (url.pathname === "/api/setup") {
       if (!owner) return response(403, "Only the demo owner can check setup.");
@@ -234,6 +242,10 @@ async function routeGateway(
     }
     let result = await stub.apply({ type: "tick" });
     const run = result.state.runs.find((item) => item.phase !== "settled");
+    const startup =
+      run?.phase === "reserved" && stub.startup
+        ? await stub.startup(run.key)
+        : null;
     if (
       request.method === "GET" &&
       (url.pathname === "/demo" ||
@@ -261,6 +273,7 @@ async function routeGateway(
                       ? "confirming"
                       : "allocating",
                   elapsedMs: Math.max(0, Date.now() - run.createdAt),
+                  detail: startup,
                 }
               : null,
           idleMinutes: POLICY.idleMs / 60_000,
