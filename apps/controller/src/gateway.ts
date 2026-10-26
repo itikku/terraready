@@ -1,5 +1,5 @@
 import { dayAt, POLICY, type Event, type transition } from "./policy.js";
-import { providerAccess } from "./provider.js";
+import { providerAccess, Runpod } from "./provider.js";
 import { controlPage } from "./page.js";
 
 type Result = ReturnType<typeof transition>;
@@ -152,6 +152,20 @@ export async function gateway(
     if (url.pathname === "/api/setup") {
       if (!owner) return response(403, "Only the demo owner can check setup.");
       if (request.method !== "GET") return response(405, "Setup requires GET.");
+      if (url.searchParams.get("diagnostics") === "1") {
+        const key = env.RUNPOD_API_KEY;
+        const formatValid = Boolean(
+          key && key.length >= 8 && key.length <= 4096 && !/\s/.test(key),
+        );
+        return Response.json(
+          {
+            configured: Boolean(key),
+            formatValid,
+            status: formatValid ? await new Runpod(key!).diagnostics() : null,
+          },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      }
       return Response.json(
         {
           provider: await providerAccess(env.RUNPOD_API_KEY),

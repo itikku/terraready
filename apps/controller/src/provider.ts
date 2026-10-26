@@ -8,6 +8,13 @@ export interface ProviderAccess {
   billing: Capability;
 }
 
+export interface OwnedPod {
+  id: string;
+  name: string;
+  nonce: string;
+  since: number;
+}
+
 export class ProviderError extends Error {
   constructor(readonly status: number) {
     super("Runpod request failed.");
@@ -65,6 +72,81 @@ export class Runpod {
     return data;
   }
 
+  async diagnostics(): Promise<Record<string, number | string>> {
+    const result: Record<string, number | string> = {};
+    for (const [name, path] of Object.entries({
+      pods: "pods?includeClusterPods=true&limit=1",
+      catalog:
+        "catalog/gpus?include=AVAILABILITY&product=POD&cloud=SECURE&count=1",
+      billing: "billing/pods?lastN=1",
+    })) {
+      try {
+        await this.#read(path);
+        result[name] = 200;
+      } catch (error) {
+        result[name] =
+          error instanceof ProviderError ? error.status : "transport_or_format";
+      }
+    }
+    return result;
+  }
+
+  // Internal lifecycle primitive only. A trusted creation record supplies the
+  // exact ID and an unpredictable per-attempt marker; a name alone is not proof.
+  async terminateOwned(owned: OwnedPod): Promise<boolean> {
+    if (
+      !/^[a-z0-9]{8,32}$/.test(owned.id) ||
+      !/^terraready-[a-f0-9]{32}$/.test(owned.name) ||
+      !/^[a-f0-9]{64}$/.test(owned.nonce) ||
+      !Number.isSafeInteger(owned.since) ||
+      owned.since <= 0
+    )
+      throw new ProviderError(0);
+    const path = `pods/${owned.id}`;
+    const lookup = async () => {
+      try {
+        return await this.#read(path);
+      } catch (error) {
+        if (error instanceof ProviderError && error.status === 404) return null;
+        throw new ProviderError(
+          error instanceof ProviderError ? error.status : 0,
+        );
+      }
+    };
+    const before = await lookup();
+    if (before === null) return true;
+    const created =
+      typeof before.createdAt === "string" ? Date.parse(before.createdAt) : NaN;
+    if (
+      before.id !== owned.id ||
+      before.name !== owned.name ||
+      !object(before.env) ||
+      before.env.TR_RUN_NONCE !== owned.nonce ||
+      !Number.isFinite(created) ||
+      created < owned.since - 60_000 ||
+      created > owned.since + 20 * 60_000
+    )
+      throw new ProviderError(0);
+    if (before.status === "TERMINATED") return true;
+    // A lost DELETE response is ambiguous. Confirm with a fresh read even after
+    // a timeout; never release a reservation merely because DELETE was accepted.
+    try {
+      const result = await this.transport(`https://api.runpod.io/v2/${path}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${this.key}` },
+        redirect: "error",
+        signal: AbortSignal.timeout(12_000),
+      });
+      await result.body?.cancel();
+    } catch {
+      // The independently persisted shutdown intent must retry if still live.
+    }
+    const after = await lookup();
+    return (
+      after === null || (after.id === owned.id && after.status === "TERMINATED")
+    );
+  }
+
   // Read-only checks of the exact three API families needed by the runtime.
   // No key, Pod configuration, billing amount or account identity is returned.
   async access(): Promise<ProviderAccess> {
@@ -86,8 +168,9 @@ export class Runpod {
       check("pods?includeClusterPods=true&limit=1", (data) =>
         Array.isArray(data.pods),
       ),
-      check("catalog/gpus?cloud=SECURE&count=1", (data) =>
-        Array.isArray(data.gpus),
+      check(
+        "catalog/gpus?include=AVAILABILITY&product=POD&cloud=SECURE&count=1",
+        (data) => Array.isArray(data.gpus),
       ),
       check("billing/pods?lastN=1", (data) => Array.isArray(data.records)),
     ]);

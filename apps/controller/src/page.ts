@@ -22,7 +22,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #bf7d1c;outline-offset:4p
 <p id="error" role="alert"></p><button id="retry" class="secondary" hidden>Check again</button>
 <section class="card" aria-labelledby="budget"><h2 id="budget">One shared budget</h2>
 <p>$1.50 per Los Angeles calendar day, shared across everyone and every run. The project also has a $5 lifetime limit.</p>
-<p>Each session lasts up to two hours from its first use and ends after ten idle minutes. Setup and idle time use the budget; a cost limit can end a session sooner.</p>
+<p>Each session lasts up to two hours from its first use and ends after thirty idle minutes. Setup and idle time use the budget; a cost limit can end a session sooner.</p>
 <p id="remaining" class="muted"></p></section>
 <p class="muted">Synthetic site data · Real model when running · Camera integration is a demo stub.</p>
 <p class="muted">Your planning decisions stay in your own workspace for this run. Ending the shared session ends access for everyone. Return to <a href="/demo">this page</a> to check or end the session.</p>

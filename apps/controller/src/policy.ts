@@ -4,7 +4,7 @@ export const POLICY = {
   lifetime: 5_000_000,
   timezone: "America/Los_Angeles",
   setupMs: 20 * 60_000,
-  idleMs: 10 * 60_000,
+  idleMs: 30 * 60_000,
   activeMs: 120 * 60_000,
   shutdownMs: 5 * 60_000,
 } as const;
@@ -170,7 +170,7 @@ export function dayAt(time: number): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
-// A lease is at most 155 minutes, so it touches at most two local calendar days.
+// A lease is at most 175 minutes, so it touches at most two local calendar days.
 function windows(start: number, end: number) {
   const firstDay = dayAt(start);
   if (firstDay === dayAt(end - 1)) return [{ day: firstDay, start, end }];

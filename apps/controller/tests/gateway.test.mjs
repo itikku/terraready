@@ -137,6 +137,24 @@ test("setup check is owner-only, read-only, secret-free and cannot start a GPU",
   assert.equal(f.events.length, before);
 });
 
+test("owner diagnostics distinguish invalid key format without returning its value", async () => {
+  const f = await fixture(false);
+  f.env.RUNPOD_API_KEY = "synthetic invalid key";
+  const req = request("/api/setup?diagnostics=1");
+  assert.equal(
+    (await gateway(req, f.env, context("guest@example.org", "guest"))).status,
+    403,
+  );
+  const result = await gateway(req, f.env, context());
+  const body = await result.json();
+  assert.deepEqual(body, {
+    configured: true,
+    formatValid: false,
+    status: null,
+  });
+  assert.ok(!JSON.stringify(body).includes(f.env.RUNPOD_API_KEY));
+});
+
 test("private control page requires Access and cannot open a run through page loads", async () => {
   const f = await fixture(false);
   assert.equal((await gateway(request("/demo"), f.env, {})).status, 403);

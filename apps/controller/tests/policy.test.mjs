@@ -51,11 +51,11 @@ test("prior billed usage is conservatively rounded and seeded once", () => {
 
 test("a single whole-host reservation includes setup, ready waiting, active use and cleanup", () => {
   const h = harness();
-  assert.equal(h.read().reserveUntil - now, 155 * minute);
+  assert.equal(h.read().reserveUntil - now, 175 * minute);
   assert.equal(h.read().costStopAt, h.read().reserveUntil - POLICY.shutdownMs);
   assert.equal(
     amount(h.read().reserved),
-    Math.ceil((100_000 * 155) / 60) + 10_000,
+    Math.ceil((100_000 * 175) / 60) + 10_000,
   );
   assert.equal(
     h.state().totalSpent,
@@ -83,14 +83,14 @@ test("setup and polling do not start or refresh the first-use/idle clock", () =>
     now + minute,
   );
   h.send({ type: "ready", key: "run-one" }, now + 2 * minute);
-  h.send({ type: "tick" }, now + 11 * minute);
+  h.send({ type: "tick" }, now + 31 * minute);
   assert.equal(h.read().firstUseAt, null);
-  h.send({ type: "tick" }, now + 12 * minute);
+  h.send({ type: "tick" }, now + 32 * minute);
   assert.equal(h.read().phase, "stopping");
   assert.equal(h.read().stopReason, "idle");
   h.send(
     { type: "open", key: "run-one" },
-    now + 12 * minute,
+    now + 32 * minute,
     "run_unavailable",
   );
 });
@@ -129,12 +129,12 @@ test("active use ends after two hours despite sustained interactive activity", (
   assert.equal(h.read().activeEndAt, now + 123 * minute);
 });
 
-test("idle use stops at ten minutes and activity at the boundary cannot resurrect it", () => {
+test("idle use stops at thirty minutes and activity at the boundary cannot resurrect it", () => {
   const h = harness();
   h.start();
   h.send(
     { type: "activity", key: "run-one" },
-    now + 13 * minute,
+    now + 33 * minute,
     "run_unavailable",
   );
   assert.equal(h.read().stopReason, "idle");
@@ -278,7 +278,7 @@ test("cross-midnight reservation splits elapsed rental cost and charges fixed co
   const h = harness(time);
   assert.deepEqual(h.read().reserved, {
     "2026-10-26": 26_667,
-    "2026-10-27": 241_667,
+    "2026-10-27": 275_000,
   });
   const reservation = structuredClone(h.read().reserved);
   h.send({ type: "tick" }, time + 11 * minute);
@@ -339,9 +339,9 @@ for (const [name, time] of [
     const h = harness(timeMs);
     h.start();
     assert.equal(h.read().activeEndAt - h.read().firstUseAt, 120 * minute);
-    assert.equal(h.read().reserveUntil - timeMs, 155 * minute);
+    assert.equal(h.read().reserveUntil - timeMs, 175 * minute);
     assert.equal(Object.keys(h.read().reserved).length, 1);
-    assert.equal(amount(h.read().reserved), 268_334);
+    assert.equal(amount(h.read().reserved), 301_667);
     assert.equal(dayAt(timeMs), time.slice(0, 10));
   });
 }
@@ -385,7 +385,7 @@ test("the next alarm is the earliest setup, idle, active or cost deadline", () =
   });
   h.start();
   assert.deepEqual(nextDeadline(h.read()), {
-    at: now + 13 * minute,
+    at: now + 33 * minute,
     reason: "idle",
   });
   h.send({ type: "stop", key: "run-one" });
