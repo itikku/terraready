@@ -1,64 +1,77 @@
 # TerraReady
 
-Overnight rain makes the north access road unsuitable for a loaded hauler. Can hauling continue on another route? What work can the excavator pull forward? What must stay held?
+## [Try the live demo →](https://terraready-controller.terraready-itikku.workers.dev/demo)
 
-TerraReady is a construction-earthworks planning prototype for answering those questions from timestamped ground evidence, machine limits, unfinished prerequisites and resource budgets. The superintendent chooses or defers each package and selects checked route/resource alternatives. Independent rules check the combination before exact human approval; an optional small local model helps choose what to examine.
+TerraReady helps a site superintendent replan earthworks when ground conditions change. A small local model reads the site's observations, equipment limits and unfinished work. Rules check which options are feasible; you choose and approve the plan.
 
-**Demo data is synthetic.** The aerial is real, attributed NAIP imagery. The default camera is a disconnected stub with a fixed illustration; neither images nor the model produce soil measurements. [Camera snapshot adapters](docs/CAMERAS.md) are implemented; physical-camera integration is untested.
+Explore a simulated rainy shift with real Qwen inference. Start or join a session without signing in. A cold start takes a few minutes; availability follows the [shared budget policy](docs/HOSTED_DEMO.md#budget-controls).
 
-![Local assessment first, with work choices and evidence on separate views](docs/images/guided-assessment.png)
+![Assess local conditions, then choose the work to approve](docs/images/guided-assessment.png)
 
-## Try the decision
+## Follow the rainy shift
 
-**[Open the live demo](https://terraready-controller.terraready-itikku.workers.dev/demo)** — no account or email code. Choose **Start live demo**, wait a few minutes for the GPU, then open the workspace. Visitors share one model and budget; each browser has its own planning decisions. Return to the same link to join or restart within the available allowance. [Session policy and limits](docs/HOSTED_DEMO.md).
+Overnight rain makes north access unsuitable for a loaded hauler. The excavator has other ready work, while west-stockpile work must wait for inspection and unfinished prerequisites.
 
-The local demo below needs no model, Mapbox token or cloud account.
+1. **Assess this shift.** The model retrieves relevant site records and returns checked findings. Expand the evidence and tool trace to see what it examined.
+2. **Choose work to approve.** Keep an assignment, choose an eligible route or defer a package. The editor checks the combined resource hours and preserves holds.
+3. **Review and approve.** Confirm the exact selection, then copy the field-lead or haul-coordinator brief. Changes to evidence or selection require another check.
 
-1. Choose **Assess this shift**. The local model reads site records and returns checked findings. Then choose **Choose work to approve**. **Choose work without the model** provides the manual path; unavailable inference is explicitly labeled.
-2. Make a decision for each package. Defer yard drainage or select an eligible alternate route. Held packages cannot be released through a dropdown.
-3. Review your selected assignments; the count follows your choices. The API rechecks the exact combination, capacities and evidence deadline. Confirm and approve, then copy the field-lead or haul-coordinator brief. Reload to see that selection and its saved approval.
-4. Expand **Demo controls** and set **Evidence clock** to **12:00**. Stale evidence requires inspection; the earlier approval cannot authorize that changed snapshot.
-
-The work editor covers seven packages, prerequisites and paired-resource hour budgets. Analysis never changes your choices. **Site evidence** opens the supporting map and measurements; the original three-package route comparison is a secondary disclosure there. Model evidence and tool traces stay expandable. Approvals never complete work or dispatch machinery.
+**Choose work without the model** keeps manual planning available during an inference outage. **Site evidence** opens the map and measurements when you need to investigate. Approving a plan saves a planning record; it does not dispatch equipment or complete work.
 
 ## Why this architecture fits
 
-**The model selects relevant checked records. Rules establish feasibility. A person approves.**
+The model's job is to find the relevant records and checked alternatives. Python rules establish feasibility. The superintendent approves the work.
 
 ```mermaid
 flowchart LR
-    UI[Browser: inspect and review] --> API[FastAPI]
+    UI[Browser: assess and choose work] --> API[FastAPI]
     API <--> DB[(Typed local LanceDB)]
     API --> Rules[Ground, prerequisite and capacity checks]
     API <--> Agent[Bounded read-only tools]
-    Agent <--> Model[Local Qwen3-4B / llama.cpp]
+    Agent <--> Model[Qwen3-4B / llama.cpp]
     Agent --> Rules
     UI --> Approval[Human approval: recheck exact selection]
     Approval --> API
     API --> Brief[Saved approval and local briefs]
 ```
 
-The browser reaches the API; it never calls the model or database directly. The local and hosted demonstrations run the API, database and model together on one host. React provides the evidence workspace; Python/FastAPI/Pydantic validate boundaries, and Arrow preserves explicit LanceDB schemas. In the hosted demo, a Cloudflare Worker signs requests and a Durable Object coordinates the shared GPU lease and budget.
+The model, API and site database run together on one host. The same boundary works on the local machine and the hosted GPU. Qwen3-4B Q4_K_M runs through llama.cpp on a loopback interface beside the site database.
 
-| Use-case need | Decision and benefit | Tradeoff |
+| Use-case need | Technical decision | Benefit and tradeoff |
 | --- | --- | --- |
-| A wet route can suit one asset and exclude another; observations age. | [Machine-specific rules](apps/api/src/terraready/engine.py) check every route zone, evidence freshness and static restrictions. Reasons cite stored observations. | Synthetic thresholds explain the workflow; they are not a validated trafficability model. |
-| A plausible model answer cannot establish ground conditions or capacity. | A [focus-first tool loop](apps/api/src/terraready/agent.py) reads known records and checked candidates. Python regenerates displayed facts; the model cannot write, approve or dispatch. | Narrower than open-ended advice. Five responses, 960 completion tokens and 120 seconds bound a turn; failure returns labeled manual recovery. |
-| Evidence or selection can change before someone approves. | [Approval rechecks](apps/api/src/terraready/main.py) recompute constraints and bind the exact snapshot, clock and policy to a fingerprint. Repeated requests preserve the saved approval. | Local demo approval is not authenticated sign-off. It does not complete prerequisites or reserve real machinery. |
-| The prototype needs inspectable evidence and repeatable tests on one host. | [Typed LanceDB tables](apps/api/src/terraready/storage.py) store fixtures, approvals and structured audit facts. Synthetic fixtures reproduce edge cases. | One API writer; no distributed transactions, embeddings or vector-search claim. Questions and free-form model prose are not retained in audits. |
-| A supplied photograph must remain distinguishable from a ground measurement. | A bounded [snapshot contract](docs/CAMERAS.md) carries image identity, capture time and digest; missing captures stay unavailable. | No vendor/video driver, visual inference or automatic measurement ingestion. Images cannot refresh stale ground evidence. |
+| The same wet route affects a hauler and excavator differently; observations also expire. | [Machine-specific rules](apps/api/src/terraready/engine.py) check every route zone, evidence age and static restriction. | Rejections cite stored evidence. The thresholds demonstrate the workflow; geotechnical validation remains outside this prototype. |
+| A small model must stay focused and cannot establish safe operating conditions. | A [read-only tool loop](apps/api/src/terraready/agent.py) retrieves records and checked candidates. Python regenerates displayed facts. Five responses, 960 completion tokens and 120 seconds bound a turn. | Inspectable assistance with a limited scope. Failure returns labeled manual recovery; the model has no write or approval tool. |
+| Conditions or choices may change before approval. | The [approval API](apps/api/src/terraready/main.py) rechecks constraints and fingerprints the exact selection, snapshot, clock and policy. | Stale selections cannot reuse an approval. Demo approval is a local planning record, not authenticated field sign-off. |
+| Evidence and decisions need to be inspectable on one host. | [Typed LanceDB tables](apps/api/src/terraready/storage.py) hold fixtures, approvals and structured audit facts. Arrow preserves their schemas. | Repeatable tests and queryable history with one API writer. Embeddings, vector retrieval and distributed transactions are not implemented. Free-form model prose is not retained in audits. |
 
-Ground eligibility is only one gate. The recovery engine also rejects unfinished prerequisites, incompatible resources and conflicting selections. Hour budgets describe serial planned effort, not a time-optimized schedule or measured productivity savings. Rules-only planning remains available when inference fails.
+Prerequisites and paired-resource hour budgets are checked alongside ground conditions. Planned hours describe serial effort; the prototype does not calculate an optimal timed schedule or measured productivity savings.
 
 ## Budget controls
 
-The shared-demo policy treats cost as an admission and resource-lifecycle constraint: **$1.50 per Los Angeles day across all visitors/runs**, **$5 lifetime usage**, and **two active hours maximum from first use**. Startup, idle, disk and cleanup count. Joining never renews an allowance; the separate $10 prepaid funding limit is not a usage budget.
+The hosted demo shares **one GPU**, **$2 per Los Angeles calendar day** and a **$5 lifetime usage ceiling** across every visitor and restart. More visitors mainly add queueing to fixed capacity. GPU time continues to cost money during startup and idle periods.
 
-The [Cloudflare ledger](apps/controller/README.md) reserves conservative whole-host costs atomically before creating one GPU. Setup has a twenty-minute cutoff; thirty minutes without meaningful use ends a ready/active run. Joining refreshes idle time without resetting the two-hour deadline. Status polling does neither. A cost limit can end a run sooner. One model loop and a bounded queue share fixed capacity; browser workspaces separate approvals and audits.
+The [Cloudflare controller](apps/controller/README.md) reserves whole-host costs before creation and persists the resource identity and deadlines. A session lasts at most two hours from first use, with a thirty-minute idle cutoff. Setup has a twenty-minute cutoff; cost can end a session sooner. Joining does not renew an allowance. The separately approved $10 prepaid funding limit is distinct from usage.
 
-**Public start, real inference, automatic cleanup and restart are verified.** Reviewers need no sign-in; only owner setup/global-stop controls use Cloudflare Access. Durable alarms check readiness and delete the recorded Pod on stop or expiry, retrying failed cleanup. An uncertain creation blocks a duplicate start. Exact-ID provider checks confirmed deletion in both live lifecycle proofs; no test GPU was left running.
+Durable alarms delete the recorded Pod on stop or expiry and retry failed cleanup. Uncertain creation blocks duplicate starts. Confirmed deletion releases unused reservation after a conservative debit. Delayed provider-bill reconciliation remains manual. These controls are implemented in the application; provider outages can delay cleanup. [Lifecycle evidence and accounting limits](docs/HOSTED_DEMO.md) explain what has been verified.
 
-After confirmed deletion, the ledger replaces the reservation with a conservative usage debit, including cleanup margin. This releases unused allowance without pretending delayed provider bills are final. Invoice reconciliation remains manual. Provider/API failures can delay cleanup: these are application controls, not a provider-enforced dollar cap. [Lifecycle, accounting and limitations](docs/HOSTED_DEMO.md) give the details.
+## What has been verified
+
+| Evidence | Result and scope |
+| --- | --- |
+| [Automated checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | Backend, controller and browser tests; formatting, lint, types, production build, live HTTP checks and package builds. Browser inference tests use a labeled protocol stub. |
+| [Real L4 inference](docs/verification/gpu-agent.json) | Qwen passed 3/3 smoke cases and 10/10 warm API requests. End-to-end p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests. Sampled peaks: **3,274 MiB GPU**, **5.94 GiB container**. |
+| [Hosted lifecycle](docs/HOSTED_DEMO.md#verified-preview) | Public start, genuine inference, controller deletion, fresh start and deletion again. Independent provider reads confirmed absence. Individual hosted smokes are separate from the measured latency sample. |
+| [Camera adapters](docs/CAMERAS.md#what-has-been-verified) | A synthetic folder exporter reaches the API/browser, with missing and invalid captures handled. Physical-camera acquisition remains untested. |
+
+The measured L4 run used source `45ff57e`, before camera adapters. Its later provider charge was **$0.1555**, including disk. These small samples establish integration. Reliability, real multiuser inference load, Jetson, power efficiency and enforced backend outbound-network denial remain unverified. The [native artifact](docs/verification/local-agent.json) records a separate local test; System distinguishes recorded measurements from current model reachability.
+
+## Data sources and demo boundaries
+
+The operating measurements, equipment and shift scenario are synthetic. The aerial is real public-domain NAIP imagery, with attribution in [ATTRIBUTIONS](ATTRIBUTIONS.md).
+
+The default camera is a disconnected stub with a fixed illustration. Neither images nor the model produce soil measurements. The [camera adapter contract](docs/CAMERAS.md) accepts developer-supplied still snapshots; photographs remain separate context and cannot refresh stale ground evidence.
+
+TerraReady is a planning prototype. Ground rules are illustrative and have not been certified for operational safety. Live weather/telemetry ingestion, visual inference and external messaging are not implemented. The implemented vertical is construction. The same asset × operation × location × evidence-time question could apply to farming, mining or forestry; those are extension opportunities.
 
 ## Run locally
 
@@ -87,17 +100,7 @@ The bundled aerial, fonts and manual decision flow work without external request
 
 For actual inference, follow the pinned downloads/hash checks in [model setup](docs/LOCAL_AGENT.md), then run `make model` and `make agent-smoke`. The approved model is **Qwen3-4B Q4_K_M** served by **llama.cpp b11669**. Without it, the interface labels rules-only fallback. A protocol stub used in browser tests is never presented as genuine inference.
 
-## What has been verified
-
-| Evidence | Result and scope |
-| --- | --- |
-| [GitHub checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | Backend, browser and controller/gateway tests, formatting, lint, types, build, live HTTP checks and package builds. Browser model tests use a labeled protocol stub. |
-| [Private L4 integration](docs/verification/gpu-agent.json) | Real Qwen inference: 3/3 smoke cases and 10/10 warm API requests. Warm end-to-end p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests. |
-| Same GPU test | Sampled peaks **3,274 MiB GPU**, **5.94 GiB container**; real approval/briefs, stopped-model fallback and expiry checked. Temporary Pod terminated; later provider billing revised the charge to **$0.1555** including disk; the artifact retains the earlier billing snapshot. |
-| [Hosted lifecycle proof](docs/HOSTED_DEMO.md#verified-preview) | Anonymous start → real workspace/Qwen analysis → controller deletion → fresh start/readiness → controller deletion. One analysis displayed **1.6 s** and three tool steps; an integration smoke, not a benchmark or real multiuser load test. |
-| [Camera interface tests](docs/CAMERAS.md#what-has-been-verified) | Synthetic folder exporter → API → browser, plus missing/invalid capture handling. No physical-camera test. |
-
-The GPU run used source `45ff57e`, before the camera extension. These small samples establish integration, not reliability, cold-cache behavior, absolute memory peaks or production safety. Container memory includes caches. Jetson, power efficiency and enforced backend outbound-network denial are unverified. The [native artifact](docs/verification/local-agent.json) is separate; the System page distinguishes recorded tests from current model reachability.
+## Verify and inspect
 
 ```sh
 PLAYWRIGHT_BROWSERS_PATH=.data/pw-browsers npx playwright install chromium
@@ -105,14 +108,8 @@ make verify
 uv build
 ```
 
-Verification uses disposable test databases and explicit protocol fixtures. Stop conflicting test previews before using ports 5174/8001/8082. `uv build` packages the backend; use the Git checkout for the complete web demo. See [verification/setup notes](docs/RUNNING.md#verification-and-reproduction) for prerequisites and historical clean-checkout provenance.
-
-## Scope and extensions
-
-The working vertical is construction. The same **asset × operation × location × evidence time** question motivates a planter on wet soil, a haul truck on a rain-soft mining road or a forestry harvester on a protected route. Those are transfer opportunities, not three additional implementations.
-
-This is a planning POC, not a safety-certified system, validated soil model or machinery controller. It has no live weather/telemetry ingestion, visual model, external messaging or optimal schedule. Camera pictures remain separate context. Anonymous access and the GPU lifecycle are verified; real multiuser inference load, Free-tier capacity and automated invoice reconciliation remain unverified or unfinished.
+Checks use disposable test databases and explicit protocol fixtures. Stop conflicting test previews before using ports 5174/8001/8082. `uv build` packages the backend; the Git checkout supplies the complete web demo. [Reproduction notes](docs/RUNNING.md#verification-and-reproduction) record setup prerequisites and historical clean-checkout results.
 
 References: [data/rules contract](docs/DATA_CONTRACT.md), [model/tools](docs/LOCAL_AGENT.md), [camera adapters](docs/CAMERAS.md), [architecture decisions](docs/DECISIONS.md), [research rationale](docs/RESEARCH.md).
 
-Original code/assets use [MIT](LICENSE). Public-domain imagery and third-party materials retain their terms in [ATTRIBUTIONS](ATTRIBUTIONS.md), including bundled font licenses. Qwen weights are Apache-2.0; llama.cpp is MIT, with pinned sources in model setup.
+Original code/assets use [MIT](LICENSE). Imagery, bundled fonts and third-party materials retain their terms in [ATTRIBUTIONS](ATTRIBUTIONS.md). Qwen weights are Apache-2.0; llama.cpp is MIT, with pinned sources in model setup.

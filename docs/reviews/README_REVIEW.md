@@ -1,5 +1,24 @@
 # README editorial critique
 
+## Revision after first-visit feedback — October 25, 2026
+
+The user identified a buried demo link and a long provenance disclaimer before the product story. Applied the public [copywriting](https://github.com/coreyhaines31/marketingskills/blob/e85f3cbc2e4a79bf33b2a12e9bdd9087d414735b/skills/copywriting/SKILL.md) and copy-editing skills as text-only instructions. Diagnosis B: preserve the construction scenario and technical argument; restore the lead and action hierarchy. This supersedes the historical recommendation below to put full camera/provenance detail in the opening.
+
+Audience: an unfamiliar technical evaluator arriving at the repository. Primary action: try the working demo. Voice: direct, practical, technically specific. No customer-result, savings, safety, vision or production-scale claim was added.
+
+| Unit | Decision | Reason |
+| --- | --- | --- |
+| Primary CTA | **Try the live demo**, on README line3 before any image | Direct action and destination. Alternatives considered: “See TerraReady in action” was less direct; “Explore a rainy shift” hid that it opens an interactive demo. |
+| Opening | Superintendent → changing ground → local records/model → checked options → human choice | Explains the job and the model's contribution before implementation detail. |
+| Provenance | One short simulated-scenario cue near the CTA; full data/camera/measurement boundary in **Data sources and demo boundaries** after architecture, budget and evidence | Preserves truthful scope while giving the reader a reason to try the demo first. |
+| Walkthrough | Three actions matching the implemented UI | One runnable story; optional evidence/trace detail stays secondary. |
+| Technical argument | Retained need → technical decision → benefit/tradeoff table and architecture diagram | Lets an engineer inspect why the design fits, with code links and bounded claims. |
+| Proof/setup | Condensed evidence into one table; kept local setup commands and reseeding caution unchanged | Reduces repetition without losing verification, attribution or the working setup path. |
+
+Final edit checks cover clarity, voice, consequence, supporting evidence, concrete wording and CTA friction. This is an editorial assessment; no fabricated ten-second comprehension rate, customer feedback, conversions or persona score is claimed. Markdown links/anchors/fences, unchanged setup commands and the GitHub rendering are checked separately. The previous README was1648 words; the revision is approximately1330. Existing technical evidence and historical review below are preserved.
+
+## Historical review
+
 Expert technical-writing review, 2026-10-25, against published `816a4eb`. The [editorial draft](README_DRAFT.md) preserves the proposed structure; the findings below describe that earlier published version.
 
 Execution update: the user approved shift-first recovery and required per-package decisions. The working editor was verified as `903d45c` with 296 backend / 60 browser tests. The root README now uses its actual labels and an inspected manual-decision capture; the critique below describes the previous README. Detailed running/maintenance information is retained in RUNNING. Human comprehension feedback remains pending.
