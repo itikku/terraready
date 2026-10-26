@@ -113,6 +113,41 @@ test("status polling never starts or extends active use and hides resource/accou
   assert.equal(result.headers.get("Cache-Control"), "no-store");
   assert.equal(f.state().runs[0].firstUseAt, null);
   assert.ok(!JSON.stringify(body).includes("syntheticpod01"));
+  assert.equal(body.startup, null);
+});
+
+test("startup progress reports confirmed allocation without revealing provider identity or changing use", async () => {
+  const f = await fixture(false);
+  await f.stub.apply({
+    type: "reserve",
+    key: "progress-run",
+    quote: {
+      id: "test",
+      hourly: 100_000,
+      fixed: 0,
+      validUntil: Date.now() + 60_000,
+    },
+  });
+  const status = async () =>
+    (await gateway(request("/api/status"), f.env, {})).json();
+  let body = await status();
+  assert.equal(body.startup.stage, "allocating");
+  assert.ok(body.startup.elapsedMs >= 0);
+  await f.stub.apply({ type: "uncertain", key: "progress-run" });
+  body = await status();
+  assert.equal(body.startup.stage, "confirming");
+  await f.stub.apply({
+    type: "created",
+    key: "progress-run",
+    resourceId: "syntheticpod02",
+  });
+  body = await status();
+  assert.equal(body.startup.stage, "preparing");
+  assert.ok(!JSON.stringify(body).includes("syntheticpod02"));
+  assert.equal(f.state().runs[0].firstUseAt, null);
+  assert.equal(f.state().runs[0].lastUseAt, null);
+  await f.stub.apply({ type: "ready", key: "progress-run" });
+  assert.equal((await status()).startup, null);
 });
 
 test("setup check is owner-only, read-only, secret-free and cannot start a GPU", async () => {

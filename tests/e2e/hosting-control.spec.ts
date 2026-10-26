@@ -286,3 +286,112 @@ test("idle warning needs an explicit keep-working action; a budget deadline cann
   ).toBeHidden();
   expect(activity).toBe(1);
 });
+
+test("startup shows real stages, elapsed time and a skeleton, then reveals explicit open", async ({
+  page,
+}, info) => {
+  await page.clock.install();
+  let phase = "reserved",
+    stage = "allocating",
+    polls = 0;
+  const html = controlPage();
+  await page.route("**/demo", async (route) =>
+    route.fulfill({
+      headers: Object.fromEntries(html.headers),
+      body: await html.clone().text(),
+    }),
+  );
+  await page.route("**/api/status", (route) => {
+    polls++;
+    return route.fulfill({
+      json: { ...status(phase, false), startup: { stage, elapsedMs: 65000 } },
+    });
+  });
+  await page.goto("/demo");
+  const progress = page.getByRole("region", {
+    name: "Getting your workspace ready",
+  });
+  await expect(progress).toBeVisible();
+  await expect(
+    page.getByText("Waiting for allocation", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Elapsed 1m 05s", { exact: true })).toBeVisible();
+  await expect(page.locator(".workspace-skeleton")).toBeVisible();
+  expect(
+    await page
+      .locator(".skeleton-line")
+      .first()
+      .evaluate((el) => getComputedStyle(el).animationName),
+  ).toBe("none");
+  stage = "preparing";
+  await page.clock.runFor(5000);
+  await expect(page.getByText("Allocated", { exact: true })).toBeVisible();
+  await expect(page.getByText("In progress", { exact: true })).toBeVisible();
+  expect(polls).toBeGreaterThan(1);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({
+    path: info.outputPath("startup-desktop.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: info.outputPath("startup-mobile.png"),
+    fullPage: true,
+  });
+  phase = "ready";
+  await page.clock.runFor(5000);
+  await expect(progress).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "Open shift workspace" }),
+  ).toBeEnabled();
+  expect(new URL(page.url()).pathname).toBe("/demo");
+});
+
+test("failed startup checks hide stale progress and recover without a second start", async ({
+  page,
+}) => {
+  let failed = false,
+    checks = 0;
+  const html = controlPage();
+  await page.route("**/demo", async (route) =>
+    route.fulfill({
+      headers: Object.fromEntries(html.headers),
+      body: await html.clone().text(),
+    }),
+  );
+  await page.route("**/api/status", (route) => {
+    checks++;
+    return failed
+      ? route.fulfill({ status: 503 })
+      : route.fulfill({
+          json: {
+            ...status("reserved", false),
+            startup: { stage: "confirming", elapsedMs: 120000 },
+          },
+        });
+  });
+  await page.goto("/demo");
+  await expect(
+    page.getByText("Confirming request", { exact: true }),
+  ).toBeVisible();
+  failed = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(
+    page.getByRole("heading", { name: "Session status unavailable" }),
+  ).toBeVisible();
+  await expect(page.locator("#startup")).toBeHidden();
+  failed = false;
+  await page.getByRole("button", { name: "Check again" }).click();
+  await expect(
+    page.getByText("Confirming request", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Start live demo", exact: true }),
+  ).toBeHidden();
+  expect(checks).toBe(3);
+});

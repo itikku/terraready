@@ -252,6 +252,17 @@ async function routeGateway(
           timezone: POLICY.timezone,
           accountingHold: result.state.accountingHold,
           startupEnabled,
+          startup:
+            run?.phase === "reserved"
+              ? {
+                  stage: run.resourceId
+                    ? "preparing"
+                    : run.uncertainCreate
+                      ? "confirming"
+                      : "allocating",
+                  elapsedMs: Math.max(0, Date.now() - run.createdAt),
+                }
+              : null,
           idleMinutes: POLICY.idleMs / 60_000,
           idleEndAt:
             run?.phase === "active"
