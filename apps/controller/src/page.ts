@@ -1,3 +1,5 @@
+import { POLICY } from "./policy.js";
+
 // A small protected control page, served without the Static Assets router so
 // Cloudflare's authenticated Access context remains available to the gateway.
 export function controlPage(): Response {
@@ -32,11 +34,12 @@ button:focus-visible,a:focus-visible{outline:3px solid #bf7d1c;outline-offset:4p
 <div id="actions"><button id="start" hidden>Start live demo</button><button id="open" hidden>Open shift workspace</button><button id="stop" class="secondary" hidden>End shared session</button></div>
 <p id="error" role="alert"></p><button id="retry" class="secondary" hidden>Check again</button>
 <section class="card" aria-labelledby="budget"><h2 id="budget">One shared budget</h2>
-<p>$1.50 per Los Angeles calendar day, shared across everyone and every run. The project also has a $5 lifetime limit.</p>
+<p>$${(POLICY.daily / 1_000_000).toFixed(2)} per Los Angeles calendar day, shared across everyone and every run. The project also has a $${POLICY.lifetime / 1_000_000} lifetime limit.</p>
 <p>Each session lasts up to two hours from its first use and ends after thirty idle minutes. Setup and idle time use the budget; a cost limit can end a session sooner.</p>
 <p id="remaining" class="muted"></p></section>
 <p class="muted">Synthetic site data · Real model when running · Camera integration is a demo stub.</p>
 <p class="muted">Your planning decisions stay in your own workspace for this run. Ending the shared session ends access for everyone. Return to <a href="/demo">this page</a> to check or end the session.</p>
+<p class="muted"><a href="/owner">Owner controls</a></p>
 </main><script nonce="${nonce}">
 const $=id=>document.getElementById(id);const api=location.pathname.startsWith("/owner")?"/owner/api":"/api";let busy=false;let checking=false;let phase="off";let startingUntil=0;let checkedAt=0;let elapsedMs=0;let lastPollAt=0;
 const states={off:['Start the live demo','Start when you are ready. No sign-in, invitation or appointment is needed. Your choices stay in this browser.'],reserved:['Starting the demo','Cold starts can take a few minutes. This page updates automatically.'],ready:['Demo is ready','Open the workspace to begin the shared session.'],active:['Demo is running','Join the current session. Everyone shares its remaining time and budget.'],stopping:['Ending the session','New work is paused while GPU shutdown is confirmed.'],terminated:['Preparing the next session','The GPU is off. Its budget reservation is being checked before another run.']};

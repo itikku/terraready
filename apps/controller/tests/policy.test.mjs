@@ -45,7 +45,7 @@ test("prior billed usage is conservatively rounded and seeded once", () => {
   const state = initialLedger();
   assert.equal(state.totalSpent, 146_056);
   assert.deepEqual(state.spent, { "2026-10-25": 146_056 });
-  assert.equal(POLICY.daily, 1_500_000);
+  assert.equal(POLICY.daily, 2_000_000);
   assert.equal(POLICY.lifetime, 5_000_000);
 });
 
@@ -143,7 +143,7 @@ test("idle use stops at thirty minutes and activity at the boundary cannot resur
 
 test("daily budget can end use before two hours, retaining five minutes for shutdown", () => {
   const time = Date.parse("2026-10-25T17:00:00Z");
-  const h = harness(time, 600_000);
+  const h = harness(time, 800_000);
   h.send(
     { type: "created", key: "run-one", resourceId: "pod-one" },
     time + minute,
@@ -297,8 +297,8 @@ test("cross-midnight reservation splits elapsed rental cost and charges fixed co
 test("remaining daily allowance before midnight cannot be borrowed from tomorrow", () => {
   const time = Date.parse("2026-10-27T06:50:00Z");
   const state = initialLedger();
-  state.spent["2026-10-26"] = 1_490_000;
-  state.totalSpent += 1_490_000;
+  state.spent["2026-10-26"] = 1_990_000;
+  state.totalSpent += 1_990_000;
   const result = transition(
     state,
     { type: "reserve", key: "run-one", quote: quote(time) },

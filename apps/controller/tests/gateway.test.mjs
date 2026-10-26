@@ -107,7 +107,7 @@ test("status polling never starts or extends active use and hides resource/accou
   const body = await result.json();
   assert.equal(body.phase, "ready");
   assert.equal(body.owner, false);
-  assert.equal(body.dailyLimit, 1.5);
+  assert.equal(body.dailyLimit, 2);
   assert.equal(body.lifetimeLimit, 5);
   assert.equal(body.timezone, "America/Los_Angeles");
   assert.equal(result.headers.get("Cache-Control"), "no-store");

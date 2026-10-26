@@ -40,7 +40,7 @@ test("owner sees honest setup and shared budget; polling never opens a run", asy
     page.getByText("Setup is being finished.", { exact: false }),
   ).toBeVisible();
   await expect(
-    page.getByText("$1.50 per Los Angeles", { exact: false }),
+    page.getByText("$2.00 per Los Angeles", { exact: false }),
   ).toBeVisible();
   await expect(
     page.getByText("Available for a new run:", { exact: false }),
@@ -62,6 +62,9 @@ test("owner sees honest setup and shared budget; polling never opens a run", asy
     path: info.outputPath("control-mobile.png"),
     fullPage: true,
   });
+  await expect(
+    page.getByRole("link", { name: "Owner controls", exact: true }),
+  ).toHaveAttribute("href", "/owner");
   expect(methods.every((method) => method === "GET")).toBe(true);
 });
 

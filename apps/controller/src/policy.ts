@@ -1,6 +1,6 @@
 // Monetary values are integer microdollars, rounded upward at each day boundary.
 export const POLICY = {
-  daily: 1_500_000,
+  daily: 2_000_000,
   lifetime: 5_000_000,
   timezone: "America/Los_Angeles",
   setupMs: 20 * 60_000,
