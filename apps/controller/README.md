@@ -8,7 +8,7 @@ From the repository root, after `npm ci`:
 make controller-check
 ```
 
-The 55 controller tests use synthetic accounting and Cloudflare's native workerd/SQLite emulator, including HTTP admission, concurrent starts, ambiguous creation, failed-delete retries and restart after cleanup. They do not read the operating LanceDB database. `make verify` and CI include this suite. The emulator is pinned to the beta used by Wrangler 4.152.0; the lockfile overrides its HTTP dependency to Undici 7.30.1.
+The 56 controller tests use synthetic accounting and Cloudflare's native workerd/SQLite emulator, including HTTP admission, concurrent starts, ambiguous creation, failed-delete retries and restart after cleanup. They do not read the operating LanceDB database. `make verify` and CI include this suite. The emulator is pinned to the beta used by Wrangler 4.152.0; the lockfile overrides its HTTP dependency to Undici 7.30.1.
 
 ## Budget and lifecycle
 
