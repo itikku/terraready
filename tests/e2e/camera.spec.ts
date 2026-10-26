@@ -30,7 +30,7 @@ test.beforeEach(async ({ page }) => {
 test("default image explicitly says disconnected demo stub", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#ground-evidence");
   await expect(
     source(page).getByText(/Demo camera stub · no camera connected/),
   ).toBeVisible();
@@ -58,7 +58,7 @@ test("supplied snapshot shows capture provenance without changing measurements",
 }) => {
   const capture = await supplied();
   await page.route(endpoint, (route) => route.fulfill({ json: capture }));
-  await page.goto("/");
+  await page.goto("/#ground-evidence");
   await expect(
     source(page).getByText(/External snapshot · test-camera/),
   ).toBeVisible();
@@ -97,7 +97,7 @@ test("unavailable snapshot retries without pretending the fixture is a camera ca
         : { mode: "external_snapshot", status: "unavailable", snapshot: null },
     }),
   );
-  await page.goto("/");
+  await page.goto("/#ground-evidence");
   await expect(
     source(page).getByText(/Camera snapshot unavailable/),
   ).toBeVisible();
@@ -122,7 +122,7 @@ test("HTTP failure and corrupt image stay explicitly unavailable", async ({
   await page.route(endpoint, (route) =>
     route.fulfill({ status: 503, json: {} }),
   );
-  await page.goto("/");
+  await page.goto("/#ground-evidence");
   await expect(
     source(page).getByText(/Camera snapshot unavailable/),
   ).toBeVisible();
@@ -170,7 +170,7 @@ test("slow old-zone response cannot replace the selected zone source", async ({
       },
     }),
   );
-  await page.goto("/");
+  await page.goto("/#ground-evidence");
   await expect(
     source(page).getByText("Checking camera source…", { exact: true }),
   ).toBeVisible();

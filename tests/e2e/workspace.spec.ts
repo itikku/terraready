@@ -8,14 +8,14 @@ test.beforeEach(async ({ page }) => {
   await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) =>
     route.abort(),
   );
-  await page.goto("/");
+  await page.goto("/#ground-evidence");
 });
 
 test("local aerial, evidence and route are available without external connectivity", async ({
   page,
 }) => {
   await expect(
-    page.getByRole("heading", { name: "Recover today's shift" }),
+    page.getByRole("heading", { name: "Inspect the site evidence" }),
   ).toBeVisible();
   await expect(
     page
@@ -95,6 +95,7 @@ test("manual route comparison changes a blocked haul to within-limits", async ({
 test("clock expiry updates both map readiness and route result", async ({
   page,
 }) => {
+  await page.getByText("Demo controls", { exact: true }).click();
   await page.getByLabel("Evidence clock").selectOption("expired");
   await expect(
     page.getByLabel("Zone evidence").getByText("Inspect", { exact: true }),
@@ -118,9 +119,7 @@ test("inspection image and provenance dialogs work with keyboard", async ({
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await page
-    .getByRole("button", { name: "Data sources and provenance" })
-    .click();
+  await page.getByRole("button", { name: "Data & provenance" }).click();
   await expect(
     page.getByRole("heading", { name: "Every observation has a source." }),
   ).toBeVisible();

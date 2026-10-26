@@ -6,7 +6,7 @@ TerraReady is a construction-earthworks planning prototype for answering those q
 
 **Demo data is synthetic.** The aerial is real, attributed NAIP imagery. The default camera is a disconnected stub with a fixed illustration; neither images nor the model produce soil measurements. [Camera snapshot adapters](docs/CAMERAS.md) are implemented; physical-camera integration is untested.
 
-![Per-package shift decisions over synthetic operating data](docs/images/shift-decisions.png)
+![Local assessment first, with work choices and evidence on separate views](docs/images/guided-assessment.png)
 
 ## Try the decision
 
@@ -14,12 +14,12 @@ TerraReady is a construction-earthworks planning prototype for answering those q
 
 The local demo below needs no model, Mapbox token or cloud account.
 
-1. Start in **Choose this shift's work**. The checked recommendation preserves excavation, reroutes hauling and pulls forward ready yard work; west work stays held.
-2. Make a decision for each package. Try **Defer this package** for yard drainage, or choose an eligible alternate route for excavation. Held packages cannot be released by changing a dropdown.
-3. Choose **Review 3 assignments** (the count follows your choices). The API rechecks the exact combination, capacities and evidence deadline. Confirm and approve, then copy the field-lead or haul-coordinator brief. Reload to see the checked selection and its saved approval in this browser session.
-4. Set **Evidence clock** to **12:00**. Stale evidence requires inspection and the earlier approval cannot authorize that changed snapshot.
+1. Choose **Assess this shift**. The local model reads site records and returns checked findings. Then choose **Choose work to approve**. **Choose work without the model** provides the manual path; unavailable inference is explicitly labeled.
+2. Make a decision for each package. Defer yard drainage or select an eligible alternate route. Held packages cannot be released through a dropdown.
+3. Review your selected assignments; the count follows your choices. The API rechecks the exact combination, capacities and evidence deadline. Confirm and approve, then copy the field-lead or haul-coordinator brief. Reload to see that selection and its saved approval.
+4. Expand **Demo controls** and set **Evidence clock** to **12:00**. Stale evidence requires inspection; the earlier approval cannot authorize that changed snapshot.
 
-The primary recovery covers seven packages with actual completion, prerequisites and paired-resource hour budgets. **Inspect ground evidence** opens the supporting map/equipment workspace. **Compare routes for original work** retains a separately scoped three-package route review. Optional assistance also reviews its own selection; it does not overwrite your package choices. Approvals never complete work or dispatch machinery.
+The work editor covers seven packages, prerequisites and paired-resource hour budgets. Analysis never changes your choices. **Site evidence** opens the supporting map and measurements; the original three-package route comparison is a secondary disclosure there. Model evidence and tool traces stay expandable. Approvals never complete work or dispatch machinery.
 
 ## Why this architecture fits
 

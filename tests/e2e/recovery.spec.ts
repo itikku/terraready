@@ -20,11 +20,11 @@ test.beforeEach(async ({ page }) => {
   await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) =>
     route.abort(),
   );
-  await page.goto("/");
+  await page.goto("/#recovery-heading");
   await ready(page);
 });
 
-test("shift comes first with real per-package decisions and protected holds", async ({
+test("work choices retain real per-package decisions and protected holds", async ({
   page,
 }) => {
   const button = await review(page, 4).boundingBox();
@@ -243,6 +243,7 @@ test("empty and expired work cannot be approved; a pending save cannot cross the
   await expect(
     shift(page).getByRole("button", { name: "Saving response…" }),
   ).toBeDisabled();
+  await page.getByText("Demo controls", { exact: true }).click();
   await page.getByLabel("Evidence clock").selectOption("expired");
   await expect(
     shift(page).getByRole("button", { name: "Review 0 assignments" }),
@@ -306,9 +307,11 @@ test("shift loading and retry are independent of the evidence workspace", async 
   await expect(shift(page).getByRole("status")).toHaveText(
     "Checking this shift…",
   );
+  await page.getByRole("link", { name: "Site evidence", exact: true }).click();
   await expect(
     page.getByLabel("Site workspace", { exact: true }),
   ).toBeVisible();
+  await page.getByRole("link", { name: "Back to shift choices" }).click();
   release();
   await expect(shift(page).getByRole("alert")).toBeVisible();
   await page.unroute("**/recovery");
@@ -423,6 +426,7 @@ test("loading an existing approval never steals focus from an evidence decision"
     await route.fulfill({ response });
   });
   await page.reload();
+  await page.getByRole("link", { name: "Site evidence", exact: true }).click();
   const east = page.getByRole("button", {
     name: "Inspect East cut",
     exact: true,
@@ -433,8 +437,12 @@ test("loading an existing approval never steals focus from an evidence decision"
     page.getByLabel("Zone evidence").getByRole("heading", { name: "East cut" }),
   ).toBeVisible();
   release();
+  await expect(page.getByLabel("Approved shift recovery briefs")).toHaveCount(
+    1,
+  );
+  await expect(east).toBeFocused();
+  await page.getByRole("link", { name: "Back to shift choices" }).click();
   await expect(
     shift(page).getByLabel("Approved shift recovery briefs"),
   ).toBeVisible();
-  await expect(east).toBeFocused();
 });

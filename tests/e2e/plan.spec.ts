@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
   await page.route(/^https?:\/\/(?!127\.0\.0\.1|localhost)/, (route) =>
     route.abort(),
   );
-  await page.goto("/");
+  await page.goto("/#route-comparison");
   await expect(
     review(page).getByText("Superintendent review", { exact: true }),
   ).toBeVisible();
@@ -127,6 +127,7 @@ test("expired clock removes approval and prevents approving all-held work", asyn
   page,
 }) => {
   await approve(page);
+  await page.getByText("Demo controls", { exact: true }).click();
   await page.getByLabel("Evidence clock").selectOption("expired");
   await expect(
     review(page).getByRole("heading", {
@@ -227,6 +228,7 @@ test("clock change during a slow save cannot display an approval for the old pro
     .getByRole("button", { name: "Approve revised plan" })
     .click();
   await expect(review(page).getByText("Saving local approval…")).toBeVisible();
+  await page.getByText("Demo controls", { exact: true }).click();
   await page.getByLabel("Evidence clock").selectOption("expired");
   release();
   await expect(

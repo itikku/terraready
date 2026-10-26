@@ -3,22 +3,19 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
-  ChevronDown,
   CloudRain,
   Compass,
   Crosshair,
-  Database,
-  FileImage,
   Info,
+  FileImage,
+  Radio,
+  ShieldCheck,
   Layers,
   Leaf,
   Map as MapIcon,
   Minus,
-  Mountain,
   Plus,
-  Radio,
   RefreshCw,
-  ShieldCheck,
   Tractor,
   Truck,
   WifiOff,
@@ -31,6 +28,7 @@ import AssistPanel from "./AssistPanel";
 import CameraEvidence from "./CameraEvidence";
 import RecoveryWorkspace from "./RecoveryWorkspace";
 import SessionNotice from "./SessionNotice";
+import "./demo-flow.css";
 import type { Evaluation, Machine, Readiness, Site, Status } from "./types";
 
 const ConnectedMap = lazy(() => import("./map/MapboxSiteMap"));
@@ -68,7 +66,39 @@ function StatusPill({ status }: { status: Status }) {
   );
 }
 
+type DemoView = "assessment" | "decisions" | "evidence";
+const viewForHash = (): DemoView =>
+  ["#ground-evidence", "#route-comparison"].includes(location.hash)
+    ? "evidence"
+    : location.hash === "#recovery-heading"
+      ? "decisions"
+      : "assessment";
+
 export default function App() {
+  const [view, setView] = useState<DemoView>(viewForHash);
+  const viewHeading = useRef<HTMLHeadingElement>(null);
+  const inspecting = useRef(false);
+  const previousView = useRef(view);
+  useEffect(() => {
+    const change = () => setView(viewForHash());
+    window.addEventListener("hashchange", change);
+    return () => window.removeEventListener("hashchange", change);
+  }, []);
+  useEffect(() => {
+    if (previousView.current === view) return;
+    previousView.current = view;
+    if (inspecting.current && view === "evidence") {
+      inspecting.current = false;
+      evidenceHeading.current?.focus();
+      evidenceHeading.current?.scrollIntoView({ block: "start" });
+    } else {
+      viewHeading.current?.focus();
+      window.scrollTo({ top: 0 });
+    }
+  }, [view]);
+  const chooseWork = () => {
+    location.hash = "recovery-heading";
+  };
   const [site, setSite] = useState<Site | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
@@ -177,87 +207,66 @@ export default function App() {
   const counts = (status: Status) =>
     readiness?.zones.filter((z) => z.status === status).length || 0;
   return (
-    <div className="app-shell">
-      <a href="#main" className="skip-link">
+    <div className="app-shell focused-demo">
+      <a
+        href={
+          view === "evidence"
+            ? "#ground-evidence"
+            : view === "decisions"
+              ? "#recovery-heading"
+              : "#main"
+        }
+        className="skip-link"
+      >
         Skip to workspace
       </a>
-      <nav className="rail" aria-label="Primary navigation">
-        <a
-          className="brand-mark"
-          href="#main"
-          aria-label="TerraReady workspace"
-        >
-          <Mountain size={25} strokeWidth={1.6} />
-        </a>
-        <span className="rail-divider" />
-        <a
-          href="#main"
-          className="rail-item active"
-          aria-label="Ground readiness"
-        >
-          <MapIcon size={21} />
-        </a>
-        <button
-          className="rail-item"
-          aria-label="Focus evidence panel"
-          onClick={() => evidenceHeading.current?.focus()}
-        >
-          <FileImage size={21} />
-        </button>
-        <a
-          href="/system"
-          className="rail-item"
-          aria-label="System & deployment"
-        >
-          <ShieldCheck size={21} />
-        </a>
-        <button
-          ref={sourceTrigger}
-          className="rail-item rail-bottom"
-          aria-label="Data sources and provenance"
-          onClick={() => setSources(true)}
-        >
-          <Database size={20} />
-        </button>
-        <div className="avatar" title="Site superintendent">
-          ST
-        </div>
-      </nav>
       <div className="app-content">
         <header className="topbar">
           <div className="wordmark">
             terra<span>ready</span>
             <span className="product-label">FIELD OPERATIONS</span>
           </div>
-          <div className="topbar-right">
-            <span className="demo-tag">INTERACTIVE DEMO</span>
-            <span className="local-status">
-              <span />
-              Local site memory
-            </span>
-          </div>
+          <nav className="demo-nav" aria-label="Demo navigation">
+            <a
+              href="#main"
+              aria-current={view === "assessment" ? "page" : undefined}
+            >
+              Assessment
+            </a>
+            <a
+              href="#ground-evidence"
+              aria-current={view === "evidence" ? "page" : undefined}
+            >
+              Site evidence
+            </a>
+            <a href="/system">How it works</a>
+          </nav>
         </header>
         <SessionNotice />
-        <main id="main" tabIndex={-1}>
+        <main
+          id="main"
+          tabIndex={-1}
+          className={view === "evidence" ? "evidence-view" : undefined}
+        >
           <section className="page-heading">
             <div>
-              <div className="breadcrumb">
-                North Ridge <span>/</span> Construction earthworks{" "}
-                <ChevronDown size={13} />
-              </div>
-              <h1>Recover today's shift</h1>
-              <p>
-                Rain blocks the loaded hauler's north route. Choose what can
-                continue and what must wait.
+              <p className="demo-context">
+                North Ridge · Synthetic site conditions · 07:00 PDT
               </p>
-            </div>
-            <div className="shift-stamp">
-              <span className="eyebrow">MORNING SHIFT</span>
-              <strong>Saturday, October 24</strong>
-              <span>
-                <Radio size={13} />
-                07:00 PDT · Demo snapshot
-              </span>
+              <h1 ref={viewHeading} tabIndex={-1}>
+                {view === "assessment"
+                  ? "What can keep moving after the rain?"
+                  : view === "decisions"
+                    ? "Choose the work to continue"
+                    : "Inspect the site evidence"}
+              </h1>
+              <p>
+                {view === "assessment"
+                  ? "A small local model assesses this site's conditions so you can make the next work decision."
+                  : view === "decisions"
+                    ? "Keep, reroute or defer work. Review the exact selection before approving it."
+                    : "Check the observations, machines and routes behind a decision."}
+              </p>
             </div>
           </section>
           {error ? (
@@ -280,454 +289,487 @@ export default function App() {
             </section>
           ) : (
             <>
-              <div className="shift-controls">
-                <div className="clock-select">
-                  <label htmlFor="clock">Evidence clock</label>
-                  <select
-                    id="clock"
-                    value={expired ? "expired" : "morning"}
-                    onChange={(e) => {
-                      setPending(true);
-                      setExpired(e.target.value === "expired");
-                    }}
-                  >
-                    <option value="morning">07:00 · Shift start</option>
-                    <option value="expired">12:00 · Evidence expired</option>
-                  </select>
+              <div hidden={view !== "assessment"}>
+                <div className="condition-brief">
+                  <CloudRain size={24} aria-hidden="true" />
+                  <p>
+                    <strong>18 mm of rain overnight.</strong> North access is
+                    soft; the loaded hauler's usual route is blocked.
+                  </p>
                 </div>
+                <AssistPanel
+                  key={`assist-${asOf ?? site.scenario.as_of}`}
+                  asOf={asOf}
+                  onChooseWork={chooseWork}
+                />
               </div>
-              <RecoveryWorkspace
-                key={`recovery-${asOf ?? site.scenario.as_of}`}
-                site={site}
-                asOf={asOf}
-                inspect={(id) => {
-                  chooseZone(id);
-                  evidenceHeading.current?.focus();
-                  evidenceHeading.current?.scrollIntoView({ block: "start" });
-                }}
-              />
-              <section
-                className="ground-evidence-heading"
-                id="ground-evidence"
-                aria-label="Ground investigation"
-              >
-                <h2>Inspect ground evidence</h2>
-                <p>
-                  Check each machine against the route and observations.{" "}
-                  <a href="#recovery-heading">Back to shift choices</a>
-                </p>
-              </section>
-              <div className="weather-strip">
-                <div className="weather-icon">
-                  <CloudRain size={24} />
-                </div>
-                <div>
-                  <strong>18 mm of rain overnight.</strong>
-                  <span>
-                    North access is soft. Review ground readiness for each
-                    machine before releasing work.
-                  </span>
-                </div>
-                <div className="rain-ended">
-                  RAIN ENDED <strong>04:00 PDT</strong>
-                </div>
+              <div hidden={view !== "decisions"}>
+                <RecoveryWorkspace
+                  key={`recovery-${asOf ?? site.scenario.as_of}`}
+                  site={site}
+                  asOf={asOf}
+                  inspect={(id) => {
+                    chooseZone(id);
+                    inspecting.current = true;
+                    location.hash = "ground-evidence";
+                  }}
+                />
               </div>
-              <section
-                className="equipment-bar"
-                aria-label="Equipment selection"
-              >
-                <div className="eyebrow">ASSESS FOR</div>
-                {[site.machines[1], site.machines[0], site.machines[2]].map(
-                  (m, index) => {
-                    const Icon = ICONS[index];
-                    return (
-                      <button
-                        key={m.id}
-                        className={`equipment-button ${m.id === machineId ? "selected" : ""}`}
-                        aria-pressed={m.id === machineId}
-                        onClick={() => chooseMachine(m)}
-                      >
-                        <Icon size={21} />
-                        <span>
-                          <strong>{SHORT[m.id]}</strong>
-                          <small>{m.name.split(" · ")[1]}</small>
-                        </span>
-                        {m.id === machineId && (
-                          <span className="equipment-check">
-                            <Check size={12} />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  },
-                )}
-              </section>
-              <div className="workspace-grid">
-                <section className="map-workspace" aria-label="Site workspace">
-                  <div className="map-heading">
-                    <div>
-                      <MapIcon size={17} />
-                      <h2>Ground readiness</h2>
-                      <span className="zone-total">5 zones</span>
-                    </div>
-                    <div className="layer-switch">
-                      <button
-                        aria-pressed={!connected}
-                        onClick={() => {
-                          setConnected(false);
-                          setProviderNotice("");
-                        }}
-                      >
-                        Local aerial
-                      </button>
-                      <button
-                        aria-pressed={connected}
-                        disabled={!tokenAvailable}
-                        title={
-                          tokenAvailable
-                            ? "Load connected Mapbox imagery"
-                            : "A Mapbox token enables connected imagery"
-                        }
-                        onClick={() => {
-                          setProviderNotice("");
-                          setProviderReady(false);
-                          setConnected(true);
-                        }}
-                      >
-                        Satellite <ArrowUpRight size={12} />
-                      </button>
-                    </div>
-                  </div>
-                  {providerNotice && (
-                    <div className="provider-notice" role="status">
-                      {providerNotice}
-                    </div>
-                  )}
-                  <div className="map-canvas" aria-busy={pending}>
-                    <OfflineSiteMap
-                      site={site}
-                      statuses={pending ? {} : statuses}
-                      selected={selected}
-                      route={route}
-                      onSelect={chooseZone}
-                      overlays={overlays && !connected}
-                      zoom={zoom}
-                    />
-                    {connected && (
-                      <Suspense
-                        fallback={
-                          <div className="map-connecting" role="status">
-                            Opening satellite imagery…
-                          </div>
-                        }
-                      >
-                        <ConnectedMap
-                          site={site}
-                          statuses={statuses}
-                          route={route}
-                          onSelect={chooseZone}
-                          onFailure={providerFailed}
-                          onReady={() => setProviderReady(true)}
-                          overlays={overlays}
-                        />
-                      </Suspense>
-                    )}
-                    {connected && !providerReady && (
-                      <div className="map-connecting" role="status">
-                        Opening satellite imagery…
-                      </div>
-                    )}
-                    <div className="map-topline">
-                      <span className="site-code">
-                        <span />
-                        NORTH RIDGE / NR-01
-                      </span>
-                      <span className="map-time">{time(clock)} PDT</span>
-                    </div>
-                    <div className="zone-dock" aria-label="Work zones">
-                      <div className="eyebrow">
-                        WORK ZONES <span>FOR {SHORT[machineId]}</span>
-                      </div>
-                      {site.zones.map((z) => (
-                        <button
-                          key={z.id}
-                          className={
-                            selected === z.id ? "zone-row selected" : "zone-row"
-                          }
-                          aria-pressed={selected === z.id}
-                          onClick={() => chooseZone(z.id)}
-                        >
-                          <span className="zone-number">
-                            {zoneNumber[z.id]}
-                          </span>
-                          <span>{z.name}</span>
-                          <span
-                            className={`zone-dot ${pending ? "unknown" : (statuses[z.id] || "INSPECT").toLowerCase()}`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <div className="map-controls">
-                      <button
-                        aria-label="Toggle readiness overlays"
-                        aria-pressed={overlays}
-                        onClick={() => setOverlays((x) => !x)}
-                      >
-                        <Layers size={18} />
-                      </button>
-                      {!connected && (
-                        <>
-                          <button
-                            aria-label="Zoom in"
-                            disabled={zoom >= 1.6}
-                            onClick={() =>
-                              setZoom((z) => Math.min(1.6, z + 0.2))
-                            }
-                          >
-                            <Plus size={19} />
-                          </button>
-                          <button
-                            aria-label="Zoom out"
-                            disabled={zoom <= 1}
-                            onClick={() => setZoom((z) => Math.max(1, z - 0.2))}
-                          >
-                            <Minus size={19} />
-                          </button>
-                          <button
-                            aria-label="Fit site"
-                            onClick={() => setZoom(1)}
-                          >
-                            <Crosshair size={18} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    <div className="map-north">
-                      <span>N</span>
-                      <ArrowUpRight size={25} />
-                    </div>
-                    <div className="map-bottomline">
-                      <span className="map-scale">
-                        ━━━━<span>~250 m · illustrative</span>
-                      </span>
-                      <span className="map-credit">
-                        {connected
-                          ? "Mapbox satellite"
-                          : "USGS / USDA NAIP · May 2022"}
-                        <br />
-                        Synthetic operating overlays
-                      </span>
-                    </div>
-                    {pending && (
-                      <div className="map-updating" role="status">
-                        Evaluating ground conditions…
-                      </div>
-                    )}
-                  </div>
-                  <div className="map-legend">
-                    <span>
-                      <i className="go" />
-                      Go <b>{counts("GO")}</b>
-                    </span>
-                    <span>
-                      <i className="inspect" />
-                      Inspect <b>{counts("INSPECT")}</b>
-                    </span>
-                    <span>
-                      <i className="no_go" />
-                      No-go <b>{counts("NO_GO")}</b>
-                    </span>
-                    <small>
-                      Readiness is specific to the selected equipment.
-                    </small>
-                  </div>
+              <div hidden={view !== "evidence"}>
+                <section
+                  className="ground-evidence-heading"
+                  id="ground-evidence"
+                  aria-label="Ground investigation"
+                >
+                  <h2>Inspect ground evidence</h2>
+                  <p>
+                    Check each machine against the route and observations.{" "}
+                    <a href="#recovery-heading">Back to shift choices</a>
+                  </p>
                 </section>
-                <aside className="evidence-panel" aria-label="Zone evidence">
-                  <div className="panel-eyebrow">
-                    <span className="eyebrow">
-                      ZONE {zoneNumber[zone.id]} / EVIDENCE
-                    </span>
-                    <FileImage size={16} />
-                  </div>
-                  <h2 ref={evidenceHeading} tabIndex={-1}>
-                    {zone.name}
-                  </h2>
-                  <div className="evidence-status">
-                    {!pending && zoneDecision ? (
-                      <StatusPill status={zoneDecision.status} />
-                    ) : (
-                      <span className="muted">Assessing…</span>
-                    )}
-                    <span>for {SHORT[machineId]}</span>
-                  </div>
-                  <CameraEvidence
-                    key={zone.id}
-                    zoneId={zone.id}
-                    observation={observation}
-                  />
-                  <div className="observation-stamp">
-                    <span>
-                      <Radio size={12} />
-                      {observation
-                        ? `${time(observation.observed_at)} PDT`
-                        : "No observation"}
-                    </span>
-                    <span className={fresh ? "fresh-tag" : "stale-tag"}>
-                      {fresh ? "Current demo evidence" : "Refresh required"}
-                    </span>
-                  </div>
-                  <p className="observation-note">
-                    {observation?.note ||
-                      "No inspection evidence is available. A field review is required."}
-                  </p>
-                  <div className="measurement-grid">
-                    <div>
-                      <span>Soil moisture</span>
-                      <strong>
-                        {observation?.moisture_fraction != null
-                          ? Math.round(observation.moisture_fraction * 100)
-                          : "—"}
-                        <small>%</small>
-                      </strong>
-                      <span className="measurement-limit">
-                        Asset limit{" "}
-                        {Math.round(machine.max_moisture_fraction * 100)}%
-                      </span>
-                    </div>
-                    <div>
-                      <span>Bearing capacity</span>
-                      <strong>
-                        {observation?.bearing_capacity_kpa ?? "—"}
-                        <small>kPa</small>
-                      </strong>
-                      <span className="measurement-limit">
-                        Asset pressure {machine.ground_pressure_kpa} kPa
-                      </span>
-                    </div>
-                  </div>
-                  <div className="finding">
-                    <span className="eyebrow">DECISION BASIS</span>
-                    {decisionError ? (
-                      <p role="alert">{decisionError}</p>
-                    ) : pending ? (
-                      <p>Refreshing evidence assessment…</p>
-                    ) : (
-                      zoneDecision?.reasons.map((reason, index) => (
-                        <p key={`${reason.code}-${index}`}>
-                          <span
-                            className={`finding-marker ${zoneDecision.status.toLowerCase()}`}
-                          />
-                          {reason.message}
-                        </p>
-                      ))
-                    )}
-                  </div>
-                  <div className="source-line">
-                    <ShieldCheck size={16} />
-                    <div>
-                      <strong>
-                        {observation
-                          ? `${Math.round(observation.confidence * 100)}% source confidence`
-                          : "Evidence unavailable"}
-                      </strong>
-                      <span>
-                        {observation?.source || "Inspection required"}
-                      </span>
-                    </div>
-                    <button
-                      aria-label="About source confidence"
-                      onClick={() => setSources(true)}
-                    >
-                      <Info size={15} />
-                    </button>
-                  </div>
-                  <p className="evidence-disclaimer">
-                    Illustrative measurements · Supervisor approval required.
-                    Source confidence is not a safety probability.
-                  </p>
-                </aside>
-              </div>
-              <section
-                className="route-review"
-                aria-label="Task and route assessment"
-              >
-                <div className="route-title">
-                  <div className="route-icon">
-                    <Truck size={22} />
+                <div className="weather-strip">
+                  <div className="weather-icon">
+                    <CloudRain size={24} />
                   </div>
                   <div>
-                    <span className="eyebrow">CURRENT WORK PACKAGE</span>
-                    <h2>{task.name}</h2>
+                    <strong>18 mm of rain overnight.</strong>
                     <span>
-                      {SHORT[machineId]} · {task.target_quantity}{" "}
-                      {task.quantity_unit === "m3" ? "m³" : task.quantity_unit}{" "}
-                      · {task.duration_hours}h planned
+                      North access is soft. Review ground readiness for each
+                      machine before releasing work.
                     </span>
                   </div>
+                  <div className="rain-ended">
+                    RAIN ENDED <strong>04:00 PDT</strong>
+                  </div>
                 </div>
-                <div className="route-picker">
-                  <label htmlFor="route">Access route</label>
-                  <select
-                    id="route"
-                    value={routeId}
-                    onChange={(e) => {
-                      setPending(true);
-                      setRouteId(e.target.value);
-                    }}
+                <section
+                  className="equipment-bar"
+                  aria-label="Equipment selection"
+                >
+                  <div className="eyebrow">ASSESS FOR</div>
+                  {[site.machines[1], site.machines[0], site.machines[2]].map(
+                    (m, index) => {
+                      const Icon = ICONS[index];
+                      return (
+                        <button
+                          key={m.id}
+                          className={`equipment-button ${m.id === machineId ? "selected" : ""}`}
+                          aria-pressed={m.id === machineId}
+                          onClick={() => chooseMachine(m)}
+                        >
+                          <Icon size={21} />
+                          <span>
+                            <strong>{SHORT[m.id]}</strong>
+                            <small>{m.name.split(" · ")[1]}</small>
+                          </span>
+                          {m.id === machineId && (
+                            <span className="equipment-check">
+                              <Check size={12} />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    },
+                  )}
+                </section>
+                <div className="workspace-grid">
+                  <section
+                    className="map-workspace"
+                    aria-label="Site workspace"
                   >
-                    {site.routes
-                      .filter((r) => r.zone_ids.includes(task.zone_id))
-                      .map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                  </select>
-                  <span>{route.distance_m} m · synthetic route</span>
-                </div>
-                <div className="route-result" aria-live="polite">
-                  {pending ? (
-                    <span>Assessing route…</span>
-                  ) : decisionError ? (
-                    <div role="alert">
-                      <span>Assessment unavailable</span>
-                      <button onClick={() => setRetry((x) => x + 1)}>
-                        Retry
+                    <div className="map-heading">
+                      <div>
+                        <MapIcon size={17} />
+                        <h2>Ground readiness</h2>
+                        <span className="zone-total">5 zones</span>
+                      </div>
+                      <div className="layer-switch">
+                        <button
+                          aria-pressed={!connected}
+                          onClick={() => {
+                            setConnected(false);
+                            setProviderNotice("");
+                          }}
+                        >
+                          Local aerial
+                        </button>
+                        <button
+                          aria-pressed={connected}
+                          disabled={!tokenAvailable}
+                          title={
+                            tokenAvailable
+                              ? "Load connected Mapbox imagery"
+                              : "A Mapbox token enables connected imagery"
+                          }
+                          onClick={() => {
+                            setProviderNotice("");
+                            setProviderReady(false);
+                            setConnected(true);
+                          }}
+                        >
+                          Satellite <ArrowUpRight size={12} />
+                        </button>
+                      </div>
+                    </div>
+                    {providerNotice && (
+                      <div className="provider-notice" role="status">
+                        {providerNotice}
+                      </div>
+                    )}
+                    <div className="map-canvas" aria-busy={pending}>
+                      <OfflineSiteMap
+                        site={site}
+                        statuses={pending ? {} : statuses}
+                        selected={selected}
+                        route={route}
+                        onSelect={chooseZone}
+                        overlays={overlays && !connected}
+                        zoom={zoom}
+                      />
+                      {connected && (
+                        <Suspense
+                          fallback={
+                            <div className="map-connecting" role="status">
+                              Opening satellite imagery…
+                            </div>
+                          }
+                        >
+                          <ConnectedMap
+                            site={site}
+                            statuses={statuses}
+                            route={route}
+                            onSelect={chooseZone}
+                            onFailure={providerFailed}
+                            onReady={() => setProviderReady(true)}
+                            overlays={overlays}
+                          />
+                        </Suspense>
+                      )}
+                      {connected && !providerReady && (
+                        <div className="map-connecting" role="status">
+                          Opening satellite imagery…
+                        </div>
+                      )}
+                      <div className="map-topline">
+                        <span className="site-code">
+                          <span />
+                          NORTH RIDGE / NR-01
+                        </span>
+                        <span className="map-time">{time(clock)} PDT</span>
+                      </div>
+                      <div className="zone-dock" aria-label="Work zones">
+                        <div className="eyebrow">
+                          WORK ZONES <span>FOR {SHORT[machineId]}</span>
+                        </div>
+                        {site.zones.map((z) => (
+                          <button
+                            key={z.id}
+                            className={
+                              selected === z.id
+                                ? "zone-row selected"
+                                : "zone-row"
+                            }
+                            aria-pressed={selected === z.id}
+                            onClick={() => chooseZone(z.id)}
+                          >
+                            <span className="zone-number">
+                              {zoneNumber[z.id]}
+                            </span>
+                            <span>{z.name}</span>
+                            <span
+                              className={`zone-dot ${pending ? "unknown" : (statuses[z.id] || "INSPECT").toLowerCase()}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="map-controls">
+                        <button
+                          aria-label="Toggle readiness overlays"
+                          aria-pressed={overlays}
+                          onClick={() => setOverlays((x) => !x)}
+                        >
+                          <Layers size={18} />
+                        </button>
+                        {!connected && (
+                          <>
+                            <button
+                              aria-label="Zoom in"
+                              disabled={zoom >= 1.6}
+                              onClick={() =>
+                                setZoom((z) => Math.min(1.6, z + 0.2))
+                              }
+                            >
+                              <Plus size={19} />
+                            </button>
+                            <button
+                              aria-label="Zoom out"
+                              disabled={zoom <= 1}
+                              onClick={() =>
+                                setZoom((z) => Math.max(1, z - 0.2))
+                              }
+                            >
+                              <Minus size={19} />
+                            </button>
+                            <button
+                              aria-label="Fit site"
+                              onClick={() => setZoom(1)}
+                            >
+                              <Crosshair size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <div className="map-north">
+                        <span>N</span>
+                        <ArrowUpRight size={25} />
+                      </div>
+                      <div className="map-bottomline">
+                        <span className="map-scale">
+                          ━━━━<span>~250 m · illustrative</span>
+                        </span>
+                        <span className="map-credit">
+                          {connected
+                            ? "Mapbox satellite"
+                            : "USGS / USDA NAIP · May 2022"}
+                          <br />
+                          Synthetic operating overlays
+                        </span>
+                      </div>
+                      {pending && (
+                        <div className="map-updating" role="status">
+                          Evaluating ground conditions…
+                        </div>
+                      )}
+                    </div>
+                    <div className="map-legend">
+                      <span>
+                        <i className="go" />
+                        Go <b>{counts("GO")}</b>
+                      </span>
+                      <span>
+                        <i className="inspect" />
+                        Inspect <b>{counts("INSPECT")}</b>
+                      </span>
+                      <span>
+                        <i className="no_go" />
+                        No-go <b>{counts("NO_GO")}</b>
+                      </span>
+                      <small>
+                        Readiness is specific to the selected equipment.
+                      </small>
+                    </div>
+                  </section>
+                  <aside className="evidence-panel" aria-label="Zone evidence">
+                    <div className="panel-eyebrow">
+                      <span className="eyebrow">
+                        ZONE {zoneNumber[zone.id]} / EVIDENCE
+                      </span>
+                      <FileImage size={16} />
+                    </div>
+                    <h2 ref={evidenceHeading} tabIndex={-1}>
+                      {zone.name}
+                    </h2>
+                    <div className="evidence-status">
+                      {!pending && zoneDecision ? (
+                        <StatusPill status={zoneDecision.status} />
+                      ) : (
+                        <span className="muted">Assessing…</span>
+                      )}
+                      <span>for {SHORT[machineId]}</span>
+                    </div>
+                    <CameraEvidence
+                      key={zone.id}
+                      zoneId={zone.id}
+                      observation={observation}
+                    />
+                    <div className="observation-stamp">
+                      <span>
+                        <Radio size={12} />
+                        {observation
+                          ? `${time(observation.observed_at)} PDT`
+                          : "No observation"}
+                      </span>
+                      <span className={fresh ? "fresh-tag" : "stale-tag"}>
+                        {fresh ? "Current demo evidence" : "Refresh required"}
+                      </span>
+                    </div>
+                    <p className="observation-note">
+                      {observation?.note ||
+                        "No inspection evidence is available. A field review is required."}
+                    </p>
+                    <div className="measurement-grid">
+                      <div>
+                        <span>Soil moisture</span>
+                        <strong>
+                          {observation?.moisture_fraction != null
+                            ? Math.round(observation.moisture_fraction * 100)
+                            : "—"}
+                          <small>%</small>
+                        </strong>
+                        <span className="measurement-limit">
+                          Asset limit{" "}
+                          {Math.round(machine.max_moisture_fraction * 100)}%
+                        </span>
+                      </div>
+                      <div>
+                        <span>Bearing capacity</span>
+                        <strong>
+                          {observation?.bearing_capacity_kpa ?? "—"}
+                          <small>kPa</small>
+                        </strong>
+                        <span className="measurement-limit">
+                          Asset pressure {machine.ground_pressure_kpa} kPa
+                        </span>
+                      </div>
+                    </div>
+                    <div className="finding">
+                      <span className="eyebrow">DECISION BASIS</span>
+                      {decisionError ? (
+                        <p role="alert">{decisionError}</p>
+                      ) : pending ? (
+                        <p>Refreshing evidence assessment…</p>
+                      ) : (
+                        zoneDecision?.reasons.map((reason, index) => (
+                          <p key={`${reason.code}-${index}`}>
+                            <span
+                              className={`finding-marker ${zoneDecision.status.toLowerCase()}`}
+                            />
+                            {reason.message}
+                          </p>
+                        ))
+                      )}
+                    </div>
+                    <div className="source-line">
+                      <ShieldCheck size={16} />
+                      <div>
+                        <strong>
+                          {observation
+                            ? `${Math.round(observation.confidence * 100)}% source confidence`
+                            : "Evidence unavailable"}
+                        </strong>
+                        <span>
+                          {observation?.source || "Inspection required"}
+                        </span>
+                      </div>
+                      <button
+                        aria-label="About source confidence"
+                        onClick={() => setSources(true)}
+                      >
+                        <Info size={15} />
                       </button>
                     </div>
-                  ) : (
-                    evaluation && (
-                      <>
-                        <StatusPill status={evaluation.status} />
-                        <span>
-                          {evaluation.status === "NO_GO"
-                            ? "Select another route before release."
-                            : evaluation.status === "INSPECT"
-                              ? "Fresh field evidence is needed."
-                              : "Within demo limits. Awaiting supervisor review."}
-                        </span>
-                      </>
-                    )
-                  )}
+                    <p className="evidence-disclaimer">
+                      Illustrative measurements · Supervisor approval required.
+                      Source confidence is not a safety probability.
+                    </p>
+                  </aside>
                 </div>
-              </section>
-              <PlanReview
-                key={asOf ?? site.scenario.as_of}
-                site={site}
-                asOf={asOf}
-              />
-              <AssistPanel
-                key={`assist-${asOf ?? site.scenario.as_of}`}
-                site={site}
-                asOf={asOf}
-              />
+                <section
+                  className="route-review"
+                  aria-label="Task and route assessment"
+                >
+                  <div className="route-title">
+                    <div className="route-icon">
+                      <Truck size={22} />
+                    </div>
+                    <div>
+                      <span className="eyebrow">CURRENT WORK PACKAGE</span>
+                      <h2>{task.name}</h2>
+                      <span>
+                        {SHORT[machineId]} · {task.target_quantity}{" "}
+                        {task.quantity_unit === "m3"
+                          ? "m³"
+                          : task.quantity_unit}{" "}
+                        · {task.duration_hours}h planned
+                      </span>
+                    </div>
+                  </div>
+                  <div className="route-picker">
+                    <label htmlFor="route">Access route</label>
+                    <select
+                      id="route"
+                      value={routeId}
+                      onChange={(e) => {
+                        setPending(true);
+                        setRouteId(e.target.value);
+                      }}
+                    >
+                      {site.routes
+                        .filter((r) => r.zone_ids.includes(task.zone_id))
+                        .map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                    </select>
+                    <span>{route.distance_m} m · synthetic route</span>
+                  </div>
+                  <div className="route-result" aria-live="polite">
+                    {pending ? (
+                      <span>Assessing route…</span>
+                    ) : decisionError ? (
+                      <div role="alert">
+                        <span>Assessment unavailable</span>
+                        <button onClick={() => setRetry((x) => x + 1)}>
+                          Retry
+                        </button>
+                      </div>
+                    ) : (
+                      evaluation && (
+                        <>
+                          <StatusPill status={evaluation.status} />
+                          <span>
+                            {evaluation.status === "NO_GO"
+                              ? "Select another route before release."
+                              : evaluation.status === "INSPECT"
+                                ? "Fresh field evidence is needed."
+                                : "Within demo limits. Awaiting supervisor review."}
+                          </span>
+                        </>
+                      )
+                    )}
+                  </div>
+                </section>
+                <details
+                  id="route-comparison"
+                  className="route-comparison-detail"
+                  open={location.hash === "#route-comparison"}
+                >
+                  <summary>
+                    Compare the original three-package route plan
+                  </summary>
+                  <PlanReview
+                    key={asOf ?? site.scenario.as_of}
+                    site={site}
+                    asOf={asOf}
+                  />
+                </details>
+              </div>
+              <details className="demo-controls">
+                <summary>Demo controls</summary>
+                <div className="shift-controls">
+                  <div className="clock-select">
+                    <label htmlFor="clock">Evidence clock</label>
+                    <select
+                      id="clock"
+                      value={expired ? "expired" : "morning"}
+                      onChange={(e) => {
+                        setPending(true);
+                        setExpired(e.target.value === "expired");
+                      }}
+                    >
+                      <option value="morning">07:00 · Shift start</option>
+                      <option value="expired">12:00 · Evidence expired</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
               <footer className="workspace-footer">
                 <span>
                   <Leaf size={14} />
-                  One operating question. Construction today; farms, mines and
-                  forests next.
+                  Synthetic site data · Camera integration is a demo stub.
                 </span>
-                <button onClick={() => setSources(true)}>
+                <button ref={sourceTrigger} onClick={() => setSources(true)}>
                   Data & provenance <ArrowRight size={13} />
                 </button>
               </footer>

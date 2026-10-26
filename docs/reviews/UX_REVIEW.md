@@ -1,5 +1,26 @@
 # Demo UX critique and proposed direction
 
+## Revision after direct user feedback — October 25, 2026
+
+The shift-first implementation failed the user's first-look test: too much competing information, unclear scroll/attention order, and the local model buried beneath controls. The earlier expert review and approved proposal did not establish usability. This feedback supersedes the primary-screen hierarchy below.
+
+The user asked for radical simplification using a public UX skill. Applied [Impeccable distill](https://github.com/pbakaus/impeccable/blob/f683f413c81e5a1adc58593897837bf3ad7af2b7/source/skills/distill/SKILL.md) with its design-context protocol; text-only pinned instructions, no third-party binaries. Audience: superintendent making a work decision and unfamiliar technical résumé reviewer. Direction: calm, practical, few choices, established palette/fonts retained.
+
+| Surface | Change | Reason |
+| --- | --- | --- |
+| First screen | Rain/blocked-route context, local-model role and one primary **Assess this shift** action. No visible package selectors or map. | Explain the use case and demonstrate the model before asking the visitor to interpret a feature inventory. |
+| Assessment result | Checked findings → **Choose work to approve**. Custom questions and tool/evidence details expand on demand. | Make the next action clear; keep model/runtime plumbing out of the main reading path. |
+| Work decisions | Separate view retains actual per-package defer/route choices and exact rechecked approval. Model analysis does not overwrite a choice. | One primary approval flow and clear human control. Manual entry remains available when inference is unavailable. |
+| Site evidence | Separate explicit navigation retains the map, camera stub, measurements and machine/route controls. Original three-package comparison is collapsed. | Keep supporting investigation accessible without dominating the first screen. |
+| Demo controls | Clock simulation moves below the main task in a disclosure. | Scenario controls should not compete with the user's decision. |
+| Cold startup | Confirmed allocation/preparation states, elapsed/last-check times, skeleton and five-second polling. | Replace an opaque wait with truthful state; no invented percentage or download-stage precision. |
+
+Design safeguards: no model-authored feasibility or automatic approval; holds/expiry remain authoritative; inference failures are labeled; source/camera boundaries remain visible; keyboard, browser history and focus transitions are tested. The first screen is inspected at desktop and 390px mobile. Automated checks establish behavior/accessibility, not customer comprehension; the user's response to this iteration remains the usability evidence to obtain.
+
+The map's reviewed visual baseline widens from1044 to1114px after rail removal; geometry, source, controls and values are retained. The 3% comparison tolerance is unchanged. Earlier failing artifacts are preserved separately. Historical screenshots/proposal below remain evidence of the previous direction.
+
+## Historical critique and proposal
+
 Expert review, 2026-10-25. Application: `9249889`; published documentation: `816a4eb`. This is an inspection of implemented behavior, not customer research. The interactive [three-state proposal](ux-proposal.html) is a design artifact; it does not save approvals or run a model.
 
 **Direction approved:** the user chose shift-first recovery, with map/evidence and scoped route comparison supporting it. They further required real decisions on each item. Implementation must let the user defer an eligible package or choose a checked route/resource alternative per package, then revalidate the combined exact selection. The prototype's fixed four-assignment preview illustrates hierarchy only; it is not the final decision editor.

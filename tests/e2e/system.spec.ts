@@ -24,9 +24,7 @@ test("workspace links to the system and native back navigation returns to the si
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("link", { name: "System & deployment", exact: true })
-    .click();
+  await page.getByRole("link", { name: "How it works", exact: true }).click();
   await expect(page).toHaveURL(/\/system$/);
   await expect(
     page.getByRole("heading", { name: /Local intelligence/ }),
@@ -36,7 +34,7 @@ test("workspace links to the system and native back navigation returns to the si
   ).toBeVisible();
   await page.goBack();
   await expect(
-    page.getByRole("heading", { name: "Recover today's shift" }),
+    page.getByRole("heading", { name: "What can keep moving after the rain?" }),
   ).toBeVisible();
 });
 
@@ -232,7 +230,7 @@ test("mobile provenance, keyboard skip and navigation stay accessible", async ({
   });
   await page.getByRole("link", { name: "Workspace", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Recover today's shift" }),
+    page.getByRole("heading", { name: "What can keep moving after the rain?" }),
   ).toBeVisible();
 });
 

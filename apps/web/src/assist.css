@@ -1,105 +1,145 @@
-.assist-content {
-  padding: 0 28px 24px;
-  font-size: 12px;
-  line-height: 1.7;
+.local-assessment {
+  padding-top: 30px;
+  max-width: 780px;
 }
-.assist-content p {
+.local-assessment h2 {
+  font-size: 23px;
+  line-height: 1.3;
+  margin: 0 0 12px;
+}
+.assessment-intro {
   color: #4b6052;
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 650px;
+  margin: 0 0 20px;
 }
-.assist-prompts,
-.assist-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 14px;
+.assessment-question {
+  margin-bottom: 20px;
+  font-size: 14px;
 }
-.assist-content form label {
+.assessment-question summary,
+.assessment-trace summary {
+  cursor: pointer;
+  color: #365642;
+}
+.assessment-question label {
   display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
+  margin: 18px 0 8px;
 }
-.assist-content textarea {
+.local-assessment textarea {
   width: 100%;
   resize: vertical;
-  min-height: 75px;
+  min-height: 90px;
   border: 1px solid #b9c8b7;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fffef9;
   color: #243d2d;
   padding: 12px;
   font: inherit;
-  margin-bottom: 12px;
 }
-.assist-content textarea:focus-visible {
-  outline: 3px solid #46967a;
-  outline-offset: 2px;
+.assist-prompts,
+.assessment-actions {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
 }
-.assist-actions span,
-.assist-meta,
-.assist-facts small,
-.assist-boundary {
-  font-size: 11px;
-  color: #54685a;
+.assist-prompts {
+  gap: 20px;
 }
-.assist-result,
-.assist-review {
-  border-top: 1px solid #d6ded1;
-  margin-top: 22px;
-  padding-top: 18px;
+.assessment-actions {
+  margin-block: 20px;
+  font-size: 14px;
 }
-.assist-content h3 {
+.assessment-actions .primary-button {
+  padding: 14px 22px;
   font-size: 15px;
-  margin-top: 0;
 }
-.assist-content li {
-  margin-block: 10px;
+.assist-result {
+  border-top: 1px solid #d6ded1;
+  padding-top: 24px;
+  margin-top: 24px;
 }
-.assist-content ul,
-.assist-content ol {
-  padding-left: 20px;
+.assist-result h3 {
+  font-size: 17px;
+  margin: 0 0 20px;
+}
+.assist-facts {
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.assist-facts li {
+  margin: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid #e1e6db;
 }
 .assist-facts p {
-  margin: 0 0 4px;
+  margin: 0;
+  color: #2e4937;
 }
-.assist-content details {
-  margin-block: 16px;
+.assessment-trace {
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.7;
 }
 .assist-trace span {
   display: block;
   overflow-wrap: anywhere;
-  font-size: 10px;
 }
-.assist-trace strong {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
+.assist-meta {
+  color: #526454;
 }
-.assist-approval {
+.assessment-fallback {
+  color: #6b4b27;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.assessment-loading {
+  padding: 20px 0;
+  color: #405745;
+  font-size: 14px;
+}
+.assessment-skeleton {
   display: grid;
-  gap: 16px;
-  justify-items: start;
-  background: #eef1e6;
-  padding: 18px;
-  border-radius: 8px;
+  gap: 12px;
+  margin-top: 20px;
+  max-width: 600px;
 }
-.assist-review article {
-  border: 1px solid #d6ded1;
-  padding: 16px;
-  margin-top: 16px;
-  border-radius: 8px;
+.assessment-skeleton span {
+  height: 12px;
+  background: #dbe2d4;
+  border-radius: 3px;
+  animation: assessment-pulse 1.6s ease-in-out infinite;
 }
-.assist-review h4 {
-  margin: 0 0 12px;
+.assessment-skeleton span:nth-child(2) {
+  width: 82%;
 }
-.assist-boundary {
-  margin: 24px 0 0;
+.assessment-skeleton span:nth-child(3) {
+  width: 61%;
+}
+@keyframes assessment-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assessment-skeleton span {
+    animation: none;
+  }
 }
 @media (max-width: 700px) {
-  .assist-content {
-    padding-inline: 16px;
+  .local-assessment {
+    padding-top: 24px;
   }
-  .assist-actions > .primary-button,
-  .assist-approval > button {
+  .assessment-actions {
+    gap: 12px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .assessment-actions .primary-button {
     width: 100%;
   }
 }
