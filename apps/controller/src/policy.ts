@@ -34,6 +34,8 @@ export interface Run {
   stopReason: string | null;
   terminatedAt: number | null;
   actual: Record<string, number> | null;
+  costBasis?: "provider_invoice" | "operator_conservative_upper_bound";
+  providerInvoicePending?: boolean;
 }
 
 export interface Ledger {
@@ -52,7 +54,12 @@ export type Event =
       type: "ready" | "open" | "activity" | "uncertain" | "absent" | "stop";
       key: string;
     }
-  | { type: "settle"; key: string; actual: Record<string, number> }
+  | {
+      type: "settle";
+      key: string;
+      actual: Record<string, number>;
+      basis?: "provider_invoice" | "operator_conservative_upper_bound";
+    }
   | { type: "tick" };
 
 class Rejected extends Error {}
@@ -125,6 +132,15 @@ function parseEvent(input: unknown): Event {
     case "settle":
       fields.push("actual");
       requireThat(amounts(input.actual), "invalid_actual_cost");
+      if ("basis" in input) {
+        fields.push("basis");
+        requireThat(
+          ["provider_invoice", "operator_conservative_upper_bound"].includes(
+            String(input.basis),
+          ),
+          "invalid_cost_basis",
+        );
+      }
       break;
     case "ready":
     case "open":
@@ -377,6 +393,22 @@ export function nextDeadline(run: Run): { at: number; reason: string } | null {
   );
 }
 
+export function bookedBound(run: Run, endedAt: number): Record<string, number> {
+  requireThat(
+    integer(endedAt, run.createdAt) && endedAt - run.createdAt < 24 * 3_600_000,
+    "unbounded_accounting",
+  );
+  const values: Record<string, number> = {};
+  for (const part of windows(run.createdAt, endedAt)) {
+    const elapsed = Math.max(0, Math.min(endedAt, part.end) - part.start);
+    if (elapsed > 0)
+      values[part.day] = Math.ceil((run.quote.hourly * elapsed) / 3_600_000);
+  }
+  values[dayAt(run.createdAt)] =
+    (values[dayAt(run.createdAt)] ?? 0) + run.quote.fixed;
+  return values;
+}
+
 function mutate(state: Ledger, event: Event, now: number): void {
   if (event.type === "tick") return;
   if (event.type === "reserve")
@@ -473,6 +505,11 @@ function mutate(state: Ledger, event: Event, now: number): void {
         state.accountingHold = true;
       }
       run.actual = { ...event.actual };
+      if (event.basis) {
+        run.costBasis = event.basis;
+        run.providerInvoicePending =
+          event.basis === "operator_conservative_upper_bound";
+      }
       run.phase = "settled";
       for (const [date, value] of Object.entries(event.actual))
         state.spent[date] = (state.spent[date] ?? 0) + value;

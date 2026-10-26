@@ -15,6 +15,15 @@ export interface OwnedPod {
   since: number;
 }
 
+export interface HostedSource {
+  commit: string;
+  sha256: string;
+}
+export interface PodQuote {
+  hourly: number;
+  dataCenterIds: string[];
+}
+
 export class ProviderError extends Error {
   constructor(
     readonly status: number,
@@ -37,12 +46,19 @@ export class Runpod {
       throw new ProviderError(0);
   }
 
-  async #read(path: string): Promise<Record<string, unknown>> {
+  async #read(
+    path: string,
+    body?: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     let response: Response;
     try {
       response = await this.transport(`https://api.runpod.io/v2/${path}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${this.key}` },
+        method: body ? "POST" : "GET",
+        headers: {
+          Authorization: `Bearer ${this.key}`,
+          ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
         redirect: "manual",
         signal: AbortSignal.timeout(12_000),
       });
@@ -92,6 +108,102 @@ export class Runpod {
     }
     if (!object(data)) throw new ProviderError(0);
     return data;
+  }
+
+  async quote(): Promise<PodQuote> {
+    const gpu = await this.#read(
+      "catalog/gpus/NVIDIA%20L4?include=AVAILABILITY&product=POD&cloud=SECURE&count=1&minCudaVersion=12.8",
+    );
+    const price = object(gpu.price) ? gpu.price.secure : undefined;
+    if (
+      typeof price !== "number" ||
+      price <= 0 ||
+      price > 0.59 ||
+      !Array.isArray(gpu.dataCenters)
+    )
+      throw new ProviderError(0, "quote");
+    const dataCenterIds = gpu.dataCenters
+      .filter(
+        (dc): dc is Record<string, unknown> =>
+          object(dc) &&
+          typeof dc.id === "string" &&
+          /^[A-Z0-9-]+$/.test(dc.id) &&
+          ["LOW", "MEDIUM", "HIGH"].includes(String(dc.availability)),
+      )
+      .map((dc) => String(dc.id));
+    if (!dataCenterIds.length) throw new ProviderError(0, "capacity");
+    // Existing approved 50 GB ephemeral disk quote plus upward rounding.
+    return { hourly: 600_000, dataCenterIds };
+  }
+
+  async create(
+    owned: Omit<OwnedPod, "id">,
+    source: HostedSource,
+    secret: string,
+    quote: PodQuote,
+  ): Promise<string> {
+    if (
+      !/^[a-f0-9]{40}$/.test(source.commit) ||
+      !/^[a-f0-9]{64}$/.test(source.sha256) ||
+      !/^[a-f0-9]{64}$/.test(secret)
+    )
+      throw new ProviderError(0, "configuration");
+    const revision = source.commit.slice(0, 7);
+    const url = `https://github.com/itikku/terraready/releases/download/preview-source-${revision}/terraready-source-${revision}.tar.gz`;
+    const command = `set -euo pipefail; unset RUNPOD_API_KEY; umask 077; cd /; mkdir terraready; cd terraready; curl --fail --location --silent --show-error --proto '=https' --proto-redir '=https' --max-time 600 --max-filesize 10000000 '${url}' -o /tmp/terraready-source.tar.gz; echo '${source.sha256}  /tmp/terraready-source.tar.gz' | sha256sum --check --status; tar -xzf /tmp/terraready-source.tar.gz; exec python3 -u scripts/hosted_boot.py`;
+    const pod = await this.#read("pods", {
+      name: owned.name,
+      cloud: "SECURE",
+      image:
+        "runpod/pytorch@sha256:602afab6d10c5932bd9824c4f23119ca20b68d9a03423e4b3e9c612ff1431ddf",
+      gpu: { id: "NVIDIA L4", count: 1, minCudaVersion: "12.8" },
+      dataCenterIds: quote.dataCenterIds,
+      disk: 50,
+      mounts: {},
+      ports: ["8000/http"],
+      startSsh: false,
+      startJupyter: false,
+      entrypoint: ["/bin/bash", "-lc"],
+      cmd: [command],
+      env: {
+        TR_RUN_NONCE: owned.nonce,
+        TR_SOURCE_COMMIT: source.commit,
+        TR_ORIGIN_SECRET: secret,
+      },
+    });
+    if (typeof pod.id !== "string" || !/^[a-z0-9]{8,32}$/.test(pod.id))
+      throw new ProviderError(0, "create_response");
+    return pod.id;
+  }
+
+  async findOwned(owned: Omit<OwnedPod, "id">): Promise<string | null> {
+    let cursor = "";
+    for (let page = 0; page < 5; page++) {
+      const result = await this.#read(
+        "pods?includeClusterPods=true&limit=100" +
+          (cursor ? "&cursor=" + encodeURIComponent(cursor) : ""),
+      );
+      if (!Array.isArray(result.pods)) throw new ProviderError(0);
+      const found = result.pods.filter(
+        (p) =>
+          object(p) &&
+          p.name === owned.name &&
+          object(p.env) &&
+          p.env.TR_RUN_NONCE === owned.nonce,
+      );
+      if (found.length > 1) throw new ProviderError(0, "ownership");
+      if (
+        found.length === 1 &&
+        object(found[0]) &&
+        typeof found[0].id === "string"
+      )
+        return found[0].id;
+      if (!result.hasNextPage) return null;
+      if (typeof result.nextCursor !== "string" || !result.nextCursor)
+        throw new ProviderError(0);
+      cursor = result.nextCursor;
+    }
+    throw new ProviderError(0, "pagination");
   }
 
   async diagnostics(): Promise<Record<string, number | string>> {

@@ -30,6 +30,7 @@ import PlanReview from "./PlanReview";
 import AssistPanel from "./AssistPanel";
 import CameraEvidence from "./CameraEvidence";
 import RecoveryWorkspace from "./RecoveryWorkspace";
+import SessionNotice from "./SessionNotice";
 import type { Evaluation, Machine, Readiness, Site, Status } from "./types";
 
 const ConnectedMap = lazy(() => import("./map/MapboxSiteMap"));
@@ -236,6 +237,7 @@ export default function App() {
             </span>
           </div>
         </header>
+        <SessionNotice />
         <main id="main" tabIndex={-1}>
           <section className="page-heading">
             <div>

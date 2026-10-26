@@ -31,10 +31,10 @@ test("owner sees honest setup and shared budget; polling never opens a run", asy
   });
   await page.goto("/demo");
   await expect(
-    page.getByRole("heading", { name: "Demo is off" }),
+    page.getByRole("heading", { name: "Start the live demo" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Start demo", exact: true }),
+    page.getByRole("button", { name: "Start live demo", exact: true }),
   ).toBeDisabled();
   await expect(
     page.getByText("Setup is being finished.", { exact: false }),
@@ -70,7 +70,7 @@ for (const [phase, heading] of [
   ["ready", "Demo is ready"],
   ["active", "Demo is running"],
   ["stopping", "Ending the session"],
-  ["terminated", "GPU is off"],
+  ["terminated", "Preparing the next session"],
 ])
   test(`guest sees ${phase} state and never owner controls`, async ({
     page,
@@ -91,7 +91,7 @@ for (const [phase, heading] of [
       page.getByRole("heading", { name: heading, exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Start demo", exact: true }),
+      page.getByRole("button", { name: "Start live demo", exact: true }),
     ).toBeHidden();
     await expect(
       page.getByRole("button", { name: "End shared session" }),
@@ -202,4 +202,87 @@ test("accounting hold blocks opening and owner shutdown remains visibly unconfir
   await expect(
     page.getByText("New work is paused", { exact: false }),
   ).toBeVisible();
+});
+
+test("an unknown reviewer can start once and join without owner approval", async ({
+  page,
+}) => {
+  const html = controlPage();
+  let phase = "off",
+    starts = 0;
+  await page.route("**/demo", async (route) =>
+    route.fulfill({
+      headers: Object.fromEntries(html.headers),
+      body: await html.clone().text(),
+    }),
+  );
+  await page.route("**/api/status", (route) =>
+    route.fulfill({
+      json: { ...status(phase, false), startupEnabled: true, idleEndAt: null },
+    }),
+  );
+  await page.route("**/api/start", async (route) => {
+    starts++;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    phase = "ready";
+    await route.fulfill({ status: 202, json: { accepted: true } });
+  });
+  await page.goto("/demo");
+  const start = page.getByRole("button", {
+    name: "Start live demo",
+    exact: true,
+  });
+  await expect(start).toBeEnabled();
+  await start.focus();
+  await page.keyboard.press("Enter");
+  await expect(start).toBeDisabled();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("button", { name: "Open shift workspace" }),
+  ).toBeEnabled();
+  expect(starts).toBe(1);
+  await expect(
+    page.getByRole("button", { name: "End shared session" }),
+  ).toBeHidden();
+  await expect(page.getByText(/thirty idle minutes/)).toBeVisible();
+});
+
+test("idle warning needs an explicit keep-working action; a budget deadline cannot be extended", async ({
+  page,
+}) => {
+  let state = {
+    ...status("active", false),
+    idleEndAt: Date.now() + 120000,
+    costStopAt: Date.now() + 3600000,
+    activeEndAt: Date.now() + 3600000,
+  };
+  let activity = 0;
+  await page.route("**/api/status", (route) => route.fulfill({ json: state }));
+  await page.route("**/api/activity", (route) => {
+    activity++;
+    return route.fulfill({ json: { accepted: true } });
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Keep working", exact: true }),
+  ).toBeVisible();
+  expect(activity).toBe(0);
+  await page.getByRole("button", { name: "Keep working", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Keep working", exact: true }),
+  ).toBeHidden();
+  expect(activity).toBe(1);
+  state = {
+    ...state,
+    idleEndAt: Date.now() + 3600000,
+    costStopAt: Date.now() + 120000,
+  };
+  await page.reload();
+  await expect(
+    page.getByText("This session is nearing its shared time or budget limit."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Keep working", exact: true }),
+  ).toBeHidden();
+  expect(activity).toBe(1);
 });

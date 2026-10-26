@@ -1563,3 +1563,19 @@ dialog::backdrop {
   font-size: 0.7rem;
   padding: 0.35rem 0.55rem;
 }
+
+.session-notice {
+  margin: 1rem 2rem;
+  padding: 1rem;
+  background: #fff4d8;
+  color: #20382f;
+  border: 1px solid #bd9b46;
+  border-radius: 8px;
+}
+.session-notice p {
+  margin: 0 0 0.5rem;
+}
+.session-notice button,
+.session-notice a {
+  margin-right: 1rem;
+}

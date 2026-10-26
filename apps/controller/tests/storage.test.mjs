@@ -304,9 +304,9 @@ test("native Worker runtime can probe the provider transport without secret disc
         contents:
           modules[0].contents +
           `
-      import { Runpod } from "./provider.js";
+      import { Runpod as ProbeRunpod } from "./provider.js";
       export class Probe extends BudgetLedger {
-        async probe() { return new Runpod("synthetic-provider-key").diagnostics(); }
+        async probe() { return new ProbeRunpod("synthetic-provider-key").diagnostics(); }
       }
     `,
       },
@@ -323,4 +323,194 @@ test("native Worker runtime can probe the provider transport without secret disc
   assert.equal(await result.pods, 200);
   assert.equal(await result.catalog, 200);
   assert.equal(await result.billing, 200);
+});
+
+async function lifecycleFixture(
+  t,
+  { ambiguous = false, deletionFails = false } = {},
+) {
+  const persist = await mkdtemp(path.join(tmpdir(), "terraready-lifecycle-"));
+  let pod = null,
+    creates = 0,
+    deletes = 0;
+  let failDelete = deletionFails;
+  const config = {
+    ...options(persist),
+    bindings: {
+      RUNPOD_API_KEY: "synthetic-provider-key",
+      ACCESS_AUD: "synthetic-audience",
+      OWNER_EMAIL: "owner@example.org",
+      ORIGIN_SECRET: "ab".repeat(32),
+      SOURCE_COMMIT: "c".repeat(40),
+      SOURCE_SHA256: "d".repeat(64),
+    },
+    modules: [
+      {
+        ...modules[0],
+        contents:
+          modules[0].contents +
+          `
+      export class LifecycleTest extends BudgetLedger {
+        readStored() {return JSON.parse(this.ctx.storage.sql.exec("SELECT state FROM ledger WHERE id=1").one().state);}
+        async serviceNow() {await this.alarm();}
+        resetCooldown() {this.ctx.storage.sql.exec("UPDATE launch_gate SET time=time-31000 WHERE id=1");}
+      }
+    `,
+      },
+      ...modules.slice(1),
+    ],
+    durableObjects: { BUDGET: { className: "LifecycleTest", useSQLite: true } },
+    outboundService: async (request) => {
+      const u = new URL(request.url);
+      if (u.hostname.endsWith(".proxy.runpod.net"))
+        return new Response("ready");
+      assert.equal(u.origin, "https://api.runpod.io");
+      assert.equal(
+        request.headers.get("authorization"),
+        "Bearer synthetic-provider-key",
+      );
+      if (u.pathname.startsWith("/v2/catalog/gpus/"))
+        return Response.json({
+          price: { secure: 0.59 },
+          dataCenters: [{ id: "EU-RO-1", availability: "LOW" }],
+        });
+      if (u.pathname === "/v2/pods" && request.method === "POST") {
+        creates++;
+        const body = await request.json();
+        assert.deepEqual(body.gpu, {
+          id: "NVIDIA L4",
+          count: 1,
+          minCudaVersion: "12.8",
+        });
+        assert.deepEqual(body.ports, ["8000/http"]);
+        assert.deepEqual(body.mounts, {});
+        assert.equal(body.disk, 50);
+        assert.equal(body.startSsh, false);
+        assert.equal(body.startJupyter, false);
+        assert.ok(!("RUNPOD_API_KEY" in body.env));
+        assert.match(body.cmd[0], /sha256sum --check/);
+        assert.match(body.cmd[0], /unset RUNPOD_API_KEY/);
+        pod = {
+          id: "syntheticpod01",
+          name: body.name,
+          env: body.env,
+          createdAt: new Date().toISOString(),
+          status: "RUNNING",
+        };
+        if (ambiguous) throw Error("synthetic lost response");
+        return Response.json({ id: pod.id });
+      }
+      if (u.pathname === "/v2/pods")
+        return Response.json({ pods: pod ? [pod] : [], hasNextPage: false });
+      assert.equal(u.pathname, "/v2/pods/syntheticpod01");
+      if (request.method === "DELETE") {
+        deletes++;
+        if (!failDelete) pod = null;
+        return new Response(null, { status: failDelete ? 500 : 204 });
+      }
+      return pod ? Response.json(pod) : Response.json({}, { status: 404 });
+    },
+  };
+  let mf = emulator(config);
+  t.after(async () => {
+    await mf.dispose();
+    await rm(persist, { recursive: true, force: true });
+  });
+  return {
+    stub: () => ledger(mf),
+    http: (url, init) => mf.dispatchFetch(url, init),
+    creates: () => creates,
+    deletes: () => deletes,
+    allowDelete: () => {
+      failDelete = false;
+    },
+    restart: async () => {
+      await mf.dispose();
+      mf = emulator(config);
+    },
+  };
+}
+
+test("concurrent visitor starts create once; readiness, restart, exact cleanup and conservative booking persist", async (t) => {
+  const f = await lifecycleFixture(t);
+  let stub = await f.stub();
+  await Promise.all(Array.from({ length: 10 }, () => stub.start()));
+  assert.equal(f.creates(), 1);
+  await stub.serviceNow();
+  let state = await stub.readStored();
+  assert.equal(state.runs[0].phase, "ready");
+  await stub.apply({ type: "open", key: state.runs[0].key });
+  const deadline = (await stub.readStored()).runs[0].activeEndAt;
+  await f.restart();
+  stub = await f.stub();
+  await stub.start();
+  assert.equal(f.creates(), 1);
+  state = await stub.readStored();
+  assert.equal(state.runs[0].activeEndAt, deadline);
+  await stub.apply({ type: "stop", key: state.runs[0].key });
+  await stub.serviceNow();
+  state = await stub.readStored();
+  assert.equal(state.runs[0].phase, "settled");
+  assert.equal(state.runs[0].costBasis, "operator_conservative_upper_bound");
+  assert.equal(state.runs[0].providerInvoicePending, true);
+  assert.equal(f.deletes(), 1);
+  assert.ok(state.totalSpent > 146056);
+  await stub.resetCooldown();
+  await stub.start();
+  assert.equal(f.creates(), 2);
+});
+
+test("lost create response is recovered by exact persisted nonce, with no second create", async (t) => {
+  const f = await lifecycleFixture(t, { ambiguous: true });
+  let stub = await f.stub();
+  await stub.start();
+  assert.equal(f.creates(), 1);
+  assert.equal((await stub.readStored()).runs[0].uncertainCreate, true);
+  await f.restart();
+  stub = await f.stub();
+  await stub.serviceNow();
+  const state = await stub.readStored();
+  assert.equal(state.runs[0].phase, "ready");
+  await stub.start();
+  assert.equal(f.creates(), 1);
+});
+
+test("failed shutdown retains the reservation until verified absence; a real alarm retries cleanup", async (t) => {
+  const f = await lifecycleFixture(t, { deletionFails: true });
+  const stub = await f.stub();
+  await stub.start();
+  let state = await stub.readStored();
+  await stub.apply({ type: "stop", key: state.runs[0].key });
+  await stub.serviceNow();
+  state = await stub.readStored();
+  assert.equal(state.runs[0].phase, "stopping");
+  assert.equal(state.runs[0].actual, null);
+  assert.equal(f.creates(), 1);
+  f.allowDelete();
+  for (let i = 0; i < 100; i++) {
+    state = await stub.readStored();
+    if (state.runs[0].phase === "settled") break;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.equal(state.runs[0].phase, "settled");
+  assert.ok(f.deletes() >= 2);
+});
+
+test("native HTTP reviewer entry and paid admission need no sign-in; owner routes reject spoofed headers", async (t) => {
+  const f = await lifecycleFixture(t);
+  const page = await f.http("http://localhost/demo");
+  assert.equal(page.status, 200);
+  assert.match(page.headers.get("Set-Cookie"), /HttpOnly/);
+  assert.match(await page.text(), /No sign-in/);
+  assert.equal(f.creates(), 0);
+  const denied = await f.http("http://localhost/owner/api/setup", {
+    headers: { "Cf-Access-Authenticated-User-Email": "owner@example.org" },
+  });
+  assert.equal(denied.status, 403);
+  const started = await f.http("http://localhost/api/start", {
+    method: "POST",
+    headers: { Origin: "http://localhost" },
+  });
+  assert.equal(started.status, 202);
+  assert.equal(f.creates(), 1);
 });

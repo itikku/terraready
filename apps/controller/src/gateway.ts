@@ -5,6 +5,7 @@ import { controlPage } from "./page.js";
 type Result = ReturnType<typeof transition>;
 interface LedgerStub {
   apply(event: Event): Promise<Result>;
+  start?(): Promise<Result>;
 }
 
 // Local boundary types until deployment configuration generates binding types.
@@ -14,6 +15,8 @@ export interface GatewayBindings {
   OWNER_EMAIL?: string;
   ORIGIN_SECRET?: string;
   RUNPOD_API_KEY?: string;
+  SOURCE_COMMIT?: string;
+  SOURCE_SHA256?: string;
 }
 
 const hex = (bytes: ArrayBuffer) =>
@@ -117,10 +120,11 @@ export async function signedOriginRequest(
   });
 }
 
-export async function gateway(
+async function routeGateway(
   request: Request,
   env: GatewayBindings,
   ctx: Pick<ExecutionContext, "access">,
+  visitor: string,
 ): Promise<Response> {
   const secret = env.ORIGIN_SECRET ?? "";
   if (
@@ -135,20 +139,36 @@ export async function gateway(
     );
   // Platform-authenticated context only. Browser-supplied Access/email headers
   // never establish identity. No Static Assets router may precede this Worker.
-  if (!ctx.access || ctx.access.aud !== env.ACCESS_AUD)
-    return response(403, "Sign in through the invited demo application.");
   try {
-    const identity = await ctx.access.getIdentity();
-    if (
-      !identity?.user_uuid ||
-      typeof identity.user_uuid !== "string" ||
-      identity.user_uuid.length > 128 ||
-      !identity.email
-    )
-      return response(403, "An invited user identity is required.");
-    const owner =
-      identity.email.toLowerCase() === env.OWNER_EMAIL.toLowerCase();
-    const url = new URL(request.url);
+    let url = new URL(request.url);
+    const ownerPath =
+      url.pathname === "/owner" || url.pathname.startsWith("/owner/");
+    let owner = false;
+    if (ownerPath) {
+      if (!ctx.access || ctx.access.aud !== env.ACCESS_AUD)
+        return response(403, "Sign in to owner controls.");
+      const identity = await ctx.access.getIdentity();
+      if (
+        !identity?.user_uuid ||
+        !identity.email ||
+        identity.email.toLowerCase() !== env.OWNER_EMAIL.toLowerCase()
+      )
+        return response(403, "Owner access is required.");
+      owner = true;
+      url.pathname = url.pathname.slice(6) || "/demo";
+      request = new Request(url.toString(), {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+        redirect: "manual",
+      });
+      url = new URL(request.url);
+    }
+    const startupEnabled = Boolean(
+      env.RUNPOD_API_KEY &&
+      /^[a-f0-9]{40}$/.test(env.SOURCE_COMMIT ?? "") &&
+      /^[a-f0-9]{64}$/.test(env.SOURCE_SHA256 ?? ""),
+    );
     if (url.pathname === "/api/setup") {
       if (!owner) return response(403, "Only the demo owner can check setup.");
       if (request.method !== "GET") return response(405, "Setup requires GET.");
@@ -172,7 +192,7 @@ export async function gateway(
       return Response.json(
         {
           provider: await providerAccess(env.RUNPOD_API_KEY),
-          startupEnabled: false,
+          startupEnabled,
         },
         { headers: { "Cache-Control": "no-store" } },
       );
@@ -182,6 +202,7 @@ export async function gateway(
       "/api/stop",
       "/api/open",
       "/api/status",
+      "/api/activity",
     ].includes(url.pathname);
     if (request.method !== "GET" && request.method !== "HEAD") {
       if (request.headers.get("Origin") !== url.origin)
@@ -194,16 +215,23 @@ export async function gateway(
       return response(405, "This action requires POST.");
     if (url.pathname === "/api/status" && request.method !== "GET")
       return response(405, "Status requires GET.");
-    if (["/api/start", "/api/stop"].includes(url.pathname) && !owner)
-      return response(403, "Only the demo owner can start or stop a GPU run.");
+    if (url.pathname === "/api/stop" && !owner)
+      return response(403, "Only the demo owner can stop the shared GPU run.");
     // Creation deliberately stays closed until the provider/build/independent
     // cleanup gates pass. No browser quote, resource ID or ledger event is trusted.
-    if (url.pathname === "/api/start")
-      return response(
-        503,
-        "GPU startup is awaiting provider readiness verification.",
-      );
     const stub = env.BUDGET.getByName("terraready-project");
+    if (url.pathname === "/api/start") {
+      if (!startupEnabled || !stub.start)
+        return response(503, "Live demo startup is not configured yet.");
+      const started = await stub.start();
+      return Response.json(
+        { accepted: started.error === null, error: started.error },
+        {
+          status: started.error ? 409 : 202,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
+    }
     let result = await stub.apply({ type: "tick" });
     const run = result.state.runs.find((item) => item.phase !== "settled");
     if (
@@ -223,7 +251,14 @@ export async function gateway(
           lifetimeLimit: POLICY.lifetime / 1_000_000,
           timezone: POLICY.timezone,
           accountingHold: result.state.accountingHold,
-          startupEnabled: false,
+          startupEnabled,
+          idleMinutes: POLICY.idleMs / 60_000,
+          idleEndAt:
+            run?.phase === "active"
+              ? run.lastUseAt! + POLICY.idleMs
+              : run?.phase === "ready"
+                ? run.readyAt! + POLICY.idleMs
+                : null,
           dailyAvailable:
             Math.max(
               0,
@@ -244,7 +279,7 @@ export async function gateway(
     if (!run || result.state.accountingHold)
       return response(
         503,
-        "No demo run is available. The owner can check its budget and status.",
+        "This session has ended. Return to /demo to start another within the shared budget.",
       );
     if (url.pathname === "/api/stop") {
       result = await stub.apply({ type: "stop", key: run.key });
@@ -263,6 +298,16 @@ export async function gateway(
         },
       );
     }
+    if (url.pathname === "/api/activity") {
+      const activity = await stub.apply({ type: "activity", key: run.key });
+      return Response.json(
+        { accepted: activity.error === null },
+        {
+          status: activity.error ? 409 : 200,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
+    }
     if (run.phase !== "active" || !run.resourceId)
       return response(503, "Open a ready demo before using its workspace.");
     if (
@@ -273,9 +318,6 @@ export async function gateway(
       )
     )
       return response(404, "This demo page does not exist.");
-    const visitor = await digest(
-      utf8(`${env.ACCESS_AUD}\n${identity.user_uuid}`),
-    );
     const forwarded = await signedOriginRequest(
       request,
       run.resourceId,
@@ -286,7 +328,14 @@ export async function gateway(
     if (upstream.status >= 300 && upstream.status < 400)
       return response(502, "The demo origin returned an unexpected redirect.");
     // Rejected/overloaded requests and polling cannot keep a lease alive.
-    if (request.method === "POST" && upstream.ok) {
+    if (
+      upstream.ok &&
+      (request.method === "POST" ||
+        (request.method === "GET" &&
+          (url.pathname === "/" ||
+            url.pathname === "/system" ||
+            url.pathname.startsWith("/api/scenarios/"))))
+    ) {
       result = await stub.apply({ type: "activity", key: run.key });
       if (result.error) return response(503, "This demo run has ended.");
     }
@@ -304,5 +353,70 @@ export async function gateway(
     if (error instanceof RangeError)
       return response(413, "Request is too large.");
     return response(503, "Shared demo unavailable. Please retry later.");
+  }
+}
+
+// Anonymous reviewers receive an opaque, signed, essential-session cookie.
+// It carries no email or approval authority. All paid admission remains shared.
+export async function gateway(
+  request: Request,
+  env: GatewayBindings,
+  ctx: Pick<ExecutionContext, "access">,
+): Promise<Response> {
+  if (!/^[a-f0-9]{64}$/.test(env.ORIGIN_SECRET ?? ""))
+    return routeGateway(request, env, ctx, "0".repeat(64));
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      utf8(env.ORIGIN_SECRET!),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"],
+    );
+    const cookies = (request.headers.get("Cookie") ?? "")
+      .split(";")
+      .map((x) => x.trim())
+      .filter((x) => x.startsWith("tr_visitor="));
+    const value = cookies.length === 1 ? cookies[0].slice(11) : "";
+    let id = "",
+      setCookie = "";
+    if (/^[a-f0-9]{32}\.[a-f0-9]{64}$/.test(value)) {
+      const [candidate, signature] = value.split(".");
+      const bytes = new Uint8Array(
+        signature.match(/../g)!.map((x) => parseInt(x, 16)),
+      );
+      if (
+        await crypto.subtle.verify(
+          "HMAC",
+          key,
+          bytes,
+          utf8("terraready-visitor-v1\n" + candidate),
+        )
+      )
+        id = candidate;
+    }
+    if (!id) {
+      id = crypto.randomUUID().replaceAll("-", "");
+      const signature = hex(
+        await crypto.subtle.sign(
+          "HMAC",
+          key,
+          utf8("terraready-visitor-v1\n" + id),
+        ),
+      );
+      setCookie = `tr_visitor=${id}.${signature}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`;
+    }
+    const result = await routeGateway(
+      request,
+      env,
+      ctx,
+      await digest(utf8("terraready-workspace-v1\n" + id)),
+    );
+    if (!setCookie) return result;
+    const headers = new Headers(result.headers);
+    headers.set("Set-Cookie", setCookie);
+    return new Response(result.body, { status: result.status, headers });
+  } catch {
+    return response(503, "Demo session unavailable. Please try again.");
   }
 }

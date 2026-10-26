@@ -65,24 +65,33 @@ async function fixture(ready = true) {
   return { env, stub, events, state: () => state };
 }
 
-test("configuration, audience and platform identity all fail closed; spoofed headers grant nothing", async () => {
+test("public reviewers need no identity; only owner paths trust native Access, never spoofed headers", async () => {
   const f = await fixture();
   assert.equal((await gateway(request("/api/status"), {}, {})).status, 503);
-  const spoof = request("/api/status", "GET", {
+  const publicStatus = await gateway(request("/api/status"), f.env, {});
+  assert.equal(publicStatus.status, 200);
+  assert.equal((await publicStatus.json()).owner, false);
+  const spoof = request("/owner/api/setup", "GET", {
     headers: {
       "Cf-Access-Authenticated-User-Email": "owner@example.org",
-      "Cf-Access-Jwt-Assertion": "invented-token",
+      "Cf-Access-Jwt-Assertion": "invented",
     },
   });
   assert.equal((await gateway(spoof, f.env, {})).status, 403);
   const wrong = context();
-  wrong.access.aud = "other-application";
+  wrong.access.aud = "other-app";
   assert.equal(
-    (await gateway(request("/api/status"), f.env, wrong)).status,
+    (await gateway(request("/owner/api/status"), f.env, wrong)).status,
     403,
   );
   assert.equal(
-    (await gateway(request("/api/status"), f.env, context("", ""))).status,
+    (
+      await gateway(
+        request("/owner/api/status"),
+        f.env,
+        context("guest@example.org", "guest"),
+      )
+    ).status,
     403,
   );
   assert.equal(f.events.filter((e) => e.type === "open").length, 0);
@@ -112,7 +121,7 @@ test("setup check is owner-only, read-only, secret-free and cannot start a GPU",
   assert.equal(
     (
       await gateway(
-        request("/api/setup"),
+        request("/owner/api/setup"),
         f.env,
         context("guest@example.org", "guest"),
       )
@@ -120,10 +129,11 @@ test("setup check is owner-only, read-only, secret-free and cannot start a GPU",
     403,
   );
   assert.equal(
-    (await gateway(request("/api/setup", "POST"), f.env, context())).status,
+    (await gateway(request("/owner/api/setup", "POST"), f.env, context()))
+      .status,
     405,
   );
-  const response = await gateway(request("/api/setup"), f.env, context());
+  const response = await gateway(request("/owner/api/setup"), f.env, context());
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.deepEqual(await response.json(), {
@@ -140,7 +150,7 @@ test("setup check is owner-only, read-only, secret-free and cannot start a GPU",
 test("owner diagnostics distinguish invalid key format without returning its value", async () => {
   const f = await fixture(false);
   f.env.RUNPOD_API_KEY = "synthetic invalid key";
-  const req = request("/api/setup?diagnostics=1");
+  const req = request("/owner/api/setup?diagnostics=1");
   assert.equal(
     (await gateway(req, f.env, context("guest@example.org", "guest"))).status,
     403,
@@ -155,9 +165,9 @@ test("owner diagnostics distinguish invalid key format without returning its val
   assert.ok(!JSON.stringify(body).includes(f.env.RUNPOD_API_KEY));
 });
 
-test("private control page requires Access and cannot open a run through page loads", async () => {
+test("public control page needs no sign-in and cannot open a run through page loads", async () => {
   const f = await fixture(false);
-  assert.equal((await gateway(request("/demo"), f.env, {})).status, 403);
+  assert.equal((await gateway(request("/demo"), f.env, {})).status, 200);
   for (const path of ["/", "/demo"]) {
     const result = await gateway(request(path), f.env, context());
     assert.equal(result.status, 200);
@@ -207,7 +217,7 @@ test("signed frontend and System routes work only during active use; assets do n
   }
   assert.equal(forwarded.length, 5);
   assert.ok(forwarded.every((req) => req.headers.has("X-TR-Signature")));
-  assert.equal(f.state().runs[0].lastUseAt, lastUse);
+  assert.ok(f.state().runs[0].lastUseAt >= lastUse);
   assert.equal(
     (await gateway(request("/.env.local"), f.env, context())).status,
     404,
@@ -224,9 +234,9 @@ test("signed frontend and System routes work only during active use; assets do n
   );
 });
 
-test("invited users cannot start/stop; owner startup stays disabled behind provider gates", async () => {
+test("visitors can start once configured; only the owner can stop the shared run", async () => {
   const f = await fixture();
-  for (const path of ["/api/start", "/api/stop"]) {
+  for (const path of ["/api/stop"]) {
     assert.equal(
       (
         await gateway(
@@ -244,8 +254,28 @@ test("invited users cannot start/stop; owner startup stays disabled behind provi
     context(),
   );
   assert.equal(started.status, 503);
+  f.env.RUNPOD_API_KEY = "synthetic-provider-key";
+  f.env.SOURCE_COMMIT = "a".repeat(40);
+  f.env.SOURCE_SHA256 = "b".repeat(64);
+  let starts = 0;
+  f.stub.start = async () => {
+    starts++;
+    return { state: f.state(), error: null };
+  };
+  const guestStart = await gateway(
+    request("/api/start", "POST"),
+    f.env,
+    context("reviewer@unknown.example", "new-reviewer"),
+  );
+  assert.equal(guestStart.status, 202);
+  assert.equal(starts, 1);
+
   assert.equal(f.events.filter((e) => e.type === "reserve").length, 1);
-  const stopped = await gateway(request("/api/stop", "POST"), f.env, context());
+  const stopped = await gateway(
+    request("/owner/api/stop", "POST"),
+    f.env,
+    context(),
+  );
   assert.equal(stopped.status, 202);
   assert.equal((await stopped.json()).shutdownConfirmed, false);
   assert.equal(f.state().runs[0].phase, "stopping");
@@ -437,7 +467,7 @@ test("proxy preserves overload feedback and updates idle only after accepted act
   const busy = await gateway(ask(), f.env, context());
   assert.equal(busy.status, 429);
   assert.equal(busy.headers.get("Retry-After"), "10");
-  assert.equal(busy.headers.get("Set-Cookie"), null);
+  assert.ok(!busy.headers.get("Set-Cookie").includes("private-origin-cookie"));
   assert.equal(f.events.filter((e) => e.type === "activity").length, 0);
   code = 200;
   assert.equal((await gateway(ask(), f.env, context())).status, 200);
@@ -456,7 +486,7 @@ test("proxy preserves overload feedback and updates idle only after accepted act
     forwarded[0].headers.get("X-TR-Visitor"),
     forwarded[2].headers.get("X-TR-Visitor"),
   );
-  assert.equal(f.events.filter((e) => e.type === "activity").length, 1);
+  assert.equal(f.events.filter((e) => e.type === "activity").length, 2);
   code = 302;
   assert.equal((await gateway(ask(), f.env, context())).status, 502);
 });
@@ -467,7 +497,7 @@ test("identity/provider errors reveal no secrets and never turn into success", a
   failed.access.getIdentity = async () => {
     throw new Error(secret);
   };
-  const failure = await gateway(request("/api/status"), f.env, failed);
+  const failure = await gateway(request("/owner/api/status"), f.env, failed);
   assert.equal(failure.status, 503);
   assert.ok(!(await failure.text()).includes(secret));
   await gateway(request("/api/open", "POST"), f.env, context());
@@ -477,4 +507,45 @@ test("identity/provider errors reveal no secrets and never turn into success", a
   const offline = await gateway(request("/api/system"), f.env, context());
   assert.equal(offline.status, 503);
   assert.ok(!(await offline.text()).includes(secret));
+});
+
+test("anonymous browser cookies are signed, opaque, stable and cannot unlock owner controls", async () => {
+  const f = await fixture(false);
+  const first = await gateway(request("/demo"), f.env, {});
+  const cookie = first.headers.get("Set-Cookie");
+  assert.match(cookie, /HttpOnly; Secure; SameSite=Lax/);
+  assert.ok(!cookie.includes("owner@example.org"));
+  const jar = cookie.split(";")[0];
+  const req = () => request("/api/status", "GET", { headers: { Cookie: jar } });
+  const repeated = await gateway(req(), f.env, {});
+  assert.equal(repeated.headers.get("Set-Cookie"), null);
+  assert.equal((await repeated.json()).owner, false);
+  assert.equal(
+    (
+      await gateway(
+        request("/api/setup", "GET", { headers: { Cookie: jar } }),
+        f.env,
+        context(),
+      )
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await gateway(
+        request("/owner/api/setup", "GET", { headers: { Cookie: jar } }),
+        f.env,
+        {},
+      )
+    ).status,
+    403,
+  );
+  const tampered = jar.slice(0, -1) + (jar.endsWith("a") ? "b" : "a");
+  const replaced = await gateway(
+    request("/api/status", "GET", { headers: { Cookie: tampered } }),
+    f.env,
+    {},
+  );
+  assert.ok(replaced.headers.get("Set-Cookie"));
+  assert.equal((await replaced.json()).owner, false);
 });
