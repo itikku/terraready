@@ -174,7 +174,9 @@ test("slow old-zone response cannot replace the selected zone source", async ({
   await expect(
     source(page).getByText("Checking camera source…", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Inspect West stockpile" }).click();
+  await page
+    .getByRole("button", { name: "Inspect West stockpile", exact: true })
+    .click();
   await expect(
     source(page).getByText(/Camera snapshot unavailable/),
   ).toBeVisible();
