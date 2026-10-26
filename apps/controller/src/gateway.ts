@@ -155,7 +155,10 @@ export async function gateway(
       if (url.searchParams.get("diagnostics") === "1") {
         const key = env.RUNPOD_API_KEY;
         const formatValid = Boolean(
-          key && key.length >= 8 && key.length <= 4096 && !/\s/.test(key),
+          key &&
+          key.length >= 8 &&
+          key.length <= 4096 &&
+          /^[\x21-\x7e]+$/.test(key),
         );
         return Response.json(
           {

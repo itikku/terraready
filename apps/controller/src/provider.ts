@@ -16,7 +16,10 @@ export interface OwnedPod {
 }
 
 export class ProviderError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly stage = "response",
+  ) {
     super("Runpod request failed.");
   }
 }
@@ -28,19 +31,24 @@ function object(value: unknown): value is Record<string, unknown> {
 export class Runpod {
   constructor(
     private readonly key: string,
-    private readonly transport: Fetch = fetch,
+    private readonly transport: Fetch = (input, init) => fetch(input, init),
   ) {
-    if (key.length < 8 || key.length > 4096 || /\s/.test(key))
+    if (key.length < 8 || key.length > 4096 || !/^[\x21-\x7e]+$/.test(key))
       throw new ProviderError(0);
   }
 
   async #read(path: string): Promise<Record<string, unknown>> {
-    const response = await this.transport(`https://api.runpod.io/v2/${path}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${this.key}` },
-      redirect: "error",
-      signal: AbortSignal.timeout(12_000),
-    });
+    let response: Response;
+    try {
+      response = await this.transport(`https://api.runpod.io/v2/${path}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${this.key}` },
+        redirect: "manual",
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      throw new ProviderError(0, "request");
+    }
     if (!response.ok) {
       await response.body?.cancel();
       throw new ProviderError(response.status);
@@ -51,14 +59,23 @@ export class Runpod {
     const chunks: Uint8Array[] = [];
     try {
       while (true) {
-        const part = await reader.read();
+        let part: ReadableStreamReadResult<Uint8Array>;
+        try {
+          part = await reader.read();
+        } catch {
+          throw new ProviderError(0, "body_read");
+        }
         if (part.done) break;
         length += part.value.byteLength;
         if (length > 1_048_576) throw new ProviderError(0);
         chunks.push(part.value);
       }
     } finally {
-      await reader.cancel();
+      try {
+        await reader.cancel();
+      } catch {
+        /* Already closed provider stream. */
+      }
       reader.releaseLock();
     }
     const bytes = new Uint8Array(length);
@@ -67,7 +84,12 @@ export class Runpod {
       bytes.set(chunk, offset);
       offset += chunk.byteLength;
     }
-    const data: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    let data: unknown;
+    try {
+      data = JSON.parse(new TextDecoder().decode(bytes));
+    } catch {
+      throw new ProviderError(0, "json");
+    }
     if (!object(data)) throw new ProviderError(0);
     return data;
   }
@@ -85,7 +107,11 @@ export class Runpod {
         result[name] = 200;
       } catch (error) {
         result[name] =
-          error instanceof ProviderError ? error.status : "transport_or_format";
+          error instanceof ProviderError
+            ? `${error.stage}:${error.status}`
+            : error instanceof Error
+              ? error.name
+              : "transport_or_format";
       }
     }
     return result;
@@ -134,7 +160,7 @@ export class Runpod {
       const result = await this.transport(`https://api.runpod.io/v2/${path}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${this.key}` },
-        redirect: "error",
+        redirect: "manual",
         signal: AbortSignal.timeout(12_000),
       });
       await result.body?.cancel();

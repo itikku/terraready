@@ -37,7 +37,7 @@ test("runtime capability checks use only fixed-host read-only authenticated requ
   for (const { url, options } of calls) {
     assert.equal(new URL(url).origin, "https://api.runpod.io");
     assert.equal(options.method, "GET");
-    assert.equal(options.redirect, "error");
+    assert.equal(options.redirect, "manual");
     assert.equal(options.headers.Authorization, "Bearer synthetic-runtime-key");
     assert.ok(options.signal instanceof AbortSignal);
     assert.equal(options.body, undefined);

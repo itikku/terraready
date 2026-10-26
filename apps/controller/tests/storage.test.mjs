@@ -291,3 +291,36 @@ test("a real emulator alarm persists shutdown intent without a browser or provid
     "alarm does not release its reservation",
   );
 });
+
+test("native Worker runtime can probe the provider transport without secret disclosure", async (t) => {
+  const persist = await mkdtemp(
+    path.join(tmpdir(), "terraready-provider-runtime-"),
+  );
+  const mf = emulator({
+    ...options(persist),
+    modules: [
+      {
+        ...modules[0],
+        contents:
+          modules[0].contents +
+          `
+      import { Runpod } from "./provider.js";
+      export class Probe extends BudgetLedger {
+        async probe() { return new Runpod("synthetic-provider-key").diagnostics(); }
+      }
+    `,
+      },
+      ...modules.slice(1),
+    ],
+    durableObjects: { BUDGET: { className: "Probe", useSQLite: true } },
+    outboundService: () => Response.json({ pods: [], gpus: [], records: [] }),
+  });
+  t.after(async () => {
+    await mf.dispose();
+    await rm(persist, { recursive: true, force: true });
+  });
+  const result = await (await ledger(mf)).probe();
+  assert.equal(await result.pods, 200);
+  assert.equal(await result.catalog, 200);
+  assert.equal(await result.billing, 200);
+});
