@@ -2,7 +2,7 @@
 
 ## [Try the live demo →](https://terraready-controller.terraready-itikku.workers.dev/demo)
 
-TerraReady helps a site superintendent replan earthworks when ground conditions change. A small local model reads the site's observations, equipment limits and unfinished work. Rules check which options are feasible; you choose and approve the plan.
+TerraReady helps a site superintendent replan earthworks when ground conditions change. A small local model reads the site's observations, equipment limits and unfinished work. Ground rules and a scheduling solver check the options; you choose and approve the work.
 
 Explore a simulated rainy shift with real Qwen inference. Start or join a session without signing in. A cold start takes a few minutes; availability follows the [shared budget policy](docs/HOSTED_DEMO.md#budget-controls).
 
@@ -16,11 +16,13 @@ Overnight rain makes north access unsuitable for a loaded hauler. The excavator 
 2. **Choose work to approve.** Keep an assignment, choose an eligible route or defer a package. The editor checks the combined resource hours and preserves holds.
 3. **Review and approve.** Confirm the exact selection, then copy the field-lead or haul-coordinator brief. Changes to evidence or selection require another check.
 
+Select an item and **Suggest a change** to test a quantity, truck limit, deadline or overtime allowance. Qwen interprets the request; a CPU solver checks it against retained work and returns a verdict with alternatives. This what-if leaves your choices and approvals unchanged.
+
 **Choose work without the model** keeps manual planning available during an inference outage. The work list stays beside the interactive map. Select a package to locate it, then open **Site evidence** for observations and camera context. Approving a plan saves a planning record; it does not dispatch equipment or complete work.
 
 ## Why this architecture fits
 
-The model's job is to find the relevant records and checked alternatives. Python rules establish feasibility. The superintendent approves the work.
+The model finds relevant records and translates a suggestion into typed constraints. Python checks ground eligibility; OR-Tools schedules the work. The superintendent decides what to approve.
 
 ```mermaid
 flowchart LR
@@ -30,6 +32,11 @@ flowchart LR
     API <--> Agent[Bounded read-only tools]
     Agent <--> Model[Qwen3-4B / llama.cpp]
     Agent --> Rules
+    API --> Intent[Qwen: typed suggestion]
+    Intent --> Solver[CPU CP-SAT: schedule and optimize]
+    Solver --> Check[Independent schedule verifier]
+    Rules --> Solver
+    Check --> UI
     UI --> Approval[Human approval: recheck exact selection]
     Approval --> API
     API --> Brief[Saved approval and local briefs]
@@ -44,19 +51,22 @@ The model, API and site database run together on one host. The same boundary wor
 | Conditions or choices may change before approval. | The [approval API](apps/api/src/terraready/main.py) rechecks constraints and fingerprints the exact selection, snapshot, clock and policy. | Stale selections cannot reuse an approval. Demo approval is a local planning record, not authenticated field sign-off. |
 | Evidence and decisions need to be inspectable on one host. | [Typed LanceDB tables](apps/api/src/terraready/storage.py) hold fixtures, approvals and structured audit facts. Arrow preserves their schemas. | Repeatable tests and queryable history with one API writer. Embeddings, vector retrieval and distributed transactions are not implemented. Free-form model prose is not retained in audits. |
 
-Prerequisites and paired-resource hour budgets are checked alongside ground conditions. Planned hours describe serial effort; the prototype does not calculate an optimal timed schedule or measured productivity savings.
+The regular work editor checks prerequisites and paired-resource hour budgets. The separate what-if solver adds timed production scheduling; its synthetic assumptions do not establish measured productivity savings.
 
 ### Where the math runs
 
-Calculations run in Python, independently of Qwen. **Show the math** exposes the inputs, limits, evidence clock and checked result; the model cannot skip these checks or change their thresholds.
+Qwen extracts intent, not equations or executable code. Application code constructs a resource-constrained scheduling problem for [OR-Tools CP-SAT](https://developers.google.com/optimization/cp/cp_solver): optional truck trips, excavator and dump exclusivity, fleet capacity, retained work, real prerequisites and shift deadlines. An independent verifier checks every feasible schedule before it can support GO.
 
-| Example | Deterministic check |
+| Question in the synthetic production example | Solver result |
 | --- | --- |
-| Loaded hauler on north access | Bearing headroom: `65 − 85 = −20 kPa` → blocked. The excavator's `65 − 42 = 23 kPa` passes this check. |
-| An old ground reading looks favourable | Observation age, post-rain timing and confidence must pass before its numbers can support release. |
-| Two packages share an excavator | Combined planned effort must fit its remaining hours; approval rechecks the exact selection. |
+| Move 320 bank m³ with two trucks in eight hours, retaining excavation and drainage | **INFEASIBLE**, even though excavator effort totals only `180 + 120 + 20 × 8 = 460` minutes. Truck cycles and shared-resource timing matter. |
+| Minimum fleet that can meet that target | **Three truck/operator pairs**, with a checked schedule within the shift. |
+| Keep two trucks and the full target | **12 minutes overtime**; minimum finish is 492 minutes. |
+| Keep two trucks and no overtime | **288 bank m³ maximum** in completed cycles. |
 
-These are explicit synthetic operating rules, not a validated soil-physics model. The [Vinci research comparison](docs/reviews/VINCI_RESEARCH.md) explains the distinction between this tool-assisted workflow and a physics-native neural/numerical solver.
+The example declares 20 loose m³ payload, 1.25 swell and 8/6/2/4-minute load/travel/dump/return stages. Only one truck is current inventory; additional pairs are hypothetical resources to obtain. Each optimum includes its bound; a time limit returns UNKNOWN rather than a fabricated answer. **Show the math** exposes the simpler ground checks too. Neither the optimizer nor the model can override a hold or extend expired evidence through a whole shift.
+
+These are explicit synthetic production assumptions and operating rules, not calibrated soil physics. [Evaluation coverage](docs/EVALS.md) explains the checks; the [Vinci comparison](docs/reviews/VINCI_RESEARCH.md) distinguishes this tool-assisted workflow from a physics-native neural/numerical solver.
 
 ## Budget controls
 
@@ -66,18 +76,19 @@ The [Cloudflare controller](apps/controller/README.md) reserves whole-host costs
 
 The [prebuilt runtime](deploy/README.md) moves installs and builds off the rented GPU. Its first uncached start still took **176 seconds**, dominated by pulling the model-bearing image; a substantial cold-start speedup has not been demonstrated.
 
-Durable alarms delete the recorded Pod on stop or expiry and retry failed cleanup. Uncertain creation blocks duplicate starts. Confirmed deletion releases unused reservation after a conservative debit. Delayed provider-bill reconciliation remains manual. These controls are implemented in the application; provider outages can delay cleanup. [Lifecycle evidence and accounting limits](docs/HOSTED_DEMO.md) explain what has been verified.
+Durable alarms delete the recorded Pod on stop or expiry and retry failed cleanup. Uncertain creation blocks duplicate starts. Controller-confirmed deletion releases unused reservation after a conservative debit; confirmation can lag an operator's fallback deletion. Delayed provider-bill reconciliation remains manual. These controls are implemented in the application; provider outages can delay cleanup. [Lifecycle evidence and accounting limits](docs/HOSTED_DEMO.md) explain what has been verified.
 
 ## What has been verified
 
 | Evidence | Result and scope |
 | --- | --- |
-| [Automated checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | Backend, controller and browser tests; formatting, lint, types, production build, live HTTP checks and package builds. Browser inference tests use a labeled protocol stub. |
+| [Automated checks](https://github.com/itikku/terraready/actions/workflows/ci.yml) | Backend, optimizer, controller and browser tests; formatting, lint, types, production build, live HTTP checks and package builds. Browser inference tests use a labeled protocol stub. See [evaluation coverage and release gates](docs/EVALS.md) for the separate real-model checks. |
+| [Per-item model and solver](docs/verification/work-suggestions.json) | 537 backend tests; actual native Qwen **26/27** curated cases. The remaining ground-override request safely asks for clarification, with no plan. A genuine hosted check changed **NO-GO → GO** after a human deferred drainage; no approval was submitted. |
 | [Real L4 inference](docs/verification/gpu-agent.json) | Qwen passed 3/3 smoke cases and 10/10 warm API requests. End-to-end p50 **2.24 s**, p95 **3.04 s**, nearest-rank over ten requests. Sampled peaks: **3,274 MiB GPU**, **5.94 GiB container**. |
 | [Hosted lifecycle](docs/HOSTED_DEMO.md#verified-preview) | Public start, genuine inference, controller deletion, fresh start and deletion again. Independent provider reads confirmed absence. Individual hosted smokes are separate from the measured latency sample. |
 | [Camera adapters](docs/CAMERAS.md#what-has-been-verified) | A synthetic folder exporter reaches the API/browser, with missing and invalid captures handled. Physical-camera acquisition remains untested. |
 
-The measured L4 run used source `45ff57e`, before camera adapters. Its later provider charge was **$0.1555**, including disk. These small samples establish integration. Reliability, real multiuser inference load, Jetson, power efficiency and enforced backend outbound-network denial remain unverified. The [native artifact](docs/verification/local-agent.json) records a separate local test; System distinguishes recorded measurements from current model reachability.
+The measured L4 run used source `45ff57e`, before camera adapters and the optimizer. Its later provider charge was **$0.1555**, including disk. These small samples establish integration. The suggestion set was used during prompt development; it is not held-out accuracy. Reliability, real multiuser inference load, Jetson, power efficiency and enforced backend outbound-network denial remain unverified. The [native artifact](docs/verification/local-agent.json) records a separate local test; System distinguishes recorded measurements from current model reachability.
 
 ## Data sources and demo boundaries
 

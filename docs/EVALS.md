@@ -135,5 +135,11 @@ Final isolated checks pass **537 backend tests**, with **98.25%** API statement/
 coverage, including **47 optimizer tests**; formatting, lint, strict types and the
 production frontend build pass. The full **91 browser** and **60 controller** checks
 pass, followed by **26 focused browser** checks for the final suggestion flow and
-System disclosure. Browser inference remains scripted. Hosted integration is pending
-and must not be inferred from these native and protocol checks.
+System disclosure. Browser regression inference remains scripted.
+
+The [genuine hosted integration](HOSTED_DEMO.md#solver-backed-suggestion-proof) then
+exercised the coupled infeasible request, a human deferring drainage followed by a
+feasible recheck, and the refused ground override. It submitted no approvals and
+passed mobile overflow/accessibility checks. The exact proof GPU was deleted and
+independently returned 404; its controller ledger is settled. Those three requests
+do not constitute a benchmark or extend the 26/27 curated set into production evidence.

@@ -2,13 +2,44 @@
 
 **[Open TerraReady](https://terraready-controller.terraready-itikku.workers.dev/demo)**. No visitor account, email code or appointment is required. Choose **Start live demo**, wait a few minutes for startup, then **Open shift workspace**. If another visitor already started it, join the same GPU. Each browser keeps its own package choices, approvals and audits for that run.
 
-The link stays available when the GPU is off. A later visitor can start again within the shared budget. Demo data is synthetic; the model is real and uses sampling without a fixed seed. Rules still decide feasibility, and the user still chooses and approves the exact work. Cameras remain an explicit stub.
+The link stays available when the GPU is off. A later visitor can start again within the shared budget. Demo data is synthetic; the model is real. Shift assessment samples without a fixed seed; typed suggestion extraction uses greedy decoding to favor faithful inputs. Ground rules and the CPU scheduling solver check feasibility; the user chooses and approves the exact work. Cameras remain an explicit stub.
 
 Only the owner's [control page](https://terraready-controller.terraready-itikku.workers.dev/owner) requires Cloudflare email-code Access. The ordinary local application retains its single-user behavior.
 
 The work list sits beside a larger interactive map: **Assess this shift → choose work → review and approve**. Selecting work locates it on the map; **Show the math** exposes checked inputs, limits and margins. Evidence and model traces expand on request. System leads with design, edge assumptions, model choice and evaluations; diagnostics sit in a closed Appendix.
 
-New sessions use [source b4f37d8](https://github.com/itikku/terraready/commit/b4f37d848b5a3e25fee2f9cdbf0a217a91eb47e3), verified by [CI40424598650](https://github.com/itikku/terraready/actions/runs/40424598650): 382 backend, 59 controller and 78 browser tests. Existing sessions keep their starting version. Startup reports total elapsed time and confirmed stages, with five-second readiness checks and no invented percentage.
+**Suggest a change** tests a selected item's quantity, truck limit, overtime or deadline against the actual current draft. Qwen produces typed intent, then CPU CP-SAT schedules the shared resources and independent code checks its answer. The result includes a verdict, conflicts and checked alternatives. Production inputs and additional trucks are explicit hypothetical assumptions. This read-only what-if does not edit or approve the work, and it does not save the comment. [Evaluation coverage and limits](EVALS.md) distinguish genuine interpretation from protocol tests and mathematical verification.
+
+New sessions use [source f876ba4](https://github.com/itikku/terraready/commit/f876ba43f639f30dc7c47c1cf2ef89918bb0e92e), verified by [CI40454376468](https://github.com/itikku/terraready/actions/runs/40454376468): 537 backend, 60 controller and 91 browser tests. Existing sessions keep their starting version. Startup reports total elapsed time and confirmed stages, with five-second readiness checks and no invented percentage.
+
+## Solver-backed suggestion proof
+
+[Image build 40455312723](https://github.com/itikku/terraready/actions/runs/40455312723)
+passed. Anonymous source/image access, Linux amd64 identity and the matching source
+revision were verified before enabling it. One L4 became ready in **175.457 seconds**;
+this remains a multi-minute cold start, not an established speed improvement.
+
+The real browser then exercised three Qwen requests:
+
+| Action | Observed result |
+| --- | --- |
+| Request 320 bank m³ with two trucks, no overtime and retained work | NO-GO, proven infeasible. Checked alternatives: minimum fleet 3, minimum overtime 12 minutes, maximum two-truck/no-overtime volume 288 bank m³. |
+| Human explicitly defers drainage, then repeats the same request | GO with an independently checked schedule; the actual draft fingerprint and selected IDs changed. Additional trucks remain hypothetical resources to obtain. |
+| Ask to override bearing capacity | Clarification, null intent and no solver result. The message states that ground evidence, equipment limits and prerequisites cannot change. |
+
+Model-loop observations were 1,607/1,138/874 ms. These are three integration cases,
+not a benchmark. No approval requests were sent. Mobile overflow and accessibility
+checks passed, and System showed the model rationale, three documented alternatives
+and the honest 26/27 native evaluation record. [Typed evidence and schedules](verification/work-suggestions.json)
+and the [genuine screenshot](images/solver-what-if.png) preserve the result.
+
+Cleanup used the independent Runpod MCP fallback after a Cloudflare administrative
+SQL stop request returned HTTP 500. Only proof Pod `t24m79fra3hi5s` was deleted; DELETE 204
+and independent GET 404 confirmed absence by 05:49:42 UTC, before its 05:54 deadline.
+The guard was paused. The controller later settled under its idle policy at 06:17:27 UTC.
+Its **$0.443326 conservative debit** extends through controller confirmation, later
+than provider absence; it is not a final invoice. No GPU remains, the controller is
+off, and reservations are released. Limits remain $5/day and $10 lifetime; no funds were added.
 
 ## Verified preview
 
@@ -59,6 +90,8 @@ The policy is **$5 shared per Los Angeles calendar day**, **$10 project lifetime
 The [controller](../apps/controller/README.md) atomically reserves whole-host cost before creation. Setup, idle, ephemeral disk and a five-minute cleanup margin count. Setup may take up to twenty minutes. A ready/active run ends after **thirty minutes without meaningful use**, with a warning and an explicit **Keep working** action near expiry. Joining or accepted interaction refreshes idle time, never the two-hour or cost deadline. Status/asset polling does not count as use. Cost can end a session sooner than either time limit.
 
 One fixed L4 serves everyone; more visitors do not create more GPUs. One analysis executes at a time, with ten total admitted requests, one per visitor across tabs, a ten-second visitor cooldown and FIFO admission. Waiting expires after thirty seconds; model execution remains bounded to five responses, 960 completion tokens and 120 seconds. Overload returns 429 with Retry-After; manual planning remains available.
+
+Per-item suggestions use that same admission slot for the complete model-and-solver operation. Interpretation is one model call with a sixty-second limit; the CPU optimizer has bounded solve budgets. Invalid output or an unproven schedule cannot become GO. A held or expired ground check remains authoritative, and the result states when evidence needs review rather than promising safe conditions through the schedule.
 
 ### Creation and cleanup
 
@@ -116,7 +149,7 @@ workspace checks; no fabricated percentage is shown.
 
 The controller uses its own encrypted `RUNPOD_API_KEY`; it is never sent to the browser or GPU. Runpod's current restricted GraphQL Read/Write option grants broad management access rather than Pod-specific permission, so the controller checks recorded ownership before deletion. The owner-only `/owner/api/setup?diagnostics=1` performs read-only Pods/catalog/billing capability checks without returning credential values or provider bodies.
 
-The GPU shape is one secure L4, 50 GB ephemeral disk, no mounts/SSH/Jupyter and only signed port 8000. The controller pins the container digest, full source commit and archive SHA-256. The current [source-only release](https://github.com/itikku/terraready/releases/tag/preview-source-b4f37d8) contains 111 manifest-checked files; no local environment, credentials or database. The enabled image is `ghcr.io/itikku/terraready-runtime@sha256:a749e7374ac4371b021e85703cbe2143502b4cacb2658b2d0ec0e5385fb56b01`.
+The GPU shape is one secure L4, 50 GB ephemeral disk, no mounts/SSH/Jupyter and only signed port 8000. The controller pins the container digest, full source commit and archive SHA-256. The current [source-only release](https://github.com/itikku/terraready/releases/tag/preview-source-f876ba4) contains 125 manifest-checked files; no local environment, credentials or database. The enabled image is `ghcr.io/itikku/terraready-runtime@sha256:d489c9f28d33be5c2159834d241398555727ede0b20c481d1dd3f6bd926bb4be`.
 
 `scripts/hosted_boot.py` verifies the manifest and rejects extra environment/storage/build files and symlinks. It discards any provider-injected `RUNPOD_API_KEY` by membership/deletion without reading its value, before child processes. It installs pinned uv 0.13.5 and Node 24.22.1, builds from lockfiles, verifies pinned Qwen/llama.cpp downloads and creates a new loopback inference key. Both earlier lifecycle proofs booted sourcead8fee4. The packaged runtime uses `scripts/hosted_image.py` to verify packaged source/frontend and start the services; it also discards the injected provider key before child processes. Its later GPU proof is recorded above. Only the signed API listens publicly; model inference stays on loopback.
 
