@@ -361,6 +361,8 @@ async function lifecycleFixture(
       export class LifecycleTest extends BudgetLedger {
         readStored() {return JSON.parse(this.ctx.storage.sql.exec("SELECT state FROM ledger WHERE id=1").one().state);}
         async serviceNow() {await this.alarm();}
+        nextAlarm() {return this.ctx.storage.getAlarm();}
+        async readStartupJSON(key) {return JSON.stringify(await this.startup(key));}
         resetCooldown() {this.ctx.storage.sql.exec("UPDATE launch_gate SET time=time-31000 WHERE id=1");}
       }
     `,
@@ -547,7 +549,7 @@ test("native packaged startup persists strict observed stages without starting a
   const status = await (await f.http("http://localhost/api/status")).json();
   assert.equal(status.startup.detail.stage, "loading_model");
   assert.ok(!JSON.stringify(status).includes("syntheticpod01"));
-  const original = await stub.startup(key);
+  const original = await stub.readStartupJSON(key);
   for (const value of [
     {
       stage: "checking_workspace",
@@ -564,7 +566,7 @@ test("native packaged startup persists strict observed stages without starting a
   ]) {
     f.setProgress(value);
     await stub.serviceNow();
-    assert.deepEqual(await stub.startup(key), original);
+    assert.equal(await stub.readStartupJSON(key), original);
   }
   f.setProgress({ stage: "checking_workspace", changedAt: Date.now() });
   await stub.serviceNow();
@@ -575,5 +577,22 @@ test("native packaged startup persists strict observed stages without starting a
   state = await stub.readStored();
   assert.equal(state.runs[0].phase, "ready");
   assert.equal(state.runs[0].firstUseAt, null);
+  assert.equal(f.creates(), 1);
+});
+
+test("startup checks again within five seconds without extending use or deadlines", async (t) => {
+  const f = await lifecycleFixture(t, { packaged: true });
+  const stub = await f.stub();
+  await stub.start();
+  const before = (await stub.readStored()).runs[0];
+  assert.ok((await stub.nextAlarm()) <= Date.now() + 6000);
+  await stub.serviceNow();
+  const after = (await stub.readStored()).runs[0];
+  assert.equal(after.phase, "reserved");
+  assert.equal(after.firstUseAt, null);
+  assert.equal(after.lastUseAt, null);
+  assert.equal(after.costStopAt, before.costStopAt);
+  assert.equal(after.reserveUntil, before.reserveUntil);
+  assert.ok((await stub.nextAlarm()) <= Date.now() + 6000);
   assert.equal(f.creates(), 1);
 });

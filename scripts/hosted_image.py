@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 import platform
+import re
 import secrets
 import shutil
 import subprocess
@@ -46,6 +47,38 @@ CUDA_WHEELS = (
     ),
 )
 STAGES = {"loading_model", "checking_workspace", "ready", "failed"}
+
+
+def verify_linkage(binary: Path, env: dict[str, str]) -> None:
+    links = subprocess.run(
+        ["ldd", str(binary)], env=env, text=True, capture_output=True, check=False
+    )
+    # ldd reports missing symbol versions on stderr and missing libraries on
+    # stdout. A CPU builder lacks only the NVIDIA driver supplied by the host.
+    failures = [
+        line
+        for line in (links.stdout + "\n" + links.stderr).splitlines()
+        if "not found" in line and not re.fullmatch(r"\s*libcuda\.so\.1\s+=>\s+not found\s*", line)
+    ]
+    if failures or links.returncode:
+        names = sorted(
+            set(
+                re.findall(
+                    r"\b(?:lib[A-Za-z0-9_+.-]+\.so(?:\.[0-9]+)*|"
+                    r"GLIBC(?:XX)?_[0-9.]+|CXXABI_[0-9.]+)\b",
+                    "\n".join(failures),
+                )
+            )
+        )
+        names = [name for name in names if len(name) <= 80][:8]
+        # Only bounded library/version tokens are printed, never raw paths,
+        # arbitrary linker text, environment values or exception messages.
+        print(
+            "Packaged linkage failed: "
+            + json.dumps({"requirements": names, "exitCode": links.returncode}),
+            flush=True,
+        )
+        raise ValueError("Packaged runtime linkage is incomplete or incompatible.")
 
 
 def child_environment() -> dict[str, str]:
@@ -90,7 +123,7 @@ def build(commit: str) -> None:
     manifest = json.loads((ROOT / "config/local-model.json").read_text())
     models = data / "models"
     models.mkdir()
-    url = (
+    model_url = (
         "https://huggingface.co/"
         + manifest["repository"]
         + "/resolve/"
@@ -98,7 +131,6 @@ def build(commit: str) -> None:
         + "/"
         + manifest["file"]
     )
-    download(url, models / manifest["file"], manifest["sha256"], manifest["bytes"])
     runtime = data / "runtime"
     runtime.mkdir()
     pinned = manifest["runtime"]["linux_x64_cuda_12_8"]
@@ -126,17 +158,10 @@ def build(commit: str) -> None:
     servers = list(runtime.rglob("llama-server"))
     if len(servers) != 1:
         raise ValueError("Pinned runtime server missing or ambiguous.")
-    links = subprocess.run(
-        ["ldd", str(servers[0].parent / "libggml-cuda.so")],
-        env=env,
-        text=True,
-        capture_output=True,
-        check=True,
-    )
-    if any(
-        "not found" in line and "libcuda.so.1" not in line for line in links.stdout.splitlines()
-    ):
-        raise ValueError("Packaged CUDA dependencies are incomplete.")
+    for binary in (servers[0], servers[0].parent / "libggml-cuda.so"):
+        verify_linkage(binary, env)
+    print("Packaged server/CUDA linkage verified; GPU driver is host-supplied.", flush=True)
+    download(model_url, models / manifest["file"], manifest["sha256"], manifest["bytes"])
     web = ROOT / "apps/web/dist"
     records = [
         {"path": p.relative_to(web).as_posix(), "sha256": checksum(p)}

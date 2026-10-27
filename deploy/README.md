@@ -32,11 +32,17 @@ and new Runpod scopes are unnecessary. There is no scheduled build or GPU launch
 
 ## Runtime contract
 
-- Linux amd64, Python 3.12.12 slim at a pinned image digest, locked Python packages
+- Linux amd64, Python 3.12.12 slim on Debian Trixie at a pinned image digest, locked Python packages
   and frontend, existing checksum-pinned Qwen3-4B Q4_K_M/llama.cpp CUDA 12.8 assets.
 - Only the required pinned NVIDIA cuBLAS 12.8.4.1 and cudart 12.8.90 wheels are added;
   PyTorch, Jupyter and the full CUDA development toolkit are absent. NVIDIA wheel
   license files are retained; Qwen remains Apache-2.0 and original source MIT.
+- The pinned llama CUDA binary requires `GLIBC_2.38`. Trixie's glibc 2.41 satisfies
+  that ABI requirement; Bookworm's 2.36 does not. Image builds check both server
+  and CUDA-library linkage before downloading weights, and fail on missing
+  libraries or symbol versions. Only the exact host-provided `libcuda.so.1`
+  absence is allowed on the CPU build runner. Diagnostics expose bounded library
+  and version names, never raw paths or environment values.
 - One GPU, existing 50 GB ephemeral disk and port 8000, with inference on loopback
   8080. New runtime keys and synthetic workspaces are created per disposable run.
 - `scripts/hosted_image.py run` discards the injected provider management key before
@@ -45,7 +51,9 @@ and new Runpod scopes are unnecessary. There is no scheduled build or GPU launch
 - The signed `/startup` route returns only an enum and transition time. It uses the
   existing HMAC/replay envelope and does not create a visitor workspace. `/ready`
   cannot succeed during model loading. The controller persists observed startup
-  states without extending a usage, idle, setup or cost deadline.
+  states without extending a usage, idle, setup or cost deadline. Readiness is
+  checked every five seconds during startup, avoiding the old thirty-second wait
+  between checks; cleanup retry timing remains unchanged.
 - Before the signed app can answer, the page says that the GPU environment is
   downloading or starting. Later it can show model loading and workspace checks.
   The elapsed timer explicitly measures total startup. There are no invented

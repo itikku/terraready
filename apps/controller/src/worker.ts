@@ -12,6 +12,8 @@ import {
 import { Runpod, ProviderError, type OwnedPod } from "./provider.js";
 import { signedOriginRequest } from "./gateway.js";
 
+const STARTUP_CHECK_MS = 5_000;
+
 interface Attempt {
   key: string;
   name: string;
@@ -107,7 +109,7 @@ export class BudgetLedger extends DurableObject<GatewayBindings> {
         crypto.randomUUID().replaceAll("-", "") +
         crypto.randomUUID().replaceAll("-", ""),
       since: now,
-      nextCheckAt: now + 30_000,
+      nextCheckAt: now + STARTUP_CHECK_MS,
     };
     this.#save(attempt);
     await this.ctx.storage.setAlarm(attempt.nextCheckAt!);
@@ -188,7 +190,8 @@ export class BudgetLedger extends DurableObject<GatewayBindings> {
     const attempt = this.#attempt(run.key);
     if (!attempt) return;
     const provider = new Runpod(this.env.RUNPOD_API_KEY);
-    attempt.nextCheckAt = Date.now() + 30_000;
+    attempt.nextCheckAt =
+      Date.now() + (run.phase === "reserved" ? STARTUP_CHECK_MS : 30_000);
     this.#save(attempt);
     try {
       if (run.resourceId === null) {

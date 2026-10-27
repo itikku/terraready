@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -182,10 +183,67 @@ def test_runtime_image_context_and_workflow_do_not_copy_local_files():
     root = Path(__file__).resolve().parents[2]
     docker = (root / "deploy/Dockerfile").read_text()
     workflow = (root / ".github/workflows/runtime-image.yml").read_text()
-    assert "python:3.12.12-slim-bookworm@sha256:" in docker
+    assert "python:3.12.12-slim-trixie@sha256:" in docker
     assert "runpod/pytorch" not in docker
     assert "scripts/hosted_image.py build" in docker
     assert "bundle_source.py" in workflow and '"$RUNNER_TEMP/terraready-context"' in workflow
     assert "workflow_dispatch:" in workflow and "packages: write" in workflow
     assert "docker login" in workflow and "GITHUB_TOKEN" in workflow
     assert "RUNPOD_API_KEY" not in workflow
+
+
+def test_linkage_allows_only_the_exact_host_driver_gap(image, monkeypatch):
+    def check(args, **kwargs):
+        assert args == ["ldd", "/runtime/libggml-cuda.so"]
+        assert kwargs["capture_output"] and not kwargs["check"]
+        return subprocess.CompletedProcess(
+            args, 0, "libcuda.so.1 => not found\nlibcublas.so.12 => /runtime/libcublas.so.12\n", ""
+        )
+
+    monkeypatch.setattr(image.subprocess, "run", check)
+    image.verify_linkage(Path("/runtime/libggml-cuda.so"), {})
+
+
+@pytest.mark.parametrize(
+    "stdout,stderr",
+    [
+        ("libcublas.so.12 => not found", ""),
+        (
+            "",
+            "/synthetic-private-path/libggml-cuda.so: /lib/libc.so.6: "
+            "version `GLIBC_2.38' not found "
+            "(required by /synthetic-private-path/libggml-cuda.so)",
+        ),
+        ("", "libcuda.so.1: version `GLIBC_2.50' not found (required by libc.so.6)"),
+    ],
+)
+def test_linkage_rejects_missing_libraries_and_versions_with_safe_diagnostics(
+    image, monkeypatch, capsys, stdout, stderr
+):
+    monkeypatch.setattr(
+        image.subprocess,
+        "run",
+        lambda args, **kwargs: subprocess.CompletedProcess(args, 0, stdout, stderr),
+    )
+    with pytest.raises(ValueError, match="incomplete or incompatible"):
+        image.verify_linkage(Path("/runtime/libggml-cuda.so"), {})
+    output = capsys.readouterr().out
+    assert "Packaged linkage failed" in output
+    assert "libcublas.so.12" in output or "GLIBC_2." in output
+    assert "/synthetic-private-path" not in output
+    assert len(output) < 1024
+
+
+def test_linker_failure_without_known_requirement_still_fails_without_raw_output(
+    image, monkeypatch, capsys
+):
+    monkeypatch.setattr(
+        image.subprocess,
+        "run",
+        lambda args, **kwargs: subprocess.CompletedProcess(args, 1, "", "synthetic-private-value"),
+    )
+    with pytest.raises(ValueError, match="incomplete or incompatible"):
+        image.verify_linkage(Path("/runtime/libggml-cuda.so"), {})
+    output = capsys.readouterr().out
+    assert '"exitCode": 1' in output
+    assert "synthetic-private-value" not in output

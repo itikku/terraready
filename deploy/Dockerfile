@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # A fixed Linux CPU Python image plus only cuBLAS/cudart replaces the PyTorch image.
-FROM python:3.12.12-slim-bookworm@sha256:2986c55feb36e6cae00fa1fefb454283e4b33f35e75ff8bdd123b134130be301
+# The pinned llama CUDA binary requires GLIBC_2.38; Trixie supplies glibc 2.41.
+FROM python:3.12.12-slim-trixie@sha256:42f1689d6d6b906c7e829f9d9ec38491550344ac9adc01e464ff9a08df1ffb48
 ARG SOURCE_COMMIT
 LABEL org.opencontainers.image.source="https://github.com/itikku/terraready"
 LABEL org.opencontainers.image.revision=$SOURCE_COMMIT
