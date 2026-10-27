@@ -3,8 +3,10 @@
 The reviewed image builds the app once on a standard GitHub Linux runner. A GPU
 session starts the packaged app and pinned local model without installing tools,
 building the frontend or downloading weights. The image still has to be pulled
-onto its host; a smaller image is not a measured cold-start improvement until a
-comparable GPU run is recorded.
+onto its host. The first uncached L4 start took 175.834 seconds, dominated by that
+pull; services were ready about five seconds after container start. See the
+[measured scope and cleanup](../docs/HOSTED_DEMO.md#packaged-runtime-observation):
+this does not establish a substantial cold-start improvement.
 
 ## Build and release gate
 
@@ -59,7 +61,7 @@ and new Runpod scopes are unnecessary. There is no scheduled build or GPU launch
   The elapsed timer explicitly measures total startup. There are no invented
   percentages or claims about unobserved provider image-pull progress.
 
-`scripts/hosted_boot.py` remains the previously verified source-download baseline
-until the prebuilt artifact has passed its build and deployment gates. Removing
-`IMAGE_REF` is an explicit operator rollback, not an automatic fallback that can
-silently change the runtime.
+The prebuilt artifact is enabled for new sessions after CPU build, anonymous pull
+and one real GPU integration check. `scripts/hosted_boot.py` remains the previously
+verified source-download baseline. Removing `IMAGE_REF` is an explicit operator
+rollback, not an automatic fallback that can silently change the runtime.

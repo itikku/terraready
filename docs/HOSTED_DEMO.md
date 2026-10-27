@@ -6,7 +6,9 @@ The link stays available when the GPU is off. A later visitor can start again wi
 
 Only the owner's [control page](https://terraready-controller.terraready-itikku.workers.dev/owner) requires Cloudflare email-code Access. The ordinary local application retains its single-user behavior.
 
-The current interface leads with **Assess this shift → choose work → review and approve**. Evidence and model traces are secondary views. New sessions use [source2a15cc0](https://github.com/itikku/terraready/commit/2a15cc06cf2b77685c22dbfe5a9be07016f8db6b), verified by [CI40275877244](https://github.com/itikku/terraready/actions/runs/40275877244):350 backend,56 controller and73 browser tests. Existing sessions keep the version they started with. The startup page now shows confirmed allocation/preparation stages, elapsed time and five-second checks; it does not invent a completion percentage.
+The work list sits beside a larger interactive map: **Assess this shift → choose work → review and approve**. Selecting work locates it on the map; **Show the math** exposes checked inputs, limits and margins. Evidence and model traces expand on request. System leads with design, edge assumptions, model choice and evaluations; diagnostics sit in a closed Appendix.
+
+New sessions use [source b4f37d8](https://github.com/itikku/terraready/commit/b4f37d848b5a3e25fee2f9cdbf0a217a91eb47e3), verified by [CI40424598650](https://github.com/itikku/terraready/actions/runs/40424598650): 382 backend, 59 controller and 78 browser tests. Existing sessions keep their starting version. Startup reports total elapsed time and confirmed stages, with five-second readiness checks and no invented percentage.
 
 ## Verified preview
 
@@ -22,6 +24,33 @@ Two real public starts were then exercised on one L4 at a time, on October 25 Pa
 | Start again | A second public Start created `aefzkc71ezif9w`, ready at 04:59:17 UTC. Owner stop again led to controller deletion and settlement at 05:04:27 UTC; independent GET 404 confirmed absence. Both proof GPUs are gone. |
 
 These are integration observations, not a latency distribution, reliability guarantee or real multiuser load test. Earlier operator previews recorded individual 1,111/1,112 ms model loops; the separate [GPU artifact](verification/gpu-agent.json) measures older source. Do not combine them into a benchmark.
+
+## Packaged-runtime observation
+
+[Image build 40424603460](https://github.com/itikku/terraready/actions/runs/40424603460)
+passed on its second attempt. The first publication failed at the registry manifest;
+a fresh workflow-token retry succeeded without broader permissions. Anonymous
+manifest access, Linux amd64 identity and the source revision were verified before
+enabling the immutable image. It contains the locked app, frontend, inference
+runtime and checksum-pinned model; sessions no longer install or build them.
+
+One uncached L4 start in EU-RO-1 on October 26 Pacific / October 27 UTC took
+**175.834 seconds** from controller reservation to ready. About 171 seconds elapsed
+before the container started; the packaged services became ready about five seconds
+later. The 3.43 GB image pull dominated. An earlier source-bootstrap observation
+was 181.611 seconds on a different host. These single observations do **not**
+establish a meaningful cold-start speedup; first starts still take a few minutes.
+
+The production browser then ran genuine Qwen analysis: **4.6 seconds**, three
+successful tool steps, checked alternatives and held work. Selecting an excavator
+package updated the map and replaced the hauler's blocked math with its own checked
+values; no work was approved. System loaded the recorded native/GPU evaluations.
+This is an integration smoke, separate from the historical ten-request benchmark.
+
+After a narrowly scoped operator stop intent for this proof, the controller deleted
+Pod `l52fprlft3ijao` and settled at 00:39:12 UTC. An independent provider GET returned
+404. Its **$0.121990** conservative debit includes cleanup margin and is not a final
+invoice. The unused reservation was released; no proof GPU remains running.
 
 ## Budget controls
 
@@ -75,10 +104,10 @@ Do not add a Static Assets binding without re-verifying owner authentication: Cl
 
 The [prebuilt runtime recipe](../deploy/README.md) moves dependency installation,
 frontend building and pinned model/runtime downloads into a manual GitHub image
-build. It is a separately gated artifact: source tests do not establish image-build
-success, GPU execution or faster startup. After build verification and anonymous
-pull access, a matching source commit and digest can select it for future sessions;
-the current visitor's run is preserved.
+build. The current image passed its CPU build, anonymous pull and one real GPU
+integration check described above. Source tests alone do not establish GPU behavior
+or faster startup. A matching source commit and immutable digest select it for new
+sessions; an existing run keeps its version.
 
 The startup page now names total startup time explicitly. Until the host reports a
 signed startup stage, it describes environment download/boot without claiming the
@@ -87,8 +116,8 @@ workspace checks; no fabricated percentage is shown.
 
 The controller uses its own encrypted `RUNPOD_API_KEY`; it is never sent to the browser or GPU. Runpod's current restricted GraphQL Read/Write option grants broad management access rather than Pod-specific permission, so the controller checks recorded ownership before deletion. The owner-only `/owner/api/setup?diagnostics=1` performs read-only Pods/catalog/billing capability checks without returning credential values or provider bodies.
 
-The GPU shape is one secure L4, 50 GB ephemeral disk, no mounts/SSH/Jupyter and only signed port 8000. The controller pins the container digest, full source commit and archive SHA-256. The current [source-only release](https://github.com/itikku/terraready/releases/tag/preview-source-2a15cc0) contains 107 manifest-checked files; no local environment, credentials or database.
+The GPU shape is one secure L4, 50 GB ephemeral disk, no mounts/SSH/Jupyter and only signed port 8000. The controller pins the container digest, full source commit and archive SHA-256. The current [source-only release](https://github.com/itikku/terraready/releases/tag/preview-source-b4f37d8) contains 111 manifest-checked files; no local environment, credentials or database. The enabled image is `ghcr.io/itikku/terraready-runtime@sha256:a749e7374ac4371b021e85703cbe2143502b4cacb2658b2d0ec0e5385fb56b01`.
 
-`scripts/hosted_boot.py` verifies the manifest and rejects extra environment/storage/build files and symlinks. It discards any provider-injected `RUNPOD_API_KEY` by membership/deletion without reading its value, before child processes. It installs pinned uv 0.13.5 and Node 24.22.1, builds from lockfiles, verifies pinned Qwen/llama.cpp downloads and creates a new loopback inference key. Both live lifecycle proofs booted sourcead8fee4. The subsequent interface-only release has automated browser/build verification; no additional paid GPU proof was created for it. Only the signed API listens publicly; model inference stays on loopback.
+`scripts/hosted_boot.py` verifies the manifest and rejects extra environment/storage/build files and symlinks. It discards any provider-injected `RUNPOD_API_KEY` by membership/deletion without reading its value, before child processes. It installs pinned uv 0.13.5 and Node 24.22.1, builds from lockfiles, verifies pinned Qwen/llama.cpp downloads and creates a new loopback inference key. Both earlier lifecycle proofs booted sourcead8fee4. The packaged runtime uses `scripts/hosted_image.py` to verify packaged source/frontend and start the services; it also discards the injected provider key before child processes. Its later GPU proof is recorded above. Only the signed API listens publicly; model inference stays on loopback.
 
 Remaining work is measurement and hardening: real multiuser inference load, Free-tier capacity, outage recovery exercises and automatic provider-invoice reconciliation. The current Start/use/stop/restart path is deployed and verified; these follow-ups are not prerequisites for trying it.

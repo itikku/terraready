@@ -64,6 +64,8 @@ The hosted demo shares **one GPU**, **$2 per Los Angeles calendar day** and a **
 
 The [Cloudflare controller](apps/controller/README.md) reserves whole-host costs before creation and persists the resource identity and deadlines. A session lasts at most two hours from first use, with a thirty-minute idle cutoff. Setup has a twenty-minute cutoff; cost can end a session sooner. Joining does not renew an allowance. The separately approved $10 prepaid funding limit is distinct from usage.
 
+The [prebuilt runtime](deploy/README.md) moves installs and builds off the rented GPU. Its first uncached start still took **176 seconds**, dominated by pulling the model-bearing image; a substantial cold-start speedup has not been demonstrated.
+
 Durable alarms delete the recorded Pod on stop or expiry and retry failed cleanup. Uncertain creation blocks duplicate starts. Confirmed deletion releases unused reservation after a conservative debit. Delayed provider-bill reconciliation remains manual. These controls are implemented in the application; provider outages can delay cleanup. [Lifecycle evidence and accounting limits](docs/HOSTED_DEMO.md) explain what has been verified.
 
 ## What has been verified
