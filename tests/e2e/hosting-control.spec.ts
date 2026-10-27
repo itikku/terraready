@@ -40,7 +40,7 @@ test("owner sees honest setup and shared budget; polling never opens a run", asy
     page.getByText("Setup is being finished.", { exact: false }),
   ).toBeVisible();
   await expect(
-    page.getByText("$2.00 per Los Angeles", { exact: false }),
+    page.getByText("$5.00 per Los Angeles", { exact: false }),
   ).toBeVisible();
   await expect(
     page.getByText("Available for a new run:", { exact: false }),

@@ -54,7 +54,7 @@ invoice. The unused reservation was released; no proof GPU remains running.
 
 ## Budget controls
 
-The policy is **$2 shared per Los Angeles calendar day**, **$10 project lifetime usage**, and **120 active minutes maximum from the first deliberate workspace open**. Every visitor and restart shares those allowances. The separate $10 prepaid funding limit does not enlarge them.
+The policy is **$5 shared per Los Angeles calendar day**, **$10 project lifetime usage**, and **120 active minutes maximum from the first deliberate workspace open**. Every visitor and restart shares those allowances. The separate $10 prepaid funding limit does not enlarge them.
 
 The [controller](../apps/controller/README.md) atomically reserves whole-host cost before creation. Setup, idle, ephemeral disk and a five-minute cleanup margin count. Setup may take up to twenty minutes. A ready/active run ends after **thirty minutes without meaningful use**, with a warning and an explicit **Keep working** action near expiry. Joining or accepted interaction refreshes idle time, never the two-hour or cost deadline. Status/asset polling does not count as use. Cost can end a session sooner than either time limit.
 

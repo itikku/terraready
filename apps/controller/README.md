@@ -13,7 +13,7 @@ The controller tests use synthetic accounting and Cloudflare's native workerd/SQ
 ## Budget and lifecycle
 
 - One unsettled lease across all visitors. A fresh server-side L4 quote and atomic reservation precede creation. Persisted attempt markers reconcile ambiguous responses; uncertainty blocks duplicate creation.
-- Integer microdollars, upward rounding, $2 per Los Angeles day and $10 lifetime across all runs. Setup, disk, idle and cleanup count; prepaid balance is separate. The original 146,056-microdollar seed is retained with a later billing correction, not reset.
+- Integer microdollars, upward rounding, $5 per Los Angeles day and $10 lifetime across all runs. Setup, disk, idle and cleanup count; prepaid balance is separate. The original 146,056-microdollar seed is retained with a later billing correction, not reset.
 
 - Up to twenty minutes setup, thirty minutes idle, 120 minutes active from first deliberate open and five minutes shutdown margin. Available money can shorten the envelope. Joins/activity refresh only idle; polling does neither. Rental is split at local midnight.
 - Durable alarms check readiness and delete only the recorded resource after ownership verification. Failed cleanup retries with the reservation held. The page distinguishes stop requested from confirmed termination.

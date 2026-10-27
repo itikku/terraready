@@ -45,7 +45,7 @@ test("prior billed usage is conservatively rounded and seeded once", () => {
   const state = initialLedger();
   assert.equal(state.totalSpent, 146_056);
   assert.deepEqual(state.spent, { "2026-10-25": 146_056 });
-  assert.equal(POLICY.daily, 2_000_000);
+  assert.equal(POLICY.daily, 5_000_000);
   assert.equal(POLICY.lifetime, 10_000_000);
 });
 
@@ -143,7 +143,11 @@ test("idle use stops at thirty minutes and activity at the boundary cannot resur
 
 test("daily budget can end use before two hours, retaining five minutes for shutdown", () => {
   const time = Date.parse("2026-10-25T17:00:00Z");
-  const h = harness(time, 800_000);
+  const state = initialLedger();
+  const priorSpent = POLICY.daily - 1_200_000;
+  state.spent[dayAt(time)] = priorSpent;
+  state.totalSpent = amount(state.spent);
+  const h = harness(time, 800_000, state);
   h.send(
     { type: "created", key: "run-one", resourceId: "pod-one" },
     time + minute,
@@ -152,7 +156,7 @@ test("daily budget can end use before two hours, retaining five minutes for shut
   h.send({ type: "open", key: "run-one" }, time + 20 * minute);
   const run = structuredClone(h.read());
   assert.ok(run.costStopAt < run.activeEndAt);
-  assert.ok(amount(run.reserved) + 146_056 <= POLICY.daily);
+  assert.ok(amount(run.reserved) + priorSpent <= POLICY.daily);
   for (let t = time + 29 * minute; t < run.costStopAt; t += 9 * minute)
     h.send({ type: "activity", key: "run-one" }, t);
   h.send({ type: "tick" }, run.costStopAt);
@@ -297,8 +301,8 @@ test("cross-midnight reservation splits elapsed rental cost and charges fixed co
 test("remaining daily allowance before midnight cannot be borrowed from tomorrow", () => {
   const time = Date.parse("2026-10-27T06:50:00Z");
   const state = initialLedger();
-  state.spent["2026-10-26"] = 1_990_000;
-  state.totalSpent += 1_990_000;
+  state.spent["2026-10-26"] = POLICY.daily - 10_000;
+  state.totalSpent += POLICY.daily - 10_000;
   const result = transition(
     state,
     { type: "reserve", key: "run-one", quote: quote(time) },
@@ -306,6 +310,20 @@ test("remaining daily allowance before midnight cannot be borrowed from tomorrow
   );
   assert.equal(result.error, "budget_exhausted");
   assert.equal(result.state.runs.length, 0);
+});
+
+test("the higher daily allowance admits later runs without resetting spend or existing deadlines", () => {
+  const state = initialLedger();
+  state.spent[dayAt(now)] = 2_500_000;
+  state.totalSpent = amount(state.spent);
+  const h = harness(now, 600_000, state);
+  h.start();
+  const before = structuredClone(h.state());
+  assert.ok(amount(h.read().reserved) + 2_500_000 <= POLICY.daily);
+  h.send({ type: "tick" }, now + 4 * minute);
+  assert.deepEqual(h.state().spent, before.spent);
+  assert.equal(h.state().totalSpent, before.totalSpent);
+  assert.deepEqual(h.read(), before.runs[0]);
 });
 
 test("lifetime allowance never resets on a new day", () => {

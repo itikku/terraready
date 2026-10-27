@@ -60,7 +60,7 @@ These are explicit synthetic operating rules, not a validated soil-physics model
 
 ## Budget controls
 
-The hosted demo shares **one GPU**, **$2 per Los Angeles calendar day** and a **$10 lifetime usage ceiling** across every visitor and restart. More visitors mainly add queueing to fixed capacity. GPU time continues to cost money during startup and idle periods.
+The hosted demo shares **one GPU**, **$5 per Los Angeles calendar day** and a **$10 lifetime usage ceiling** across every visitor and restart. More visitors mainly add queueing to fixed capacity. GPU time continues to cost money during startup and idle periods.
 
 The [Cloudflare controller](apps/controller/README.md) reserves whole-host costs before creation and persists the resource identity and deadlines. A session lasts at most two hours from first use, with a thirty-minute idle cutoff. Setup has a twenty-minute cutoff; cost can end a session sooner. Joining does not renew an allowance. The separately approved $10 prepaid funding limit is distinct from usage.
 
