@@ -1,4 +1,11 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -29,12 +36,14 @@ import CameraEvidence from "./CameraEvidence";
 import RecoveryWorkspace from "./RecoveryWorkspace";
 import SessionNotice from "./SessionNotice";
 import MathChecks from "./MathChecks";
+import WorkSuggestion from "./WorkSuggestion";
 import "./demo-flow.css";
 import type {
   Evaluation,
   Machine,
   Readiness,
   RecoveryPlan,
+  RecoveryDraft,
   Site,
   Status,
 } from "./types";
@@ -115,6 +124,11 @@ export default function App() {
   const [routeId, setRouteId] = useState("north-to-east");
   const [selected, setSelected] = useState("north-access");
   const [overview, setOverview] = useState<RecoveryPlan | null>(null);
+  const [draft, setDraft] = useState<RecoveryDraft | null>(null);
+  const draftChanged = useCallback(
+    (value: RecoveryDraft | null) => setDraft(value),
+    [],
+  );
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [pending, setPending] = useState(true);
@@ -237,6 +251,14 @@ export default function App() {
       .sort((a, b) => b.observed_at.localeCompare(a.observed_at)) || [];
   const observation = observations[0];
   const clock = asOf || site?.scenario.as_of || "";
+  const draftCandidate = overview?.candidates.find(
+    (candidate) =>
+      candidate.task_id === taskId &&
+      draft?.candidate_ids.includes(candidate.id),
+  );
+  const draftAssignment = draftCandidate
+    ? `${SHORT[draftCandidate.machine_id]} · ${site?.routes.find((item) => item.id === draftCandidate.route_id)?.name}`
+    : "This item is not selected in your draft. Existing inspection and prerequisite holds remain in force.";
   const fresh = Boolean(
     site &&
     observation &&
@@ -428,6 +450,22 @@ export default function App() {
                         Inspect observations and camera context{" "}
                         <ArrowRight size={14} />
                       </a>
+                      <WorkSuggestion
+                        key={JSON.stringify([
+                          taskId,
+                          machineId,
+                          routeId,
+                          clock,
+                        ])}
+                        task={task}
+                        site={site}
+                        draftAssignment={draftAssignment}
+                        draft={
+                          draft && Date.parse(draft.as_of) === Date.parse(clock)
+                            ? draft
+                            : null
+                        }
+                      />
                     </div>
                     <p className="shift-map-credit">
                       USGS / USDA NAIP · May 2022 · Synthetic operating overlays
@@ -440,6 +478,7 @@ export default function App() {
                   key={`recovery-${asOf ?? site.scenario.as_of}`}
                   site={site}
                   asOf={asOf}
+                  onDraftChange={draftChanged}
                   inspect={(id) => {
                     chooseZone(id);
                     inspecting.current = true;

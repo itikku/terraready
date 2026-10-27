@@ -13,6 +13,7 @@ dependencies = [
   "pydantic>=2.10,<3",
   "pyarrow>=20,<27",
   "uvicorn>=0.34,<1",
+  "ortools==9.15.6755",
 ]
 
 [project.optional-dependencies]

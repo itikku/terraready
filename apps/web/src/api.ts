@@ -8,6 +8,7 @@ import type {
   ShiftPlan,
   Site,
   SystemEvidence,
+  WorkSuggestionResponse,
 } from "./types";
 
 async function json<T>(
@@ -15,7 +16,13 @@ async function json<T>(
   signal: AbortSignal,
   body?: object,
   context:
-    "site" | "plan" | "approval" | "assist" | "system" | "selection" = "site",
+    | "site"
+    | "plan"
+    | "approval"
+    | "assist"
+    | "system"
+    | "selection"
+    | "suggestion" = "site",
 ): Promise<T> {
   const response = await fetch(url, {
     signal,
@@ -28,6 +35,16 @@ async function json<T>(
       : {}),
   });
   if (!response.ok) {
+    if (context === "suggestion")
+      throw new Error(
+        response.status === 409
+          ? "The shift or your draft changed. Check this suggestion again against the current work."
+          : response.status === 429
+            ? "The local model is busy. Try again when the current analysis finishes. Your work choices are unchanged."
+            : response.status === 422
+              ? "This suggestion or draft is outside the supported planning inputs. Check the request and current assignments."
+              : "The suggestion could not be checked. Try again; your work choices are unchanged.",
+      );
     if (context === "selection" && response.status === 422)
       throw new Error(
         "These choices exceed a resource limit or include work that cannot start. Adjust the assignments and check again.",
@@ -168,6 +185,23 @@ export const evaluateRecovery = (
 
 export const getSystemEvidence = (signal: AbortSignal) =>
   json<SystemEvidence>("/api/system", signal, undefined, "system");
+
+export const checkWorkSuggestion = (
+  body: {
+    task_id: string;
+    suggestion: string;
+    source_plan_id: string;
+    current_candidate_ids: string[];
+    as_of: string;
+  },
+  signal: AbortSignal,
+) =>
+  json<WorkSuggestionResponse>(
+    "/api/scenarios/post-rain/suggestions",
+    signal,
+    body,
+    "suggestion",
+  );
 
 export const getCamera = (zoneId: string, signal: AbortSignal) =>
   json<CameraView>(

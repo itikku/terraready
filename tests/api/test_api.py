@@ -107,7 +107,9 @@ def test_only_named_post_endpoints_exist_and_there_is_no_seed_endpoint(client):
     paths = client.get("/openapi.json").json()["paths"]
     for path, methods in paths.items():
         assert set(methods) <= (
-            {"post"} if path.endswith(("/evaluate", "/approvals", "/assist")) else {"get"}
+            {"post"}
+            if path.endswith(("/evaluate", "/approvals", "/assist", "/suggestions"))
+            else {"get"}
         )
 
 

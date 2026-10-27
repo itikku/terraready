@@ -73,6 +73,19 @@ def origin(tmp_path, docket):
     return HostedOrigin(tmp_path / "hosted", SECRET, docket, UnavailableModel(), clock=lambda: NOW)
 
 
+def test_suggestions_share_existing_visitor_model_admission(origin):
+    with TestClient(origin) as client, origin.queue.admit(ALICE):
+        result = request(
+            client,
+            "POST",
+            BASE + "/suggestions",
+            payload={"task_id": "east-haul", "suggestion": "Use two trucks."},
+        )
+    assert result.status_code == 429
+    assert result.headers["retry-after"] == "10"
+    assert result.headers["cache-control"] == "no-store"
+
+
 @pytest.mark.parametrize("target", ["/health", "/ready", "/api/system", BASE, "/docs"])
 def test_direct_origin_is_closed_without_creating_a_workspace(origin, target):
     with TestClient(origin) as client:

@@ -69,6 +69,33 @@ test("system starts with design, model rationale and evaluations; diagnostics st
   ).toBeVisible();
   await expect(page.getByText(/smaller Qwen3-1.7B candidate/)).toBeVisible();
   await expect(
+    page.getByRole("heading", { name: "Capability before parameter count" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Memory and latency are separate gates",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/historical measurements predate the new solver/),
+  ).toBeVisible();
+  const alternatives = page.locator("details").filter({
+    has: page.getByText("Other documented candidates · not tested here", {
+      exact: true,
+    }),
+  });
+  await expect(alternatives).toHaveJSProperty("open", false);
+  await alternatives
+    .getByText("Other documented candidates · not tested here", { exact: true })
+    .click();
+  await expect(alternatives.getByRole("link")).toHaveCount(3);
+  await expect(alternatives).toContainText(
+    "no local performance ranking is claimed",
+  );
+  await expect(
+    page.getByText(/26\/27 real Qwen cases met exact expected behavior/),
+  ).toBeVisible();
+  await expect(
     page.getByText("3/3 native smoke cases passed", { exact: true }),
   ).toBeVisible();
   await expect(

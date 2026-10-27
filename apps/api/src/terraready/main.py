@@ -32,8 +32,11 @@ from terraready.models import (
 from terraready.planner import build_plan, make_approval
 from terraready.recovery import build_recovery, make_recovery_approval
 from terraready.seed import database_path
+from terraready.solver import StaleSuggestion
+from terraready.solver_models import WorkSuggestionRequest, WorkSuggestionResponse
 from terraready.storage import ApprovalUnavailable, AssistUnavailable, DataUnavailable, SiteStore
 from terraready.system_evidence import RuntimeStatus, SystemEvidence, load_evidence
+from terraready.work_suggestions import suggest_work
 
 ScenarioId = Annotated[str, ApiPath(pattern=r"^[a-z][a-z0-9-]{0,63}$")]
 
@@ -48,6 +51,10 @@ def create_app(
     verification_dir: Path | None = None,
     camera_provider: CameraProvider | None = None,
     assist_runner: Callable[[SiteSnapshot, AssistRequest, ModelClient], AssistRun] | None = None,
+    suggestion_runner: Callable[
+        [SiteSnapshot, WorkSuggestionRequest, ModelClient], WorkSuggestionResponse
+    ]
+    | None = None,
 ) -> FastAPI:
     api = FastAPI(
         title="TerraReady",
@@ -58,6 +65,7 @@ def create_app(
     path = db_path or database_path()
     inference = model_client or LocalModel(Path(".data/runtime/inference.key"))
     run_assistance = assist_runner or assist
+    run_suggestion = suggestion_runner or suggest_work
 
     @api.get("/api/system", response_model=SystemEvidence)
     def system_evidence() -> SystemEvidence:
@@ -236,6 +244,25 @@ def create_app(
         except AssistUnavailable:
             # Analysis is still usable, but never pretend its audit trail is durable.
             return run
+
+    @api.post("/api/scenarios/{scenario_id}/suggestions", response_model=WorkSuggestionResponse)
+    def work_suggestion(
+        scenario_id: ScenarioId, body: WorkSuggestionRequest, response: Response
+    ) -> WorkSuggestionResponse:
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return run_suggestion(scenario_snapshot(scenario_id), body, inference)
+        except StaleSuggestion as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except UnknownEntity as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except InvalidEvaluation as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except (ValueError, RuntimeError):
+            raise HTTPException(
+                status_code=503,
+                detail="Suggestion analysis is unavailable. Your work choices have not changed.",
+            ) from None
 
     return api
 

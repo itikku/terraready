@@ -65,6 +65,34 @@ def test_hosted_sampling_omits_fixed_seed_without_changing_model_bounds(tmp_path
     assert body["stream"] is False
 
 
+@pytest.mark.parametrize("seed", [42, None])
+def test_typed_suggestion_uses_greedy_extraction_with_a_finite_output_budget(
+    tmp_path, monkeypatch, seed
+):
+    client, connection = setup(tmp_path, monkeypatch, b'{"choices": []}')
+    client = LocalModel(client.key_file, seed=seed)
+    tool = {"type": "function", "function": {"name": "interpret_suggestion"}}
+    client.complete([], [tool], 3)
+    body = connection.sent[2]
+    assert body["temperature"] == 0
+    assert body["top_p"] == 1
+    assert body["presence_penalty"] == 0
+    assert body["max_tokens"] == 192
+    assert body["tool_choice"] == "required"
+    assert body["parallel_tool_calls"] is False
+    assert body["stream"] is False
+    assert ("seed" in body) is (seed is not None)
+
+
+def test_other_tools_keep_the_existing_assessment_sampling(tmp_path, monkeypatch):
+    client, connection = setup(tmp_path, monkeypatch, b'{"choices": []}')
+    client.complete([], [{"type": "function", "function": {"name": "get_shift"}}], 3)
+    body = connection.sent[2]
+    assert body["temperature"] == 0.7
+    assert body["presence_penalty"] == 1.5
+    assert body["max_tokens"] == 192
+
+
 @pytest.mark.parametrize(
     "raw,status,error,reason",
     [

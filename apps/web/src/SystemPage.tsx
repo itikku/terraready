@@ -18,22 +18,22 @@ const flow = [
   [
     Database,
     "Site evidence",
-    "Timestamped observations, equipment limits and unfinished work in local LanceDB.",
+    "Local observations, equipment limits, unfinished work and explicit synthetic production assumptions.",
   ],
   [
     Cpu,
     "Local model",
-    "Qwen selects relevant records and proposes options through read-only tools.",
+    "Qwen reads a suggestion on one work item and translates it into bounded planning inputs.",
   ],
   [
     ShieldCheck,
-    "Deterministic checks",
-    "Python checks ground limits, evidence age, prerequisites and resource hours.",
+    "Checks and optimization",
+    "Ground holds remain hard gates. CPU CP-SAT schedules shared resources; separate code verifies the result.",
   ],
   [
     Fingerprint,
     "Your decision",
-    "You choose the work. Approval checks the exact selection against the current snapshot.",
+    "What-ifs are read-only. You choose the actual work; approval rechecks that exact selection.",
   ],
   [
     Users,
@@ -92,7 +92,9 @@ export default function SystemPage() {
           <h1 id="system-title">Local judgment. Reliable calculations.</h1>
           <p>
             A small model helps a superintendent find work that can continue
-            after rain. Code checks the constraints; a person approves the plan.
+            after rain. The model interprets requests; code checks conditions
+            and solves the schedule. A person chooses and approves the actual
+            work.
           </p>
         </section>
         <section
@@ -125,9 +127,12 @@ export default function SystemPage() {
               <h3>What we assume about the work</h3>
               <p>
                 One superintendent replans a single post-rain shift. Equipment
-                and operator are one paired resource; task hours are planned
-                serial effort, not a time-optimized schedule. Missing or stale
-                evidence holds work for inspection. Approval never completes a
+                and operator are one paired resource. The baseline checks
+                planned effort against capacity. Per-item what-ifs additionally
+                schedule loading, travel, dumping and other jobs on shared
+                resources. Production rates are synthetic; additional
+                truck/operator pairs are hypothetical. Missing or stale evidence
+                holds work for inspection. Approval never completes a
                 prerequisite or dispatches machinery.
               </p>
             </div>
@@ -150,23 +155,36 @@ export default function SystemPage() {
           <span className="eyebrow">02 · MODEL & HARDWARE</span>
           <h2 id="model-heading">Qwen3-4B, kept deliberately small</h2>
           <p className="system-lead">
-            Q4_K_M quantization keeps the weights near 2.50 GB. The Apache-2.0
-            model runs through llama.cpp with a 4,096-token context and one
-            inference slot. It finds relevant evidence and options; it cannot
-            change the rules, approve work or call a cloud fallback.
+            <a href="https://huggingface.co/Qwen/Qwen3-4B">Qwen3-4B</a> at
+            Q4_K_M uses 2.497 GB of weights, a 4,096-token context and one
+            inference slot. This application uses text only: the model selects
+            evidence and translates suggestions into typed constraints; images
+            do not become measurements. The CPU solver runs beside the model,
+            outside the neural network. Rules and approval stay in application
+            code.
           </p>
           <div className="system-design-notes">
             <div>
-              <h3>Why this model</h3>
+              <h3>Capability before parameter count</h3>
               <p>
-                The smaller Qwen3-1.7B candidate made tool calls but failed our
-                relevance and evidence-reference checks. The 4B model passed the
-                reroute, redeploy and blocked-work cases with the same criteria.
-                This was a bounded selection, not a broad model benchmark.
+                The smaller Qwen3-1.7B candidate at Q8 made tool calls but
+                failed relevance and evidence-reference checks. The 4B model at
+                Q4 passed those earlier reroute, redeploy and blocked-work
+                cases. Correct record references, schema-valid tool calls and
+                grounded interpretation matter more here than fluent prose.
+                Different sizes and quantizations make this a bounded project
+                comparison, not a controlled model benchmark. New per-item
+                interpretation has its own readiness evaluations.
               </p>
             </div>
             <div>
-              <h3>What hardware we have exercised</h3>
+              <h3>Memory and latency are separate gates</h3>
+              <p>
+                Weight size is not total memory: runtime buffers, the context
+                cache, application and solver also need room. Longer context or
+                more simultaneous requests raise that cost. We measure latency
+                and peak memory on the target hardware.
+              </p>
               <p>
                 {proof
                   ? `${proof.hardware.host}${proof.hardware.host_memory_bytes ? ` with ${proof.hardware.host_memory_bytes / 2 ** 30} GiB host RAM` : ""} in the native test. `
@@ -174,12 +192,49 @@ export default function SystemPage() {
                 {gpu
                   ? `One ${gpu.gpu_name} sampled ${gpu.sampled_peak_gpu_mib.toLocaleString("en-US")} MiB GPU peak and ${(gpu.sampled_peak_container_memory_bytes / 2 ** 30).toFixed(2)} GiB container peak. `
                   : "No GPU footprint is inferred without its test artifact. "}
-                These observations do not establish minimum hardware
-                requirements. CPU-only 4B inference hit the 120-second deadline
-                on the M1; Jetson and power efficiency have not been tested.
+                These historical measurements predate the new solver and do not
+                establish minimum requirements. CPU-only 4B inference hit a
+                120-second deadline on the M1; Jetson and power efficiency are
+                untested.
               </p>
             </div>
           </div>
+          <p>
+            llama.cpp provides a native CPU/GPU path with preloaded, offline
+            operation. Pinned model, runtime and source hashes make the tested
+            configuration reproducible. The Qwen weights use Apache-2.0; there
+            is no cloud inference fallback.
+          </p>
+          <details>
+            <summary>Other documented candidates · not tested here</summary>
+            <ul>
+              <li>
+                <a href="https://huggingface.co/microsoft/Phi-4-mini-instruct">
+                  Microsoft Phi-4-mini-instruct
+                </a>
+                : 3.8B, MIT license, documented function calling.
+              </li>
+              <li>
+                <a href="https://huggingface.co/google/gemma-3-4b-it">
+                  Google Gemma 3 4B
+                </a>
+                : 4B, multimodal, Gemma license. This application's current flow
+                does not require vision inference.
+              </li>
+              <li>
+                <a href="https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct">
+                  Meta Llama 3.2 3B Instruct
+                </a>
+                : 3B, text, custom Llama license.
+              </li>
+            </ul>
+            <p>
+              These are candidates for the same grounded task evaluations,
+              portability checks, latency and memory measurements. Parameter
+              count alone establishes neither quality nor hardware fit; no local
+              performance ranking is claimed.
+            </p>
+          </details>
         </section>
         <section
           aria-labelledby="readiness-heading"
@@ -217,6 +272,21 @@ export default function SystemPage() {
                     prerequisites, approval fingerprints, browser interactions
                     and failure states. Browser inference uses a labeled
                     protocol stub.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Per-item suggestions and optimization</th>
+                  <td>
+                    <a href="https://github.com/itikku/terraready/blob/main/docs/EVALS.md">
+                      Suggestion and solver evaluation record
+                    </a>
+                  </td>
+                  <td>
+                    26/27 real Qwen cases met exact expected behavior. One
+                    ground-override request asked for clarification and produced
+                    no plan. This curated, prompt-tuned regression set does not
+                    establish production reliability. Separate optimizer tests
+                    check schedules independently.
                   </td>
                 </tr>
                 <tr>

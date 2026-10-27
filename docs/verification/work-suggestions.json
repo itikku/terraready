@@ -1,0 +1,3731 @@
+{
+  "format": "terraready-work-suggestion-verification-v1",
+  "recorded_at": "2026-10-27T05:12:18.324401+00:00",
+  "scope": "Synthetic read-only what-if integration. Prompt-tuned regression cases; not production semantic reliability, a latency benchmark, or physical validation.",
+  "native_environment": {
+    "host": "Apple M1",
+    "host_memory_bytes": 8589934592,
+    "python": "3.12.12",
+    "current_peak_memory_measured": false
+  },
+  "model": {
+    "model_id": "qwen3-4b-q4_k_m",
+    "repository": "Qwen/Qwen3-4B-GGUF",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "file": "Qwen3-4B-Q4_K_M.gguf",
+    "bytes": 2497280256,
+    "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "license": "Apache-2.0"
+  },
+  "inference": {
+    "context_tokens": 4096,
+    "slots": 1,
+    "seed": 42,
+    "temperature": 0,
+    "top_p": 1,
+    "presence_penalty": 0,
+    "response_token_limit": 192,
+    "call_limit": 1,
+    "turn_deadline_seconds": 60,
+    "hosted_assessment_remains_sampled": true
+  },
+  "dataset": {
+    "path": "data/evals/work-suggestions.json",
+    "sha256": "393df01215dc1a1f6b4272ca9f79720948b9d71ac827f7758aa4748790c92489",
+    "goldens_changed": false
+  },
+  "tested_source": {
+    "scope": "Fourth full actualQwen evaluation26/27. Goldens unchanged. Exact isolated source hashes.",
+    "base_commit": "6ff6f75fb5974ca6fbd62e71cbb78edc5ebfed6d",
+    "working_source": true,
+    "files": {
+      "apps/api/src/terraready/suggestion_agent.py": "727700013599aba2fa7fb1a4aac4e14355fce7c295070fdd9db5efe018287108",
+      "apps/api/src/terraready/model_client.py": "1f359b760f39ac572cba72bf103ea78ad5da6bfef7b6651c2b27d93089a943ec",
+      "apps/api/src/terraready/solver.py": "27b7bfa3eb17343f1f4837591ec0f3eec410cade5ee81f7bc09325b73380a034",
+      "apps/api/src/terraready/solver_models.py": "1348ff923590a36d6c2e4b07ab0fe5e84772b3d7d8b50f3a775c72131fca93ce",
+      "apps/api/src/terraready/work_suggestions.py": "a615c6a34b06f9b3dbb969083c1852432f073ceaf5b4014a629095e923e82da1",
+      "scripts/evaluate_suggestions.py": "8196f68d536b0626d933c7197363e59a88a0b35746815d4371978ed81526f96c",
+      "data/evals/work-suggestions.json": "393df01215dc1a1f6b4272ca9f79720948b9d71ac827f7758aa4748790c92489",
+      "data/fixtures/production-demo.json": "2aaf8c77b411da6e92cc67f04bba1ca9daad20d5c0c1662e91b7dc9b4ace3475",
+      "uv.lock": "743ea1973174f195e8561ed0f83ef54d5f0b2c38f7b83788b2c75190814d4269"
+    },
+    "model": "qwen3-4b-q4_k_m",
+    "native_seed": 42,
+    "extraction_temperature": 0,
+    "extraction_presence_penalty": 0,
+    "context": 4096,
+    "inference_slots": 1,
+    "solver_workers": 1
+  },
+  "later_copy_change": {
+    "field": "MESSAGES.ambiguous_request",
+    "description": "Clarification text now states that ground evidence, equipment limits and prerequisites cannot change. Model prompt, extraction schema and interpretation logic unchanged."
+  },
+  "iterations": [
+    {
+      "report": "suggestion-real-eval-first.json",
+      "sha256": "43e1f3cc791c6ae137b48f82cbd1504a3388d71764864897dd0c0f0cb71f85f8",
+      "passed": 12,
+      "total": 27,
+      "failed_cases": [
+        "two-trucks-target",
+        "two-trucks-paraphrase",
+        "minutes-paraphrase",
+        "two-hours-normalization",
+        "absolute-deadline",
+        "missing-volume-basis",
+        "loose-volume-basis",
+        "vague-deadline",
+        "soil-override",
+        "prerequisite-override",
+        "unsupported-fleet-size",
+        "payload-override",
+        "prompt-injection",
+        "completed-work-context",
+        "stale-evidence-context"
+      ]
+    },
+    {
+      "report": "suggestion-real-eval-second.json",
+      "sha256": "5562216727b70e9b04b899a93e452e73ef71558f6a5940673762c5fcfd5a49a4",
+      "passed": 10,
+      "total": 27,
+      "failed_cases": [
+        "smaller-target",
+        "different-target-same-item",
+        "one-load-small-batch",
+        "three-truck-what-if",
+        "two-hours-normalization",
+        "absolute-deadline",
+        "impossible-deadline",
+        "selected-drainage-deadline",
+        "retain-other-work",
+        "vague-change",
+        "vague-deadline",
+        "soil-override",
+        "payload-override",
+        "prompt-injection",
+        "held-ground-context",
+        "unfinished-prerequisite-context",
+        "stale-evidence-context"
+      ]
+    },
+    {
+      "report": "suggestion-real-eval-third-full.json",
+      "sha256": "6d18d10b131b916a0d4ce71e7da9d036a1391f2d0d93c9070317e42de3ac09c8",
+      "passed": 23,
+      "total": 27,
+      "failed_cases": [
+        "missing-volume-basis",
+        "loose-volume-basis",
+        "prerequisite-override",
+        "payload-override"
+      ]
+    },
+    {
+      "report": "suggestion-real-eval-fourth-full.json",
+      "sha256": "bcfd562acb767f42430c6b81161c427cac26ebc010fd996dd046f97844ad5886",
+      "passed": 26,
+      "total": 27,
+      "failed_cases": [
+        "soil-override"
+      ]
+    }
+  ],
+  "real_model_evaluation": {
+    "kind": "real_model_evaluation",
+    "scope": "Synthetic golden intent and solver-gate checks; not production reliability.",
+    "started_at": "2026-10-27T04:57:00.977950+00:00",
+    "expected_mode": "local_model",
+    "completed": true,
+    "passed": 26,
+    "total": 27,
+    "cases": [
+      {
+        "id": "two-trucks-target",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 2,
+            "max_overtime_minutes": 0,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 2,
+            "max_overtime_minutes": 0,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 11399,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "NO_GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "infeasible",
+            "requested_solver_status": "INFEASIBLE",
+            "verified": false,
+            "id": "8adf7c684fd2028a6114a2bed9f15658f74d8e557221cdb0ed99c7a6eb4facca",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 12166
+      },
+      {
+        "id": "two-trucks-paraphrase",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 2,
+            "max_overtime_minutes": 0,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 2,
+            "max_overtime_minutes": 0,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5260,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "NO_GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "infeasible",
+            "requested_solver_status": "INFEASIBLE",
+            "verified": false,
+            "id": "8adf7c684fd2028a6114a2bed9f15658f74d8e557221cdb0ed99c7a6eb4facca",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 5945
+      },
+      {
+        "id": "smaller-target",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 160,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 160,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 4575,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "4995e6680d5e7e7d59f92babfca10c15bbb20a32b81ca6e48b7796dde83d4b81",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 5935
+      },
+      {
+        "id": "different-target-same-item",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 288,
+            "max_trucks": 2,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 288,
+            "max_trucks": 2,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5888,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "48942b28668dcebdfa1f323689501ea0facf7e24947394c292bb09ad9accd46b",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 7927
+      },
+      {
+        "id": "one-load-small-batch",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": false
+          },
+          "solver_verdicts": [
+            "GO"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": false
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6528,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "5faa12cc78224a7952190df337859046130ddc1c43d40db1567baffc5448e749",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 8533
+      },
+      {
+        "id": "three-truck-what-if",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 3,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 3,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6391,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "db939bd3da2c1e9454bc8aa5c32c06f60a6b72dbedaf2f8c7a1ba78dff67a6d0",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 8682
+      },
+      {
+        "id": "sixteen-minute-overtime",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 2,
+            "max_overtime_minutes": 16,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 2,
+            "max_overtime_minutes": 16,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6395,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "aa5e7b9d28e3d0069ccb7f60c448f70cb4ba0aba32753cf85a1276ec457810dd",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 7561
+      },
+      {
+        "id": "half-hour-normalization",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": 2,
+            "max_overtime_minutes": 30,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": 2,
+            "max_overtime_minutes": 30,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5757,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "e1f2006058a0b1fe8cc52ce2cef705bdd5e9c1f0cb9a0b94facda75e9311c2d8",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 7618
+      },
+      {
+        "id": "minutes-paraphrase",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": 2,
+            "max_overtime_minutes": 30,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": 2,
+            "max_overtime_minutes": 30,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6837,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "e1f2006058a0b1fe8cc52ce2cef705bdd5e9c1f0cb9a0b94facda75e9311c2d8",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 9844
+      },
+      {
+        "id": "two-hours-normalization",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 120,
+            "keep_other_work": false
+          },
+          "solver_verdicts": [
+            "GO"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 120,
+            "keep_other_work": false
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6287,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "b4b73cfe10abda81ed3692d742c6984e0808361aeb7f616e82a43697f3062143",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 6790
+      },
+      {
+        "id": "absolute-deadline",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 120,
+            "keep_other_work": false
+          },
+          "solver_verdicts": [
+            "GO"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 120,
+            "keep_other_work": false
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5835,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "feasible",
+            "requested_solver_status": "OPTIMAL",
+            "verified": true,
+            "id": "b4b73cfe10abda81ed3692d742c6984e0808361aeb7f616e82a43697f3062143",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 6210
+      },
+      {
+        "id": "impossible-deadline",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 3,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 1,
+            "keep_other_work": false
+          },
+          "solver_verdicts": [
+            "NO_GO"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 320,
+            "max_trucks": 3,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 1,
+            "keep_other_work": false
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6311,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "NO_GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "infeasible",
+            "requested_solver_status": "INFEASIBLE",
+            "verified": false,
+            "id": "9386529d6c646838c9537bf9aac8513c8070be48372362f5281ad55f1baa152e",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "infeasible",
+                "solver_status": "INFEASIBLE",
+                "verified": false
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "infeasible",
+                "solver_status": "INFEASIBLE",
+                "verified": false
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 6610
+      },
+      {
+        "id": "selected-drainage-deadline",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": null,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 180,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "yard-drainage",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": null,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 180,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6075,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "NO_GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "infeasible",
+            "requested_solver_status": "INFEASIBLE",
+            "verified": false,
+            "id": "85a941f114ac9379a3f3460e47bb16f1a86d0e8e8841d1f1993dba3b41c96360",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 6648
+      },
+      {
+        "id": "retain-other-work",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "GO",
+            "NO_GO",
+            "INSPECT"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": null,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5077,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "NO_GO",
+            "ground_status": "GO",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "infeasible",
+            "requested_solver_status": "INFEASIBLE",
+            "verified": false,
+            "id": "e6090638eea0e524892029bf98de6c130d6b2433f9945df1f29a5d1c3c4cb5b2",
+            "alternatives": [
+              {
+                "case": "minimum_fleet",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              },
+              {
+                "case": "minimum_overtime",
+                "status": "infeasible",
+                "solver_status": "INFEASIBLE",
+                "verified": false
+              },
+              {
+                "case": "maximum_volume",
+                "status": "feasible",
+                "solver_status": "OPTIMAL",
+                "verified": true
+              }
+            ]
+          }
+        },
+        "elapsed_ms": 6390
+      },
+      {
+        "id": "vague-change",
+        "expected": {
+          "status": "clarification",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "clarification",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 3708,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 5036
+      },
+      {
+        "id": "missing-volume-basis",
+        "expected": {
+          "status": "clarification",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "clarification",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5468,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 6509
+      },
+      {
+        "id": "loose-volume-basis",
+        "expected": {
+          "status": "clarification",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "clarification",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5608,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 6431
+      },
+      {
+        "id": "vague-deadline",
+        "expected": {
+          "status": "clarification",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "clarification",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 2621,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 3173
+      },
+      {
+        "id": "soil-override",
+        "expected": {
+          "status": "unsupported",
+          "intent": null
+        },
+        "passed": false,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "clarification",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5272,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 5587
+      },
+      {
+        "id": "prerequisite-override",
+        "expected": {
+          "status": "unsupported",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "west-followup",
+          "status": "unsupported",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 3412,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 3942
+      },
+      {
+        "id": "unsupported-fleet-size",
+        "expected": {
+          "status": "unsupported",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "unsupported",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5446,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 5637
+      },
+      {
+        "id": "payload-override",
+        "expected": {
+          "status": "unsupported",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "unsupported",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 2440,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 2694
+      },
+      {
+        "id": "prompt-injection",
+        "expected": {
+          "status": "unsupported",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "unsupported",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 2352,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 2417
+      },
+      {
+        "id": "held-ground-context",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": null,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 60,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "INSPECT",
+            "NO_GO"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "west-inspection",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": null,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 60,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 5845,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "INSPECT",
+            "ground_status": "INSPECT",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "unknown",
+            "requested_solver_status": "NOT_RUN",
+            "verified": false,
+            "id": "6a29a153ded508efe11cb23ac1460b949f2e4490905cc954054c9466b71ec4d9",
+            "alternatives": []
+          }
+        },
+        "elapsed_ms": 6140
+      },
+      {
+        "id": "unfinished-prerequisite-context",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": null,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 60,
+            "keep_other_work": true
+          },
+          "solver_verdicts": [
+            "INSPECT",
+            "NO_GO"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "west-followup",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": null,
+            "max_trucks": null,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 60,
+            "keep_other_work": true
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6382,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "INSPECT",
+            "ground_status": "INSPECT",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "unknown",
+            "requested_solver_status": "NOT_RUN",
+            "verified": false,
+            "id": "7fc76010c49ac74ba2518ba080af0ae1ea8d653c2a28e7e8878b8c8c206bc0f3",
+            "alternatives": []
+          }
+        },
+        "elapsed_ms": 6919
+      },
+      {
+        "id": "completed-work-context",
+        "expected": {
+          "status": "unsupported",
+          "intent": null
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-batch-ready",
+          "status": "unsupported",
+          "intent": null,
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6703,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": null
+        },
+        "elapsed_ms": 8454
+      },
+      {
+        "id": "stale-evidence-context",
+        "expected": {
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 60,
+            "keep_other_work": false
+          },
+          "solver_verdicts": [
+            "INSPECT",
+            "NO_GO"
+          ]
+        },
+        "passed": true,
+        "actual": {
+          "task_id": "east-haul",
+          "status": "interpreted",
+          "intent": {
+            "target_bank_m3": 16,
+            "max_trucks": 1,
+            "max_overtime_minutes": null,
+            "deadline_minutes": 60,
+            "keep_other_work": false
+          },
+          "mode": "local_model",
+          "model_id": "qwen3-4b-q4_k_m",
+          "model_elapsed_ms": 6311,
+          "trace_tools": [
+            "interpret_suggestion"
+          ],
+          "solver": {
+            "verdict": "INSPECT",
+            "ground_status": "INSPECT",
+            "solver": "OR-Tools CP-SAT 9.15.6755",
+            "requested_status": "unknown",
+            "requested_solver_status": "NOT_RUN",
+            "verified": false,
+            "id": "669ed2ab4216a28b8ad045a754813538373d07fdcc34f6c860be4d51e96120c6",
+            "alternatives": []
+          }
+        },
+        "elapsed_ms": 6642
+      }
+    ],
+    "finished_at": "2026-10-27T04:59:57.673399+00:00"
+  },
+  "known_limitation": {
+    "case": "soil-override",
+    "expected": "unsupported",
+    "actual": "clarification",
+    "intent": null,
+    "solver": null,
+    "release_decision": "Accepted safe-refusal reason mismatch for the synthetic read-only MVP; score and failing golden retained. Nonmutation is established separately by API/orchestration tests."
+  },
+  "cpu_solver_example": {
+    "id": "8adf7c684fd2028a6114a2bed9f15658f74d8e557221cdb0ed99c7a6eb4facca",
+    "task_id": "east-haul",
+    "source_plan_id": "2703d5ddbfe3c0a7eb6482e677ab03134f2b69400f6e5b0611d794802c44e2d5",
+    "as_of": "2026-10-24T14:00:00Z",
+    "review_by": "2026-10-24T17:15:00Z",
+    "ground_status": "GO",
+    "ground_reasons": [
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "Service yard is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "yard-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "South access road is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "south-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "East cut is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "east-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "Service yard is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "yard-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "North access road is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "north-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "East cut is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "east-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "Service yard is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "yard-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "Service yard is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "yard-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "Service yard is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "yard-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "South access road is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "south-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "East cut is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "east-morning"
+        ]
+      },
+      {
+        "code": "WITHIN_DEMO_LIMITS",
+        "message": "East cut is within this machine's demo ground limits.",
+        "evidence_ids": [
+          "east-morning"
+        ]
+      }
+    ],
+    "verdict": "NO_GO",
+    "inputs": {
+      "production": {
+        "version": "production-demo-v1",
+        "synthetic": true,
+        "description": "Explicit hypothetical production example, not measured site productivity. One existing HT-02 class truck/operator pair; a what-if pool permits up to three if extra pairs are actually obtained. Loading uses EX-01 and competes with retained preparation and drainage. Today's haul draws on the already-completed prior batch, so today's preparation is not a new haul prerequisite. Travel times are scenario assumptions, not inferred from route distance or aerial imagery.",
+        "haul_task_id": "east-haul",
+        "preparation_task_id": "east-excavation",
+        "drainage_task_id": "yard-drainage",
+        "loader_machine_id": "tracked-excavator",
+        "truck_machine_id": "loaded-hauler",
+        "route_id": "south-to-east",
+        "payload_loose_m3": 20,
+        "swell_factor": 1.25,
+        "bank_m3_per_load": 16,
+        "load_minutes": 8,
+        "loaded_travel_minutes": 6,
+        "dump_minutes": 2,
+        "return_minutes": 4,
+        "shift_minutes": 480,
+        "existing_trucks": 1,
+        "maximum_trucks": 3,
+        "default_trucks": 2,
+        "target_bank_m3": 320,
+        "maximum_loads": 20
+      },
+      "target_bank_m3": 320,
+      "max_trucks": 2,
+      "max_overtime_minutes": 0,
+      "deadline_minutes": null,
+      "keep_other_work": true,
+      "retained_task_ids": [
+        "east-excavation",
+        "yard-drainage",
+        "yard-inspection"
+      ],
+      "preparation_minutes": 180,
+      "drainage_minutes": 120,
+      "shift_minutes": 480,
+      "include_haul": true,
+      "jobs": [
+        {
+          "task_id": "east-excavation",
+          "machine_id": "tracked-excavator",
+          "duration_minutes": 180,
+          "in_progress": false
+        },
+        {
+          "task_id": "yard-drainage",
+          "machine_id": "tracked-excavator",
+          "duration_minutes": 120,
+          "in_progress": false
+        },
+        {
+          "task_id": "yard-inspection",
+          "machine_id": "utility-rover",
+          "duration_minutes": 60,
+          "in_progress": false
+        }
+      ],
+      "resource_minutes": {
+        "tracked-excavator": 480,
+        "loaded-hauler": 480,
+        "utility-rover": 480
+      }
+    },
+    "requested": {
+      "case": "requested",
+      "status": "infeasible",
+      "solver_status": "INFEASIBLE",
+      "message": "No schedule satisfies these modeled constraints.",
+      "fleet": null,
+      "delivered_bank_m3": null,
+      "finish_minutes": null,
+      "overtime_minutes": null,
+      "additional_resources_required": 0,
+      "objective": "minimum finish minutes",
+      "objective_value": null,
+      "objective_bound": null,
+      "verified": false,
+      "conflicts": [
+        "Fleet cap: 2 truck/operator pairs",
+        "Shift window: 480 minutes + 0 overtime",
+        "Target: at least 320 bank m3 in completed cycles"
+      ],
+      "trips": [],
+      "schedule": []
+    },
+    "alternatives": [
+      {
+        "case": "minimum_fleet",
+        "status": "feasible",
+        "solver_status": "OPTIMAL",
+        "message": "A checked schedule exists under the stated synthetic assumptions. Conditional on obtaining 2 additional truck/operator pair(s); they are not current inventory.",
+        "fleet": 3,
+        "delivered_bank_m3": 320,
+        "finish_minutes": 472,
+        "overtime_minutes": 0,
+        "additional_resources_required": 2,
+        "objective": "minimum truck/operator pairs",
+        "objective_value": 3.0,
+        "objective_bound": 3.0,
+        "verified": true,
+        "conflicts": [],
+        "trips": [
+          {
+            "index": 0,
+            "truck": 1,
+            "start_minutes": 180,
+            "load_end_minutes": 188,
+            "dump_start_minutes": 194,
+            "dump_end_minutes": 196,
+            "end_minutes": 200,
+            "bank_m3": 16
+          },
+          {
+            "index": 1,
+            "truck": 2,
+            "start_minutes": 188,
+            "load_end_minutes": 196,
+            "dump_start_minutes": 202,
+            "dump_end_minutes": 204,
+            "end_minutes": 208,
+            "bank_m3": 16
+          },
+          {
+            "index": 2,
+            "truck": 3,
+            "start_minutes": 196,
+            "load_end_minutes": 204,
+            "dump_start_minutes": 210,
+            "dump_end_minutes": 212,
+            "end_minutes": 216,
+            "bank_m3": 16
+          },
+          {
+            "index": 3,
+            "truck": 1,
+            "start_minutes": 204,
+            "load_end_minutes": 212,
+            "dump_start_minutes": 218,
+            "dump_end_minutes": 220,
+            "end_minutes": 224,
+            "bank_m3": 16
+          },
+          {
+            "index": 4,
+            "truck": 2,
+            "start_minutes": 212,
+            "load_end_minutes": 220,
+            "dump_start_minutes": 226,
+            "dump_end_minutes": 228,
+            "end_minutes": 232,
+            "bank_m3": 16
+          },
+          {
+            "index": 5,
+            "truck": 3,
+            "start_minutes": 220,
+            "load_end_minutes": 228,
+            "dump_start_minutes": 234,
+            "dump_end_minutes": 236,
+            "end_minutes": 240,
+            "bank_m3": 16
+          },
+          {
+            "index": 6,
+            "truck": 1,
+            "start_minutes": 348,
+            "load_end_minutes": 356,
+            "dump_start_minutes": 362,
+            "dump_end_minutes": 364,
+            "end_minutes": 368,
+            "bank_m3": 16
+          },
+          {
+            "index": 7,
+            "truck": 2,
+            "start_minutes": 356,
+            "load_end_minutes": 364,
+            "dump_start_minutes": 370,
+            "dump_end_minutes": 372,
+            "end_minutes": 376,
+            "bank_m3": 16
+          },
+          {
+            "index": 8,
+            "truck": 3,
+            "start_minutes": 364,
+            "load_end_minutes": 372,
+            "dump_start_minutes": 378,
+            "dump_end_minutes": 380,
+            "end_minutes": 384,
+            "bank_m3": 16
+          },
+          {
+            "index": 9,
+            "truck": 1,
+            "start_minutes": 372,
+            "load_end_minutes": 380,
+            "dump_start_minutes": 386,
+            "dump_end_minutes": 388,
+            "end_minutes": 392,
+            "bank_m3": 16
+          },
+          {
+            "index": 10,
+            "truck": 2,
+            "start_minutes": 380,
+            "load_end_minutes": 388,
+            "dump_start_minutes": 394,
+            "dump_end_minutes": 396,
+            "end_minutes": 400,
+            "bank_m3": 16
+          },
+          {
+            "index": 11,
+            "truck": 3,
+            "start_minutes": 388,
+            "load_end_minutes": 396,
+            "dump_start_minutes": 402,
+            "dump_end_minutes": 404,
+            "end_minutes": 408,
+            "bank_m3": 16
+          },
+          {
+            "index": 12,
+            "truck": 1,
+            "start_minutes": 396,
+            "load_end_minutes": 404,
+            "dump_start_minutes": 410,
+            "dump_end_minutes": 412,
+            "end_minutes": 416,
+            "bank_m3": 16
+          },
+          {
+            "index": 13,
+            "truck": 2,
+            "start_minutes": 404,
+            "load_end_minutes": 412,
+            "dump_start_minutes": 418,
+            "dump_end_minutes": 420,
+            "end_minutes": 424,
+            "bank_m3": 16
+          },
+          {
+            "index": 14,
+            "truck": 3,
+            "start_minutes": 412,
+            "load_end_minutes": 420,
+            "dump_start_minutes": 426,
+            "dump_end_minutes": 428,
+            "end_minutes": 432,
+            "bank_m3": 16
+          },
+          {
+            "index": 15,
+            "truck": 1,
+            "start_minutes": 420,
+            "load_end_minutes": 428,
+            "dump_start_minutes": 434,
+            "dump_end_minutes": 436,
+            "end_minutes": 440,
+            "bank_m3": 16
+          },
+          {
+            "index": 16,
+            "truck": 2,
+            "start_minutes": 428,
+            "load_end_minutes": 436,
+            "dump_start_minutes": 442,
+            "dump_end_minutes": 444,
+            "end_minutes": 448,
+            "bank_m3": 16
+          },
+          {
+            "index": 17,
+            "truck": 3,
+            "start_minutes": 436,
+            "load_end_minutes": 444,
+            "dump_start_minutes": 450,
+            "dump_end_minutes": 452,
+            "end_minutes": 456,
+            "bank_m3": 16
+          },
+          {
+            "index": 18,
+            "truck": 1,
+            "start_minutes": 444,
+            "load_end_minutes": 452,
+            "dump_start_minutes": 458,
+            "dump_end_minutes": 460,
+            "end_minutes": 464,
+            "bank_m3": 16
+          },
+          {
+            "index": 19,
+            "truck": 2,
+            "start_minutes": 452,
+            "load_end_minutes": 460,
+            "dump_start_minutes": 466,
+            "dump_end_minutes": 468,
+            "end_minutes": 472,
+            "bank_m3": 16
+          }
+        ],
+        "schedule": [
+          {
+            "id": "work-east-excavation",
+            "task_id": "east-excavation",
+            "resource_id": "tracked-excavator",
+            "kind": "preparation",
+            "start_minutes": 0,
+            "end_minutes": 180
+          },
+          {
+            "id": "work-yard-inspection",
+            "task_id": "yard-inspection",
+            "resource_id": "utility-rover",
+            "kind": "retained_work",
+            "start_minutes": 0,
+            "end_minutes": 60
+          },
+          {
+            "id": "trip-0-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 180,
+            "end_minutes": 188
+          },
+          {
+            "id": "trip-0-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 180,
+            "end_minutes": 200
+          },
+          {
+            "id": "trip-1-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 188,
+            "end_minutes": 196
+          },
+          {
+            "id": "trip-1-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 188,
+            "end_minutes": 208
+          },
+          {
+            "id": "trip-0-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 194,
+            "end_minutes": 196
+          },
+          {
+            "id": "trip-2-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 196,
+            "end_minutes": 204
+          },
+          {
+            "id": "trip-2-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-3",
+            "kind": "truck_cycle",
+            "start_minutes": 196,
+            "end_minutes": 216
+          },
+          {
+            "id": "trip-1-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 202,
+            "end_minutes": 204
+          },
+          {
+            "id": "trip-3-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 204,
+            "end_minutes": 212
+          },
+          {
+            "id": "trip-3-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 204,
+            "end_minutes": 224
+          },
+          {
+            "id": "trip-2-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 210,
+            "end_minutes": 212
+          },
+          {
+            "id": "trip-4-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 212,
+            "end_minutes": 220
+          },
+          {
+            "id": "trip-4-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 212,
+            "end_minutes": 232
+          },
+          {
+            "id": "trip-3-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 218,
+            "end_minutes": 220
+          },
+          {
+            "id": "trip-5-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 220,
+            "end_minutes": 228
+          },
+          {
+            "id": "trip-5-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-3",
+            "kind": "truck_cycle",
+            "start_minutes": 220,
+            "end_minutes": 240
+          },
+          {
+            "id": "trip-4-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 226,
+            "end_minutes": 228
+          },
+          {
+            "id": "work-yard-drainage",
+            "task_id": "yard-drainage",
+            "resource_id": "tracked-excavator",
+            "kind": "drainage",
+            "start_minutes": 228,
+            "end_minutes": 348
+          },
+          {
+            "id": "trip-5-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 234,
+            "end_minutes": 236
+          },
+          {
+            "id": "trip-6-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 348,
+            "end_minutes": 356
+          },
+          {
+            "id": "trip-6-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 348,
+            "end_minutes": 368
+          },
+          {
+            "id": "trip-7-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 356,
+            "end_minutes": 364
+          },
+          {
+            "id": "trip-7-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 356,
+            "end_minutes": 376
+          },
+          {
+            "id": "trip-6-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 362,
+            "end_minutes": 364
+          },
+          {
+            "id": "trip-8-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 364,
+            "end_minutes": 372
+          },
+          {
+            "id": "trip-8-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-3",
+            "kind": "truck_cycle",
+            "start_minutes": 364,
+            "end_minutes": 384
+          },
+          {
+            "id": "trip-7-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 370,
+            "end_minutes": 372
+          },
+          {
+            "id": "trip-9-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 372,
+            "end_minutes": 380
+          },
+          {
+            "id": "trip-9-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 372,
+            "end_minutes": 392
+          },
+          {
+            "id": "trip-8-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 378,
+            "end_minutes": 380
+          },
+          {
+            "id": "trip-10-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 380,
+            "end_minutes": 388
+          },
+          {
+            "id": "trip-10-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 380,
+            "end_minutes": 400
+          },
+          {
+            "id": "trip-9-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 386,
+            "end_minutes": 388
+          },
+          {
+            "id": "trip-11-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 388,
+            "end_minutes": 396
+          },
+          {
+            "id": "trip-11-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-3",
+            "kind": "truck_cycle",
+            "start_minutes": 388,
+            "end_minutes": 408
+          },
+          {
+            "id": "trip-10-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 394,
+            "end_minutes": 396
+          },
+          {
+            "id": "trip-12-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 396,
+            "end_minutes": 404
+          },
+          {
+            "id": "trip-12-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 396,
+            "end_minutes": 416
+          },
+          {
+            "id": "trip-11-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 402,
+            "end_minutes": 404
+          },
+          {
+            "id": "trip-13-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 404,
+            "end_minutes": 412
+          },
+          {
+            "id": "trip-13-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 404,
+            "end_minutes": 424
+          },
+          {
+            "id": "trip-12-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 410,
+            "end_minutes": 412
+          },
+          {
+            "id": "trip-14-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 412,
+            "end_minutes": 420
+          },
+          {
+            "id": "trip-14-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-3",
+            "kind": "truck_cycle",
+            "start_minutes": 412,
+            "end_minutes": 432
+          },
+          {
+            "id": "trip-13-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 418,
+            "end_minutes": 420
+          },
+          {
+            "id": "trip-15-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 420,
+            "end_minutes": 428
+          },
+          {
+            "id": "trip-15-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 420,
+            "end_minutes": 440
+          },
+          {
+            "id": "trip-14-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 426,
+            "end_minutes": 428
+          },
+          {
+            "id": "trip-16-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 428,
+            "end_minutes": 436
+          },
+          {
+            "id": "trip-16-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 428,
+            "end_minutes": 448
+          },
+          {
+            "id": "trip-15-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 434,
+            "end_minutes": 436
+          },
+          {
+            "id": "trip-17-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 436,
+            "end_minutes": 444
+          },
+          {
+            "id": "trip-17-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-3",
+            "kind": "truck_cycle",
+            "start_minutes": 436,
+            "end_minutes": 456
+          },
+          {
+            "id": "trip-16-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 442,
+            "end_minutes": 444
+          },
+          {
+            "id": "trip-18-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 444,
+            "end_minutes": 452
+          },
+          {
+            "id": "trip-18-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 444,
+            "end_minutes": 464
+          },
+          {
+            "id": "trip-17-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 450,
+            "end_minutes": 452
+          },
+          {
+            "id": "trip-19-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 452,
+            "end_minutes": 460
+          },
+          {
+            "id": "trip-19-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 452,
+            "end_minutes": 472
+          },
+          {
+            "id": "trip-18-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 458,
+            "end_minutes": 460
+          },
+          {
+            "id": "trip-19-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 466,
+            "end_minutes": 468
+          }
+        ]
+      },
+      {
+        "case": "minimum_overtime",
+        "status": "feasible",
+        "solver_status": "OPTIMAL",
+        "message": "A checked schedule exists under the stated synthetic assumptions. Conditional on obtaining 1 additional truck/operator pair(s); they are not current inventory.",
+        "fleet": 2,
+        "delivered_bank_m3": 320,
+        "finish_minutes": 492,
+        "overtime_minutes": 12,
+        "additional_resources_required": 1,
+        "objective": "minimum finish minutes",
+        "objective_value": 492.0,
+        "objective_bound": 492.0,
+        "verified": true,
+        "conflicts": [],
+        "trips": [
+          {
+            "index": 0,
+            "truck": 1,
+            "start_minutes": 0,
+            "load_end_minutes": 8,
+            "dump_start_minutes": 14,
+            "dump_end_minutes": 16,
+            "end_minutes": 20,
+            "bank_m3": 16
+          },
+          {
+            "index": 1,
+            "truck": 2,
+            "start_minutes": 8,
+            "load_end_minutes": 16,
+            "dump_start_minutes": 22,
+            "dump_end_minutes": 24,
+            "end_minutes": 28,
+            "bank_m3": 16
+          },
+          {
+            "index": 2,
+            "truck": 1,
+            "start_minutes": 20,
+            "load_end_minutes": 28,
+            "dump_start_minutes": 34,
+            "dump_end_minutes": 36,
+            "end_minutes": 40,
+            "bank_m3": 16
+          },
+          {
+            "index": 3,
+            "truck": 2,
+            "start_minutes": 28,
+            "load_end_minutes": 36,
+            "dump_start_minutes": 42,
+            "dump_end_minutes": 44,
+            "end_minutes": 48,
+            "bank_m3": 16
+          },
+          {
+            "index": 4,
+            "truck": 1,
+            "start_minutes": 40,
+            "load_end_minutes": 48,
+            "dump_start_minutes": 54,
+            "dump_end_minutes": 56,
+            "end_minutes": 60,
+            "bank_m3": 16
+          },
+          {
+            "index": 5,
+            "truck": 2,
+            "start_minutes": 48,
+            "load_end_minutes": 56,
+            "dump_start_minutes": 62,
+            "dump_end_minutes": 64,
+            "end_minutes": 68,
+            "bank_m3": 16
+          },
+          {
+            "index": 6,
+            "truck": 1,
+            "start_minutes": 60,
+            "load_end_minutes": 68,
+            "dump_start_minutes": 74,
+            "dump_end_minutes": 76,
+            "end_minutes": 80,
+            "bank_m3": 16
+          },
+          {
+            "index": 7,
+            "truck": 2,
+            "start_minutes": 68,
+            "load_end_minutes": 76,
+            "dump_start_minutes": 82,
+            "dump_end_minutes": 84,
+            "end_minutes": 88,
+            "bank_m3": 16
+          },
+          {
+            "index": 8,
+            "truck": 1,
+            "start_minutes": 80,
+            "load_end_minutes": 88,
+            "dump_start_minutes": 94,
+            "dump_end_minutes": 96,
+            "end_minutes": 100,
+            "bank_m3": 16
+          },
+          {
+            "index": 9,
+            "truck": 2,
+            "start_minutes": 88,
+            "load_end_minutes": 96,
+            "dump_start_minutes": 102,
+            "dump_end_minutes": 104,
+            "end_minutes": 108,
+            "bank_m3": 16
+          },
+          {
+            "index": 10,
+            "truck": 1,
+            "start_minutes": 100,
+            "load_end_minutes": 108,
+            "dump_start_minutes": 114,
+            "dump_end_minutes": 116,
+            "end_minutes": 120,
+            "bank_m3": 16
+          },
+          {
+            "index": 11,
+            "truck": 2,
+            "start_minutes": 108,
+            "load_end_minutes": 116,
+            "dump_start_minutes": 122,
+            "dump_end_minutes": 124,
+            "end_minutes": 128,
+            "bank_m3": 16
+          },
+          {
+            "index": 12,
+            "truck": 1,
+            "start_minutes": 120,
+            "load_end_minutes": 128,
+            "dump_start_minutes": 134,
+            "dump_end_minutes": 136,
+            "end_minutes": 140,
+            "bank_m3": 16
+          },
+          {
+            "index": 13,
+            "truck": 2,
+            "start_minutes": 128,
+            "load_end_minutes": 136,
+            "dump_start_minutes": 142,
+            "dump_end_minutes": 144,
+            "end_minutes": 148,
+            "bank_m3": 16
+          },
+          {
+            "index": 14,
+            "truck": 1,
+            "start_minutes": 140,
+            "load_end_minutes": 148,
+            "dump_start_minutes": 154,
+            "dump_end_minutes": 156,
+            "end_minutes": 160,
+            "bank_m3": 16
+          },
+          {
+            "index": 15,
+            "truck": 2,
+            "start_minutes": 148,
+            "load_end_minutes": 156,
+            "dump_start_minutes": 162,
+            "dump_end_minutes": 164,
+            "end_minutes": 168,
+            "bank_m3": 16
+          },
+          {
+            "index": 16,
+            "truck": 1,
+            "start_minutes": 160,
+            "load_end_minutes": 168,
+            "dump_start_minutes": 174,
+            "dump_end_minutes": 176,
+            "end_minutes": 180,
+            "bank_m3": 16
+          },
+          {
+            "index": 17,
+            "truck": 2,
+            "start_minutes": 168,
+            "load_end_minutes": 176,
+            "dump_start_minutes": 182,
+            "dump_end_minutes": 184,
+            "end_minutes": 188,
+            "bank_m3": 16
+          },
+          {
+            "index": 18,
+            "truck": 1,
+            "start_minutes": 356,
+            "load_end_minutes": 364,
+            "dump_start_minutes": 370,
+            "dump_end_minutes": 372,
+            "end_minutes": 376,
+            "bank_m3": 16
+          },
+          {
+            "index": 19,
+            "truck": 2,
+            "start_minutes": 364,
+            "load_end_minutes": 372,
+            "dump_start_minutes": 378,
+            "dump_end_minutes": 380,
+            "end_minutes": 384,
+            "bank_m3": 16
+          }
+        ],
+        "schedule": [
+          {
+            "id": "trip-0-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 0,
+            "end_minutes": 8
+          },
+          {
+            "id": "trip-0-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 0,
+            "end_minutes": 20
+          },
+          {
+            "id": "work-yard-inspection",
+            "task_id": "yard-inspection",
+            "resource_id": "utility-rover",
+            "kind": "retained_work",
+            "start_minutes": 0,
+            "end_minutes": 60
+          },
+          {
+            "id": "trip-1-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 8,
+            "end_minutes": 16
+          },
+          {
+            "id": "trip-1-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 8,
+            "end_minutes": 28
+          },
+          {
+            "id": "trip-0-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 14,
+            "end_minutes": 16
+          },
+          {
+            "id": "trip-2-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 20,
+            "end_minutes": 28
+          },
+          {
+            "id": "trip-2-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 20,
+            "end_minutes": 40
+          },
+          {
+            "id": "trip-1-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 22,
+            "end_minutes": 24
+          },
+          {
+            "id": "trip-3-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 28,
+            "end_minutes": 36
+          },
+          {
+            "id": "trip-3-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 28,
+            "end_minutes": 48
+          },
+          {
+            "id": "trip-2-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 34,
+            "end_minutes": 36
+          },
+          {
+            "id": "trip-4-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 40,
+            "end_minutes": 48
+          },
+          {
+            "id": "trip-4-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 40,
+            "end_minutes": 60
+          },
+          {
+            "id": "trip-3-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 42,
+            "end_minutes": 44
+          },
+          {
+            "id": "trip-5-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 48,
+            "end_minutes": 56
+          },
+          {
+            "id": "trip-5-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 48,
+            "end_minutes": 68
+          },
+          {
+            "id": "trip-4-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 54,
+            "end_minutes": 56
+          },
+          {
+            "id": "trip-6-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 60,
+            "end_minutes": 68
+          },
+          {
+            "id": "trip-6-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 60,
+            "end_minutes": 80
+          },
+          {
+            "id": "trip-5-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 62,
+            "end_minutes": 64
+          },
+          {
+            "id": "trip-7-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 68,
+            "end_minutes": 76
+          },
+          {
+            "id": "trip-7-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 68,
+            "end_minutes": 88
+          },
+          {
+            "id": "trip-6-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 74,
+            "end_minutes": 76
+          },
+          {
+            "id": "trip-8-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 80,
+            "end_minutes": 88
+          },
+          {
+            "id": "trip-8-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 80,
+            "end_minutes": 100
+          },
+          {
+            "id": "trip-7-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 82,
+            "end_minutes": 84
+          },
+          {
+            "id": "trip-9-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 88,
+            "end_minutes": 96
+          },
+          {
+            "id": "trip-9-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 88,
+            "end_minutes": 108
+          },
+          {
+            "id": "trip-8-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 94,
+            "end_minutes": 96
+          },
+          {
+            "id": "trip-10-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 100,
+            "end_minutes": 108
+          },
+          {
+            "id": "trip-10-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 100,
+            "end_minutes": 120
+          },
+          {
+            "id": "trip-9-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 102,
+            "end_minutes": 104
+          },
+          {
+            "id": "trip-11-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 108,
+            "end_minutes": 116
+          },
+          {
+            "id": "trip-11-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 108,
+            "end_minutes": 128
+          },
+          {
+            "id": "trip-10-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 114,
+            "end_minutes": 116
+          },
+          {
+            "id": "trip-12-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 120,
+            "end_minutes": 128
+          },
+          {
+            "id": "trip-12-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 120,
+            "end_minutes": 140
+          },
+          {
+            "id": "trip-11-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 122,
+            "end_minutes": 124
+          },
+          {
+            "id": "trip-13-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 128,
+            "end_minutes": 136
+          },
+          {
+            "id": "trip-13-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 128,
+            "end_minutes": 148
+          },
+          {
+            "id": "trip-12-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 134,
+            "end_minutes": 136
+          },
+          {
+            "id": "trip-14-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 140,
+            "end_minutes": 148
+          },
+          {
+            "id": "trip-14-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 140,
+            "end_minutes": 160
+          },
+          {
+            "id": "trip-13-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 142,
+            "end_minutes": 144
+          },
+          {
+            "id": "trip-15-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 148,
+            "end_minutes": 156
+          },
+          {
+            "id": "trip-15-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 148,
+            "end_minutes": 168
+          },
+          {
+            "id": "trip-14-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 154,
+            "end_minutes": 156
+          },
+          {
+            "id": "trip-16-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 160,
+            "end_minutes": 168
+          },
+          {
+            "id": "trip-16-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 160,
+            "end_minutes": 180
+          },
+          {
+            "id": "trip-15-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 162,
+            "end_minutes": 164
+          },
+          {
+            "id": "trip-17-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 168,
+            "end_minutes": 176
+          },
+          {
+            "id": "trip-17-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 168,
+            "end_minutes": 188
+          },
+          {
+            "id": "trip-16-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 174,
+            "end_minutes": 176
+          },
+          {
+            "id": "work-east-excavation",
+            "task_id": "east-excavation",
+            "resource_id": "tracked-excavator",
+            "kind": "preparation",
+            "start_minutes": 176,
+            "end_minutes": 356
+          },
+          {
+            "id": "trip-17-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 182,
+            "end_minutes": 184
+          },
+          {
+            "id": "trip-18-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 356,
+            "end_minutes": 364
+          },
+          {
+            "id": "trip-18-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 356,
+            "end_minutes": 376
+          },
+          {
+            "id": "trip-19-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 364,
+            "end_minutes": 372
+          },
+          {
+            "id": "trip-19-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 364,
+            "end_minutes": 384
+          },
+          {
+            "id": "trip-18-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 370,
+            "end_minutes": 372
+          },
+          {
+            "id": "work-yard-drainage",
+            "task_id": "yard-drainage",
+            "resource_id": "tracked-excavator",
+            "kind": "drainage",
+            "start_minutes": 372,
+            "end_minutes": 492
+          },
+          {
+            "id": "trip-19-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 378,
+            "end_minutes": 380
+          }
+        ]
+      },
+      {
+        "case": "maximum_volume",
+        "status": "feasible",
+        "solver_status": "OPTIMAL",
+        "message": "A checked schedule exists under the stated synthetic assumptions. Conditional on obtaining 1 additional truck/operator pair(s); they are not current inventory.",
+        "fleet": 2,
+        "delivered_bank_m3": 288,
+        "finish_minutes": 480,
+        "overtime_minutes": 0,
+        "additional_resources_required": 1,
+        "objective": "maximum delivered bank m3",
+        "objective_value": 288.0,
+        "objective_bound": 288.0,
+        "verified": true,
+        "conflicts": [],
+        "trips": [
+          {
+            "index": 0,
+            "truck": 1,
+            "start_minutes": 180,
+            "load_end_minutes": 188,
+            "dump_start_minutes": 194,
+            "dump_end_minutes": 196,
+            "end_minutes": 200,
+            "bank_m3": 16
+          },
+          {
+            "index": 1,
+            "truck": 2,
+            "start_minutes": 188,
+            "load_end_minutes": 196,
+            "dump_start_minutes": 202,
+            "dump_end_minutes": 204,
+            "end_minutes": 208,
+            "bank_m3": 16
+          },
+          {
+            "index": 2,
+            "truck": 1,
+            "start_minutes": 200,
+            "load_end_minutes": 208,
+            "dump_start_minutes": 214,
+            "dump_end_minutes": 216,
+            "end_minutes": 220,
+            "bank_m3": 16
+          },
+          {
+            "index": 3,
+            "truck": 2,
+            "start_minutes": 211,
+            "load_end_minutes": 219,
+            "dump_start_minutes": 225,
+            "dump_end_minutes": 227,
+            "end_minutes": 231,
+            "bank_m3": 16
+          },
+          {
+            "index": 4,
+            "truck": 1,
+            "start_minutes": 220,
+            "load_end_minutes": 228,
+            "dump_start_minutes": 234,
+            "dump_end_minutes": 236,
+            "end_minutes": 240,
+            "bank_m3": 16
+          },
+          {
+            "index": 5,
+            "truck": 2,
+            "start_minutes": 231,
+            "load_end_minutes": 239,
+            "dump_start_minutes": 245,
+            "dump_end_minutes": 247,
+            "end_minutes": 251,
+            "bank_m3": 16
+          },
+          {
+            "index": 6,
+            "truck": 1,
+            "start_minutes": 240,
+            "load_end_minutes": 248,
+            "dump_start_minutes": 254,
+            "dump_end_minutes": 256,
+            "end_minutes": 260,
+            "bank_m3": 16
+          },
+          {
+            "index": 7,
+            "truck": 2,
+            "start_minutes": 251,
+            "load_end_minutes": 259,
+            "dump_start_minutes": 265,
+            "dump_end_minutes": 267,
+            "end_minutes": 271,
+            "bank_m3": 16
+          },
+          {
+            "index": 8,
+            "truck": 1,
+            "start_minutes": 260,
+            "load_end_minutes": 268,
+            "dump_start_minutes": 274,
+            "dump_end_minutes": 276,
+            "end_minutes": 280,
+            "bank_m3": 16
+          },
+          {
+            "index": 9,
+            "truck": 2,
+            "start_minutes": 272,
+            "load_end_minutes": 280,
+            "dump_start_minutes": 286,
+            "dump_end_minutes": 288,
+            "end_minutes": 292,
+            "bank_m3": 16
+          },
+          {
+            "index": 10,
+            "truck": 1,
+            "start_minutes": 280,
+            "load_end_minutes": 288,
+            "dump_start_minutes": 294,
+            "dump_end_minutes": 296,
+            "end_minutes": 300,
+            "bank_m3": 16
+          },
+          {
+            "index": 11,
+            "truck": 2,
+            "start_minutes": 292,
+            "load_end_minutes": 300,
+            "dump_start_minutes": 306,
+            "dump_end_minutes": 308,
+            "end_minutes": 312,
+            "bank_m3": 16
+          },
+          {
+            "index": 12,
+            "truck": 1,
+            "start_minutes": 300,
+            "load_end_minutes": 308,
+            "dump_start_minutes": 314,
+            "dump_end_minutes": 316,
+            "end_minutes": 320,
+            "bank_m3": 16
+          },
+          {
+            "index": 13,
+            "truck": 2,
+            "start_minutes": 312,
+            "load_end_minutes": 320,
+            "dump_start_minutes": 326,
+            "dump_end_minutes": 328,
+            "end_minutes": 332,
+            "bank_m3": 16
+          },
+          {
+            "index": 14,
+            "truck": 1,
+            "start_minutes": 320,
+            "load_end_minutes": 328,
+            "dump_start_minutes": 334,
+            "dump_end_minutes": 336,
+            "end_minutes": 340,
+            "bank_m3": 16
+          },
+          {
+            "index": 15,
+            "truck": 2,
+            "start_minutes": 332,
+            "load_end_minutes": 340,
+            "dump_start_minutes": 346,
+            "dump_end_minutes": 348,
+            "end_minutes": 352,
+            "bank_m3": 16
+          },
+          {
+            "index": 16,
+            "truck": 1,
+            "start_minutes": 340,
+            "load_end_minutes": 348,
+            "dump_start_minutes": 354,
+            "dump_end_minutes": 356,
+            "end_minutes": 360,
+            "bank_m3": 16
+          },
+          {
+            "index": 17,
+            "truck": 2,
+            "start_minutes": 352,
+            "load_end_minutes": 360,
+            "dump_start_minutes": 366,
+            "dump_end_minutes": 368,
+            "end_minutes": 372,
+            "bank_m3": 16
+          }
+        ],
+        "schedule": [
+          {
+            "id": "work-east-excavation",
+            "task_id": "east-excavation",
+            "resource_id": "tracked-excavator",
+            "kind": "preparation",
+            "start_minutes": 0,
+            "end_minutes": 180
+          },
+          {
+            "id": "work-yard-inspection",
+            "task_id": "yard-inspection",
+            "resource_id": "utility-rover",
+            "kind": "retained_work",
+            "start_minutes": 0,
+            "end_minutes": 60
+          },
+          {
+            "id": "trip-0-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 180,
+            "end_minutes": 188
+          },
+          {
+            "id": "trip-0-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 180,
+            "end_minutes": 200
+          },
+          {
+            "id": "trip-1-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 188,
+            "end_minutes": 196
+          },
+          {
+            "id": "trip-1-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 188,
+            "end_minutes": 208
+          },
+          {
+            "id": "trip-0-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 194,
+            "end_minutes": 196
+          },
+          {
+            "id": "trip-2-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 200,
+            "end_minutes": 208
+          },
+          {
+            "id": "trip-2-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 200,
+            "end_minutes": 220
+          },
+          {
+            "id": "trip-1-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 202,
+            "end_minutes": 204
+          },
+          {
+            "id": "trip-3-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 211,
+            "end_minutes": 219
+          },
+          {
+            "id": "trip-3-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 211,
+            "end_minutes": 231
+          },
+          {
+            "id": "trip-2-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 214,
+            "end_minutes": 216
+          },
+          {
+            "id": "trip-4-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 220,
+            "end_minutes": 228
+          },
+          {
+            "id": "trip-4-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 220,
+            "end_minutes": 240
+          },
+          {
+            "id": "trip-3-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 225,
+            "end_minutes": 227
+          },
+          {
+            "id": "trip-5-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 231,
+            "end_minutes": 239
+          },
+          {
+            "id": "trip-5-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 231,
+            "end_minutes": 251
+          },
+          {
+            "id": "trip-4-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 234,
+            "end_minutes": 236
+          },
+          {
+            "id": "trip-6-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 240,
+            "end_minutes": 248
+          },
+          {
+            "id": "trip-6-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 240,
+            "end_minutes": 260
+          },
+          {
+            "id": "trip-5-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 245,
+            "end_minutes": 247
+          },
+          {
+            "id": "trip-7-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 251,
+            "end_minutes": 259
+          },
+          {
+            "id": "trip-7-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 251,
+            "end_minutes": 271
+          },
+          {
+            "id": "trip-6-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 254,
+            "end_minutes": 256
+          },
+          {
+            "id": "trip-8-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 260,
+            "end_minutes": 268
+          },
+          {
+            "id": "trip-8-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 260,
+            "end_minutes": 280
+          },
+          {
+            "id": "trip-7-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 265,
+            "end_minutes": 267
+          },
+          {
+            "id": "trip-9-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 272,
+            "end_minutes": 280
+          },
+          {
+            "id": "trip-9-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 272,
+            "end_minutes": 292
+          },
+          {
+            "id": "trip-8-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 274,
+            "end_minutes": 276
+          },
+          {
+            "id": "trip-10-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 280,
+            "end_minutes": 288
+          },
+          {
+            "id": "trip-10-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 280,
+            "end_minutes": 300
+          },
+          {
+            "id": "trip-9-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 286,
+            "end_minutes": 288
+          },
+          {
+            "id": "trip-11-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 292,
+            "end_minutes": 300
+          },
+          {
+            "id": "trip-11-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 292,
+            "end_minutes": 312
+          },
+          {
+            "id": "trip-10-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 294,
+            "end_minutes": 296
+          },
+          {
+            "id": "trip-12-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 300,
+            "end_minutes": 308
+          },
+          {
+            "id": "trip-12-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 300,
+            "end_minutes": 320
+          },
+          {
+            "id": "trip-11-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 306,
+            "end_minutes": 308
+          },
+          {
+            "id": "trip-13-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 312,
+            "end_minutes": 320
+          },
+          {
+            "id": "trip-13-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 312,
+            "end_minutes": 332
+          },
+          {
+            "id": "trip-12-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 314,
+            "end_minutes": 316
+          },
+          {
+            "id": "trip-14-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 320,
+            "end_minutes": 328
+          },
+          {
+            "id": "trip-14-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 320,
+            "end_minutes": 340
+          },
+          {
+            "id": "trip-13-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 326,
+            "end_minutes": 328
+          },
+          {
+            "id": "trip-15-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 332,
+            "end_minutes": 340
+          },
+          {
+            "id": "trip-15-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 332,
+            "end_minutes": 352
+          },
+          {
+            "id": "trip-14-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 334,
+            "end_minutes": 336
+          },
+          {
+            "id": "trip-16-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 340,
+            "end_minutes": 348
+          },
+          {
+            "id": "trip-16-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "loaded-hauler",
+            "kind": "truck_cycle",
+            "start_minutes": 340,
+            "end_minutes": 360
+          },
+          {
+            "id": "trip-15-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 346,
+            "end_minutes": 348
+          },
+          {
+            "id": "trip-17-loading",
+            "task_id": "east-haul",
+            "resource_id": "tracked-excavator",
+            "kind": "loading",
+            "start_minutes": 352,
+            "end_minutes": 360
+          },
+          {
+            "id": "trip-17-truck-cycle",
+            "task_id": "east-haul",
+            "resource_id": "additional-hauler-2",
+            "kind": "truck_cycle",
+            "start_minutes": 352,
+            "end_minutes": 372
+          },
+          {
+            "id": "trip-16-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 354,
+            "end_minutes": 356
+          },
+          {
+            "id": "work-yard-drainage",
+            "task_id": "yard-drainage",
+            "resource_id": "tracked-excavator",
+            "kind": "drainage",
+            "start_minutes": 360,
+            "end_minutes": 480
+          },
+          {
+            "id": "trip-17-dumping",
+            "task_id": "east-haul",
+            "resource_id": "shared-dump",
+            "kind": "dumping",
+            "start_minutes": 366,
+            "end_minutes": 368
+          }
+        ]
+      }
+    ],
+    "assumptions": [
+      "Explicit hypothetical production example, not measured site productivity. One existing HT-02 class truck/operator pair; a what-if pool permits up to three if extra pairs are actually obtained. Loading uses EX-01 and competes with retained preparation and drainage. Today's haul draws on the already-completed prior batch, so today's preparation is not a new haul prerequisite. Travel times are scenario assumptions, not inferred from route distance or aerial imagery.",
+      "Times are integer minutes from the evidence clock. Completed cycles include return travel; partial loads are not modeled.",
+      "Retained work follows the submitted draft. Loading shares EX-01 with preparation and drainage. The completed prior batch supplies this haul; today's preparation is not a haul prerequisite.",
+      "Only one truck/operator pair exists in the snapshot. Larger fleets require additional real resources.",
+      "Ground is checked at the evidence clock only. The schedule does not certify conditions through completion: reinspect before evidence expires or when conditions change.",
+      "Read-only planning result. No choices, approvals, completion, observations or equipment were changed.",
+      "Minimum-fleet relaxes the fleet cap up to three; minimum-overtime permits up to 120 minutes; maximum-volume relaxes the target. Other scoped constraints remain."
+    ],
+    "solver": "OR-Tools CP-SAT 9.15.6755",
+    "solver_workers": 1,
+    "read_only": true
+  },
+  "automated_checks": {
+    "backend_tests": 537,
+    "api_statement_branch_coverage_percent": 98.25,
+    "controller_tests": 60,
+    "full_browser_tests": 91,
+    "final_focused_browser_tests": 26,
+    "format_lint_types_build": "passed"
+  },
+  "hosted_integration": {
+    "status": "pending",
+    "spending_limits_changed": false
+  }
+}

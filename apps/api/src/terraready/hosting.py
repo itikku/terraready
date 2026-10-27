@@ -23,7 +23,9 @@ from terraready.agent_models import AssistRequest, AssistRun
 from terraready.assist_queue import AssistQueue, QueueUnavailable
 from terraready.main import create_app
 from terraready.models import SiteSnapshot
+from terraready.solver_models import WorkSuggestionRequest, WorkSuggestionResponse
 from terraready.storage import SiteStore
+from terraready.work_suggestions import suggest_work
 
 HEX64 = re.compile(r"^[a-f0-9]{64}$")
 HEX32 = re.compile(r"^[a-f0-9]{32}$")
@@ -131,7 +133,18 @@ class HostedOrigin:
                         status_code=429, detail=str(exc), headers={"Retry-After": "10"}
                     ) from exc
 
-            api = create_app(path, self._model, assist_runner=run)
+            def run_suggestion(
+                site: SiteSnapshot, body: WorkSuggestionRequest, model: ModelClient
+            ) -> WorkSuggestionResponse:
+                try:
+                    with self.queue.admit(visitor):
+                        return suggest_work(site, body, model)
+                except QueueUnavailable as exc:
+                    raise HTTPException(
+                        status_code=429, detail=str(exc), headers={"Retry-After": "10"}
+                    ) from exc
+
+            api = create_app(path, self._model, assist_runner=run, suggestion_runner=run_suggestion)
 
             if self._web_root is not None:
                 web = self._web_root

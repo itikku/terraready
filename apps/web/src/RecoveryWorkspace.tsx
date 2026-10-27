@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { approveRecovery, evaluateRecovery, getRecovery } from "./api";
-import type { RecoveryPlan, Site } from "./types";
+import type { RecoveryDraft, RecoveryPlan, Site } from "./types";
 import "./recovery.css";
 
 const clock = (value: string) =>
@@ -22,10 +22,12 @@ export default function RecoveryWorkspace({
   site,
   asOf,
   inspect,
+  onDraftChange,
 }: {
   site: Site;
   asOf?: string;
   inspect: (zone: string) => void;
+  onDraftChange?: (draft: RecoveryDraft | null) => void;
 }) {
   const [catalog, setCatalog] = useState<RecoveryPlan | null>(null);
   const [checked, setChecked] = useState<RecoveryPlan | null>(null);
@@ -44,6 +46,18 @@ export default function RecoveryWorkspace({
   const storageKey = `terraready-recovery-${site.scenario.id}-${asOf ?? site.scenario.as_of}`;
   const ids = Object.values(choices).filter(Boolean);
   const approval = checked?.approval;
+  const draftIds = JSON.stringify([...ids].sort());
+  useEffect(() => {
+    onDraftChange?.(
+      catalog
+        ? {
+            catalog_id: catalog.id,
+            candidate_ids: JSON.parse(draftIds) as string[],
+            as_of: catalog.as_of,
+          }
+        : null,
+    );
+  }, [catalog, draftIds, onDraftChange]);
   const taskName = (id: string) => site.tasks.find((t) => t.id === id)!.name;
   const machineName = (id: string) =>
     site.machines.find((m) => m.id === id)!.name;

@@ -56,17 +56,22 @@ class LocalModel:
             key = self.key_file.read_text().strip()
             if len(key) != 64 or any(c not in "0123456789abcdef" for c in key):
                 raise InferenceFailure("unavailable")
+            # Copying requested constraints needs faithful extraction, not novelty.
+            extracting = (
+                len(tools) == 1
+                and tools[0].get("function", {}).get("name") == "interpret_suggestion"
+            )
             options: dict[str, Any] = {
                 "model": self.model_id,
                 "messages": messages,
                 "tools": tools,
                 "tool_choice": "required",
                 "parallel_tool_calls": False,
-                "temperature": 0.7,
-                "top_p": 0.8,
+                "temperature": 0 if extracting else 0.7,
+                "top_p": 1 if extracting else 0.8,
                 "top_k": 20,
                 "min_p": 0,
-                "presence_penalty": 1.5,
+                "presence_penalty": 0 if extracting else 1.5,
                 "max_tokens": 192,
                 "reasoning_effort": "none",
                 "chat_template_kwargs": {"enable_thinking": False},

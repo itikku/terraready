@@ -40,6 +40,8 @@ FILES = frozenset(
         "config/local-model.json",
         "data/fixtures/post-rain.json",
         "data/fixtures/shift-docket.json",
+        "data/fixtures/production-demo.json",
+        "data/evals/work-suggestions.json",
         "docs/verification/local-agent.json",
         "docs/verification/gpu-agent.json",
     }

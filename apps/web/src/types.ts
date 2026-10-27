@@ -204,6 +204,138 @@ export interface RecoveryPlan {
   approval: Approval | null;
 }
 
+export interface RecoveryDraft {
+  catalog_id: string;
+  candidate_ids: string[];
+  as_of: string;
+}
+
+export interface SuggestionIntent {
+  target_bank_m3: number | null;
+  max_trucks: number | null;
+  max_overtime_minutes: number | null;
+  deadline_minutes: number | null;
+  keep_other_work: boolean;
+}
+
+export interface SolverCaseResult {
+  case: "requested" | "minimum_fleet" | "minimum_overtime" | "maximum_volume";
+  status: "feasible" | "infeasible" | "unknown";
+  solver_status: "OPTIMAL" | "FEASIBLE" | "INFEASIBLE" | "UNKNOWN" | "NOT_RUN";
+  message: string;
+  fleet: number | null;
+  delivered_bank_m3: number | null;
+  finish_minutes: number | null;
+  overtime_minutes: number | null;
+  additional_resources_required: number;
+  objective: string;
+  objective_value: number | null;
+  objective_bound: number | null;
+  verified: boolean;
+  conflicts: string[];
+  trips: {
+    index: number;
+    truck: number;
+    start_minutes: number;
+    load_end_minutes: number;
+    dump_start_minutes: number;
+    dump_end_minutes: number;
+    end_minutes: number;
+    bank_m3: number;
+  }[];
+  schedule: {
+    id: string;
+    task_id: string;
+    resource_id: string;
+    kind:
+      | "preparation"
+      | "drainage"
+      | "retained_work"
+      | "loading"
+      | "truck_cycle"
+      | "dumping";
+    start_minutes: number;
+    end_minutes: number;
+  }[];
+}
+
+export interface WorkSuggestionResponse {
+  task_id: string;
+  source_plan_id: string;
+  planning_only: true;
+  interpretation: {
+    status:
+      | "interpreted"
+      | "clarification"
+      | "unsupported"
+      | "unavailable"
+      | "timeout"
+      | "invalid_output";
+    task_id: string;
+    intent: SuggestionIntent | null;
+    message: string;
+    model_id: string;
+    mode: "local_model" | "test_stub" | "deterministic_fallback";
+    elapsed_ms: number;
+    completion_tokens: number;
+    trace: AssistRun["trace"];
+  };
+  solver: null | {
+    id: string;
+    task_id: string;
+    source_plan_id: string;
+    as_of: string;
+    review_by: string | null;
+    ground_status: Status;
+    ground_reasons: Reason[];
+    verdict: Status | "UNKNOWN";
+    requested: SolverCaseResult;
+    alternatives: SolverCaseResult[];
+    assumptions: string[];
+    solver: string;
+    solver_workers: 1;
+    read_only: true;
+    inputs: {
+      production: {
+        version: "production-demo-v1";
+        synthetic: true;
+        description: string;
+        haul_task_id: string;
+        preparation_task_id: string;
+        drainage_task_id: string;
+        loader_machine_id: string;
+        truck_machine_id: string;
+        route_id: string;
+        payload_loose_m3: number;
+        swell_factor: number;
+        bank_m3_per_load: number;
+        load_minutes: number;
+        loaded_travel_minutes: number;
+        dump_minutes: number;
+        return_minutes: number;
+        shift_minutes: number;
+        existing_trucks: 1;
+        maximum_trucks: 3;
+        default_trucks: number;
+        target_bank_m3: number;
+        maximum_loads: 20;
+      };
+      target_bank_m3: number;
+      max_trucks: number;
+      max_overtime_minutes: number;
+      deadline_minutes: number | null;
+      keep_other_work: boolean;
+      retained_task_ids: string[];
+      preparation_minutes: number;
+      drainage_minutes: number;
+      shift_minutes: number;
+      include_haul: boolean;
+      jobs: { task_id: string; machine_id: string; duration_minutes: number }[];
+      resource_minutes: Record<string, number>;
+    };
+  };
+}
+
 export interface GpuTestEvidence {
   provider: "Runpod";
   gpu_name: string;
